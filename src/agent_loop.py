@@ -172,6 +172,43 @@ _API_AGENT_RULES = """\
   - After `create_session` returns id `89effa28`: "Created [New Chat](#session-89effa28) — click to switch."
   - Listing sessions: "1. [Big Chat](#session-abc123) — 2h ago, 2. [Code Review](#session-def456) — 5h ago\""""
 
+
+# --- Spanish fork helper (Fase 3) ---------------------------------------
+# When the user's UI language is "es", the agent must still follow the
+# English tool protocol (tool names, code-fence tags, JSON keys) verbatim,
+# but its reasoning and final reply should be in neutral Spanish. We avoid
+# duplicating the long rule blocks by suffixing a short directive.
+
+_ES_AGENT_DIRECTIVE = (
+    "\n\n## Idioma de respuesta\n"
+    "El usuario ha elegido espa\xf1ol como idioma de la interfaz. "
+    "Responde y razona en espa\xf1ol neutro (tuteo, sin voseo ni "
+    "regionalismos). Conserva en ingl\xe9s los nombres de tools, los "
+    "tags de bloque (```bash, ```python, etc.), las claves JSON y los "
+    "t\xe9rminos t\xe9cnicos que sean m\xe1s claros as\xed (tool, prompt, "
+    "model, endpoint, RAG, MCP, skill, agent, session, document, note, "
+    "task, memory, etc.). Si el usuario cambia de idioma, s\xedguelo "
+    "pero mant\xe9n la legibilidad t\xe9cnica."
+)
+
+
+def apply_language(prompt: str, lang: Optional[str]) -> str:
+    """Append a Spanish-language directive when ui_language=='es'.
+
+    Used by _build_system_prompt to inject the language hint into the
+    agent system prompt without having to maintain a full Spanish mirror
+    of every ruleset. Other languages are no-ops.
+    """
+    if not lang or not isinstance(lang, str):
+        return prompt
+    lang = lang.strip().lower()
+    if lang != "es":
+        return prompt
+    if not prompt:
+        return _ES_AGENT_DIRECTIVE.strip()
+    return prompt + _ES_AGENT_DIRECTIVE
+
+
 # Each tool section is keyed by tool name(s) it covers.
 # Sections with multiple tools use a tuple key.
 TOOL_SECTIONS = {
@@ -405,8 +442,18 @@ def _section_text(name: str, default: str) -> str:
     return val if isinstance(val, str) and val.strip() else default
 
 
-def _assemble_prompt(tool_names: set, disabled_tools: set = None, compact: bool = False) -> str:
-    """Build the system prompt with only the specified tools included."""
+def _assemble_prompt(
+    tool_names: set,
+    disabled_tools: set = None,
+    compact: bool = False,
+    ui_language: Optional[str] = None,
+) -> str:
+    """Build the system prompt with only the specified tools included.
+
+    When ``ui_language`` is "es", the Spanish-language directive
+    (apply_language) is suffixed to the assembled prompt so the agent
+    reasons and replies in Spanish while keeping tool protocol verbatim.
+    """
     disabled = disabled_tools or set()
     included = tool_names - disabled
 
@@ -417,7 +464,7 @@ def _assemble_prompt(tool_names: set, disabled_tools: set = None, compact: bool 
             f"Available tools: {tool_list}.",
             _API_AGENT_RULES,
         ]
-        return "\n\n".join(parts)
+        return apply_language("\n\n".join(parts), ui_language)
 
     parts = [_AGENT_PREAMBLE]
 
@@ -453,7 +500,7 @@ def _assemble_prompt(tool_names: set, disabled_tools: set = None, compact: bool 
         parts.append(f"(Other tools available when needed: {hint})")
 
     parts.append(_AGENT_RULES)
-    return "\n\n".join(parts)
+    return apply_language("\n\n".join(parts), ui_language)
 
 
 # Legacy: full prompt with all tools (fallback when RAG unavailable)
@@ -611,8 +658,13 @@ def _build_system_prompt(
     compact: bool = False,
     owner: Optional[str] = None,
     suppress_local_context: bool = False,
+    ui_language: Optional[str] = None,
 ) -> List[Dict]:
-    """Build agent system prompt, inject MCP/document context, merge consecutive system msgs."""
+    """Build agent system prompt, inject MCP/document context, merge consecutive system msgs.
+
+    When ``ui_language`` is "es", the agent ruleset gets the Spanish
+    directive suffixed (see apply_language).
+    """
     global _cached_base_prompt, _cached_base_prompt_key
     if suppress_local_context:
         active_document = None
@@ -1036,7 +1088,7 @@ def _build_base_prompt(
         tool_names = set(ALWAYS_AVAILABLE) | set(relevant_tools)
         if needs_admin:
             tool_names |= _ADMIN_TOOLS
-        agent_prompt = _assemble_prompt(tool_names, disabled, compact=compact)
+        agent_prompt = _assemble_prompt(tool_names, disabled, compact=compact, ui_language=ui_language)
     else:
         # Fallback: full prompt (RAG unavailable)
         agent_prompt = AGENT_SYSTEM_PROMPT
@@ -1047,10 +1099,11 @@ def _build_base_prompt(
                 "chat_with_model", "ask_teacher", "list_models",
             }
             agent_prompt = _assemble_prompt(
-                set(TOOL_SECTIONS.keys()) - mgmt_tools, disabled, compact=compact
+                set(TOOL_SECTIONS.keys()) - mgmt_tools, disabled, compact=compact,
+                ui_language=ui_language,
             )
         elif compact:
-            agent_prompt = _assemble_prompt(set(TOOL_SECTIONS.keys()), disabled, compact=True)
+            agent_prompt = _assemble_prompt(set(TOOL_SECTIONS.keys()), disabled, compact=True, ui_language=ui_language)
 
     # Inject the Level-0 skill index — one line per skill so the agent
     # knows what canonical procedures exist. Includes published skills
@@ -1458,6 +1511,7 @@ async def stream_agent_loop(
     approved_plan: Optional[str] = None,
     tool_policy: Optional[ToolPolicy] = None,
     _is_teacher_run: bool = False,
+    ui_language: Optional[str] = None,
 ) -> AsyncGenerator[str, None]:
     """Streaming agent loop generator.
 
@@ -1642,6 +1696,7 @@ async def stream_agent_loop(
         compact=_is_api_model,
         owner=owner,
         suppress_local_context=guide_only,
+        ui_language=ui_language,
     )
     if workspace and not guide_only:
         # PREPEND (not append) so it dominates the large base prompt — appended
