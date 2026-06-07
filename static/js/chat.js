@@ -1,4 +1,4 @@
-// static/js/chat.js
+﻿// static/js/chat.js
 
 /**
  * Main chat functionality - message handling and streaming
@@ -382,11 +382,11 @@ import { createStreamRenderer } from './streamingRenderer.js';
         const stoppedIndicator = document.createElement('div');
         stoppedIndicator.className = 'stopped-indicator';
         const stoppedLabel = document.createElement('span');
-        stoppedLabel.textContent = '[Message interrupted]';
+        stoppedLabel.textContent = _t('chat.message_interrupted');
         stoppedIndicator.appendChild(stoppedLabel);
         const continueBtn = document.createElement('button');
         continueBtn.className = 'continue-btn';
-        continueBtn.title = 'Continue';
+        continueBtn.title = _t('chat.continue_title');
         continueBtn.textContent = '\u25B8';
         const _stoppedHolder = currentHolder; // capture before it gets cleared
         continueBtn.addEventListener('click', () => {
@@ -729,10 +729,10 @@ import { createStreamRenderer } from './streamingRenderer.js';
         textEl.textContent = label;
         banner.appendChild(textEl);
         const importBtn = document.createElement('button');
-        importBtn.textContent = 'Import';
+        importBtn.textContent = _t('chat.import');
         importBtn.addEventListener('click', async () => {
           importBtn.disabled = true;
-          importBtn.textContent = 'Importing…';
+          importBtn.textContent = _t('chat.importing');
           const EXT_LANG = {'.py':'python','.js':'javascript','.ts':'typescript','.html':'html','.css':'css','.md':'markdown','.json':'json','.yml':'yaml','.yaml':'yaml','.sh':'bash','.sql':'sql','.rs':'rust','.go':'go','.java':'java','.c':'c','.cpp':'cpp','.rb':'ruby','.php':'php','.xml':'xml','.jsx':'javascript','.tsx':'typescript'};
           let imported = 0;
           for (const { info, file } of _importableFiles) {
@@ -1368,7 +1368,7 @@ import { createStreamRenderer } from './streamingRenderer.js';
                   accumulated = accumulated.replace(/<think>/i, '<think time="' + _elapsedDone + '">');
                   roundText = roundText.replace(/<think>/i, '<think time="' + _elapsedDone + '">');
                 }
-                if (_liveThinkHeader) _liveThinkHeader.textContent = 'View thinking process';
+                if (_liveThinkHeader) _liveThinkHeader.textContent = _t('chat.view_thinking');
                 if (_liveThinkSpinnerSlot) _liveThinkSpinnerSlot.remove();
                 if (_liveThinkTimerEl && _elapsedDone) {
                   _liveThinkTimerEl.textContent = _elapsedDone + 's';
@@ -1629,7 +1629,7 @@ import { createStreamRenderer } from './streamingRenderer.js';
                     accumulated = accumulated.replace(/<think>/i, '<think time="' + elapsed + '">');
                     roundText = roundText.replace(/<think>/i, '<think time="' + elapsed + '">');
                   }
-                  if (_liveThinkHeader) _liveThinkHeader.textContent = 'View thinking process';
+                  if (_liveThinkHeader) _liveThinkHeader.textContent = _t('chat.view_thinking');
                   if (_liveThinkSpinnerSlot) _liveThinkSpinnerSlot.remove();
                   // Move timer to right side of header
                   if (_liveThinkTimerEl && elapsed) {
@@ -1890,7 +1890,7 @@ import { createStreamRenderer } from './streamingRenderer.js';
                   const contBtn = document.createElement('button');
                   contBtn.className = 'continue-btn';
                   contBtn.title = 'Continue the task';
-                  contBtn.textContent = 'Continue ▸';
+                  contBtn.textContent = _t('chat.continue_arrow') + ' ▸';
                   const _holder = currentHolder;
                   contBtn.addEventListener('click', () => {
                     note.remove();
@@ -2018,7 +2018,7 @@ import { createStreamRenderer } from './streamingRenderer.js';
                   isThinking = false;
                   cancelAnimationFrame(_thinkTimerRAF);
                   var _elapsed2 = thinkingStartTime ? ((Date.now() - thinkingStartTime) / 1000).toFixed(1) : null;
-                  if (_liveThinkHeader) _liveThinkHeader.textContent = 'View thinking process';
+                  if (_liveThinkHeader) _liveThinkHeader.textContent = _t('chat.view_thinking');
                   if (_liveThinkTimerEl) _liveThinkTimerEl.textContent = _elapsed2 ? _elapsed2 + 's' : '';
                   if (_liveThinkSpinnerSlot) _liveThinkSpinnerSlot.remove();
                   // Assign stable IDs
@@ -2614,7 +2614,7 @@ import { createStreamRenderer } from './streamingRenderer.js';
             _stall.className = 'stopped-indicator';
             const _lbl = document.createElement('span');
             _lbl.style.cssText = 'font-style:italic;opacity:0.7;';
-            _lbl.textContent = 'Paused mid-task';
+            _lbl.textContent = _t('chat.paused_mid_task');
             _stall.appendChild(_lbl);
             const _cont = document.createElement('button');
             _cont.className = 'continue-btn agent-continue-btn';
@@ -2796,14 +2796,14 @@ import { createStreamRenderer } from './streamingRenderer.js';
           const _approveBtn = document.createElement('button');
           _approveBtn.type = 'button';
           _approveBtn.className = 'plan-approve-btn';
-          _approveBtn.textContent = 'Approve & Run';
+          _approveBtn.textContent = _t('agent.approve_run');
           _approveBtn.addEventListener('click', _runApproved);
           // Open the plan in a draggable, side-dockable window (reuses the
           // shared modal framework). Approving from the window runs it too.
           const _openBtn = document.createElement('button');
           _openBtn.type = 'button';
           _openBtn.className = 'plan-open-btn';
-          _openBtn.textContent = 'Open in window';
+          _openBtn.textContent = _t('agent.open_in_window');
           _openBtn.addEventListener('click', () => {
             planWindowModule.openPlanWindow(_planText, _runApproved);
           });
@@ -3000,11 +3000,11 @@ import { createStreamRenderer } from './streamingRenderer.js';
             const stoppedIndicator = document.createElement('div');
             stoppedIndicator.className = 'stopped-indicator';
             const stoppedLabel = document.createElement('span');
-            stoppedLabel.textContent = '[Message interrupted]';
+            stoppedLabel.textContent = _t('chat.message_interrupted');
             stoppedIndicator.appendChild(stoppedLabel);
             const continueBtn = document.createElement('button');
             continueBtn.className = 'continue-btn';
-            continueBtn.title = 'Continue';
+            continueBtn.title = _t('chat.continue_title');
             continueBtn.textContent = '\u25B8';
             continueBtn.addEventListener('click', () => {
               stoppedIndicator.remove();
@@ -3261,7 +3261,7 @@ import { createStreamRenderer } from './streamingRenderer.js';
     bar.innerHTML = `<span class="stall-banner-txt">Quiet for ${label} — still working?</span>`;
     const cont = document.createElement('button');
     cont.className = 'stall-banner-btn';
-    cont.textContent = 'Nudge it';
+    cont.textContent = _t('chat.nudge_it');
     cont.title = 'Stop the stalled stream and ask it to continue';
     cont.addEventListener('click', () => {
       _removeStallBanner();
@@ -3274,7 +3274,7 @@ import { createStreamRenderer } from './streamingRenderer.js';
     });
     const stop = document.createElement('button');
     stop.className = 'stall-banner-btn stall-banner-stop';
-    stop.textContent = 'Stop';
+    stop.textContent = _t('chat.stop');
     stop.addEventListener('click', () => { _removeStallBanner(); abortCurrentRequest(true); });
     bar.appendChild(cont);
     bar.appendChild(stop);
@@ -3307,7 +3307,7 @@ import { createStreamRenderer } from './streamingRenderer.js';
       const label = document.createElement('span');
       label.style.fontStyle = 'italic';
       label.style.opacity = '0.7';
-      label.textContent = '[Cancelled by user]';
+      label.textContent = _t('chat.cancelled_by_user');
       indicator.appendChild(label);
       body.appendChild(indicator);
     }
