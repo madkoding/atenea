@@ -216,11 +216,11 @@ def setup_memory_routes(memory_manager: MemoryManager, session_manager: SessionM
         system_msg = {
             "role": "system",
             "content": (
-                "You are a helpful assistant. Analyze the entire conversation history provided and extract any "
-                "useful factual statements, contacts, addresses, phone numbers, or other information that the user "
-                "might want to remember for future interactions. Return each piece of information as a JSON object "
-                "with a 'text' field. For example: [{'text': 'Alice lives at 123 Main St'}, {'text': 'Bob works at Acme Corp'}]. "
-                "Only include information that is specific and likely to be useful later."
+                "Eres un asistente de extraccion de memoria. Analiza todo el historial de conversacion y extrae "
+                "hechos utiles: datos personales, contactos, direcciones, telefonos u otra informacion que el usuario "
+                "quiera recordar en futuras interacciones. Devuelve cada elemento como un objeto JSON con campo 'text'. "
+                "Ejemplo: [{'text': 'Alice lives at 123 Main St'}, {'text': 'Bob works at Acme Corp'}]. "
+                "Incluye solo informacion especifica y probablemente util mas adelante."
             ),
         }
         messages = [system_msg] + sess.get_context_messages()
@@ -419,18 +419,18 @@ def setup_memory_routes(memory_manager: MemoryManager, session_manager: SessionM
 
         # Send to LLM for memory extraction
         import_prompt = (
-            "You are a memory extraction assistant. The user uploaded a document. "
-            "Analyze the text below and extract specific, useful facts — things like "
-            "names, preferences, jobs, locations, relationships, opinions, projects, "
-            "goals, contacts, or any other personal details worth remembering.\n\n"
-            "Rules:\n"
-            "- Each fact should be a short, self-contained statement\n"
-            "- Do NOT extract generic knowledge\n"
-            "- Focus on personal, memorable information\n"
-            "- If there are no useful facts, return an empty array\n\n"
-            "Return a JSON array of objects with 'text' and 'category' fields.\n"
-            "Categories: 'identity', 'preference', 'fact', 'contact', 'project', 'goal'\n\n"
-            "Return ONLY valid JSON, no markdown fences."
+            "Eres un asistente de extraccion de memoria. El usuario subio un documento. "
+            "Analiza el texto y extrae hechos especificos y utiles: nombres, preferencias, trabajo, "
+            "ubicaciones, relaciones, opiniones, proyectos, metas, contactos u otros datos personales "
+            "que valga la pena recordar.\n\n"
+            "Reglas:\n"
+            "- Cada hecho debe ser una frase corta y autocontenida\n"
+            "- NO extraigas conocimiento generico\n"
+            "- Prioriza informacion personal y memorable\n"
+            "- Si no hay hechos utiles, devuelve un arreglo vacio\n\n"
+            "Devuelve un arreglo JSON de objetos con campos 'text' y 'category'.\n"
+            "Categorias: 'identity', 'preference', 'fact', 'contact', 'project', 'goal'\n\n"
+            "Devuelve SOLO JSON valido, sin fences de markdown."
         )
 
         try:

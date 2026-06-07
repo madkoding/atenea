@@ -761,10 +761,10 @@ def setup_chat_routes(
                     # Set DB mode to research_pending so the NEXT message auto-triggers research
                     set_session_mode(session, "research_pending")
                     ctx.messages.insert(0, {"role": "system", "content":
-                        "The user wants to start deep web research. Before searching, ask 2-3 brief "
-                        "clarifying questions to understand exactly what they want to know. For example: "
-                        "what aspects matter most, are they comparing to something, what's their context "
-                        "(moving, traveling, curiosity). Be conversational. Keep it short."
+                        "El usuario quiere iniciar una investigacion web profunda. Antes de buscar, haz 2-3 "
+                        "preguntas breves de aclaracion para entender exactamente que quiere saber. Por "
+                        "ejemplo: que aspectos le importan mas, si esta comparando con algo, cual es su "
+                        "contexto (mudanza, viaje, curiosidad). Mantente conversacional y breve."
                     })
                     _skip_research = True
                 else:
@@ -1329,13 +1329,13 @@ def setup_chat_routes(
 
         messages = [
             {"role": "system", "content": (
-                "You are rewriting a previous response. Follow the instruction exactly. "
-                "Output ONLY the rewritten text — no preamble, no explanation, no meta-commentary. "
-                "Preserve any formatting (markdown, code blocks, lists) from the original."
+                "Estas reescribiendo una respuesta previa. Sigue la instruccion exactamente. "
+                "Devuelve SOLO el texto reescrito: sin preambulo, sin explicacion y sin meta-comentarios. "
+                "Conserva el formato del original (markdown, bloques de codigo, listas)."
             )},
             {"role": "user", "content": (
-                f"Here is the original response:\n\n{original_text}\n\n"
-                f"Instruction: {instruction}"
+                f"Aqui esta la respuesta original:\n\n{original_text}\n\n"
+                f"Instruccion: {instruction}"
             )},
         ]
 

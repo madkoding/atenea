@@ -109,28 +109,27 @@ async def _eval_skill_run(skill_md: str, task: str, transcript: str,
     from src.llm_core import llm_call_async
 
     sys_prompt = (
-        "You are a strict QA reviewer judging whether an AI 'skill' (a reusable "
-        "procedure) actually works. You are given the SKILL, the TASK it was tested "
-        "on, and the TRANSCRIPT of the agent's run.\n\n"
-        "Judge honestly:\n"
-        "- Did following the skill accomplish the task?\n"
-        "- Are the steps clear, correct, and reproducible?\n"
-        "- Did it reference tools/commands that don't exist or that errored?\n"
-        "- Is it too vague or generic to be a useful, reusable skill?\n"
-        "- METADATA: do the frontmatter fields match what the skill actually does? "
-        "Flag wrong/misleading/missing tags, a wrong category, a when_to_use that "
-        "doesn't describe the real trigger, or a description that oversells or "
-        "mismatches the body. List each metadata problem in 'issues' (prefix it "
-        "with 'metadata:'). Metadata problems alone do NOT make the verdict 'fail' "
-        "if the procedure works — note them as issues on an otherwise-passing run.\n\n"
-        "IMPORTANT — fairness rule: if the run could NOT proceed because it lacked "
-        "an input or target the test never provided (e.g. there was no document/"
-        "email/data to act on, so the agent reasonably asked for it), that is NOT "
-        "the skill's fault. Return verdict \"inconclusive\" — do NOT mark it fail "
-        "or needs_work. Only judge the skill's PROCEDURE; reserve fail/needs_work "
-        "for when the steps themselves are wrong, vague, or reference missing tools.\n\n"
-        "If you need to reason, do it inside <think></think> FIRST. Then output "
-        "ONLY this JSON (no fences):\n"
+        "Eres un revisor estricto de QA que evalua si un 'skill' de IA (procedimiento "
+        "reutilizable) realmente funciona. Se te dan el SKILL, la TASK de prueba y el "
+        "TRANSCRIPT de la ejecucion del agente.\n\n"
+        "Evalua con honestidad:\n"
+        "- Seguir el skill logro completar la tarea?\n"
+        "- Los pasos son claros, correctos y reproducibles?\n"
+        "- Referencia tools/comandos inexistentes o que fallaron?\n"
+        "- Es demasiado vago o generico para ser un skill reusable?\n"
+        "- METADATA: los campos del frontmatter coinciden con lo que realmente hace el "
+        "skill? Marca tags/category/when_to_use/description incorrectos o enganosos. "
+        "Lista cada problema de metadata en 'issues' (prefijo 'metadata:'). Problemas "
+        "de metadata por si solos NO deben convertir el veredicto en 'fail' si el "
+        "procedimiento funciona; anotalos como issues en una corrida que pasa.\n\n"
+        "IMPORTANTE — regla de equidad: si la ejecucion NO pudo avanzar por falta de "
+        "un input/objetivo que la prueba nunca proporciono (por ejemplo, no habia "
+        "documento/email/datos sobre los que actuar), eso NO es culpa del skill. "
+        "Devuelve verdict \"inconclusive\"; NO marques fail ni needs_work. Evalua solo "
+        "el PROCEDIMIENTO del skill; usa fail/needs_work cuando los pasos sean "
+        "incorrectos, vagos o dependan de tools faltantes.\n\n"
+        "Si necesitas razonar, hazlo primero dentro de <think></think>. Luego devuelve "
+        "SOLO este JSON (sin fences):\n"
         '{"verdict": "pass" | "needs_work" | "fail" | "inconclusive", '
         '"confidence": 0.0-1.0, "summary": "one short sentence", '
         '"issues": ["short issue", ...]}'
@@ -263,13 +262,13 @@ async def _eval_skill_necessity(skill_md: str, others: list, url: str, model: st
 
     catalog = "\n".join(f"- {o.get('name')}: {o.get('description', '')}" for o in others) or "(no other skills)"
     sys_prompt = (
-        "You assess whether a reusable AI 'skill' (a saved procedure) is worth keeping. "
-        "A skill is UNNECESSARY if it essentially duplicates another skill in the library, "
-        "OR if it's so trivial/generic that a capable assistant would do it correctly with no "
-        "saved procedure at all. A skill IS necessary if it captures a specific, non-obvious "
-        "procedure, tool sequence, or hard-won detail.\n\n"
-        "Be conservative: only call it unnecessary when you're confident. Reason in "
-        "<think></think> first if needed, then output ONLY this JSON:\n"
+        "Evalua si un 'skill' reusable de IA (procedimiento guardado) realmente vale la pena. "
+        "Un skill es UNNECESSARY si en esencia duplica otro skill de la libreria, "
+        "O si es tan trivial/generico que un asistente competente lo haria bien sin "
+        "ningun procedimiento guardado. Un skill SI es necesario si captura un "
+        "procedimiento especifico y no obvio, una secuencia de tools, o un detalle dificil.\n\n"
+        "Se conservador: solo marcalo innecesario cuando tengas confianza. Razona en "
+        "<think></think> si hace falta, luego devuelve SOLO este JSON:\n"
         '{"necessary": true|false, "redundant_with": ["skill-name", ...], '
         '"reason": "one short sentence"}'
     )
@@ -346,17 +345,18 @@ async def _eval_skill_retrieval_precision(skill_md: str, others: list,
 
     catalog = "\n".join(f"- {o.get('name')}: {o.get('description', '')}" for o in others[:80]) or "(no other skills)"
     sys_prompt = (
-        "You are auditing retrieval metadata for a reusable AI skill. The app selects "
-        "skills by matching user requests against the skill name, description, tags, "
-        "when_to_use, and procedure text. Judge whether this skill is likely to be "
-        "over-selected for nearby but wrong requests.\n\n"
-        "Focus ONLY on metadata/retrieval precision, not whether the procedure works. "
-        "Flag broad tags such as network, installation, system, document, search, ssh, "
-        "python, gpu, or server when they would cause this narrow skill to match too "
-        "many adjacent tasks. Recommend narrower tags/when_to_use wording. Compare "
-        "against the other skills to spot boundaries.\n\n"
-        "Return ok=true only when the trigger metadata is narrow enough. If not ok, "
-        "issues MUST start with 'metadata: retrieval:' and be actionable. Output ONLY JSON:\n"
+        "Estas auditando metadata de retrieval para un skill reusable de IA. La app "
+        "selecciona skills comparando el pedido del usuario con name, description, tags, "
+        "when_to_use y el texto del procedimiento. Evalua si este skill puede ser "
+        "sobre-seleccionado para pedidos parecidos pero incorrectos.\n\n"
+        "Enfocate SOLO en precision de metadata/retrieval, no en si el procedimiento funciona. "
+        "Marca tags amplios como network, installation, system, document, search, ssh, "
+        "python, gpu o server cuando hagan que este skill estrecho coincida con demasiadas "
+        "tareas vecinas. Recomienda tags y when_to_use mas precisos. Compara contra los "
+        "demas skills para detectar limites.\n\n"
+        "Devuelve ok=true solo cuando la metadata de disparo sea suficientemente precisa. "
+        "Si no es ok, los issues DEBEN empezar con 'metadata: retrieval:' y ser accionables. "
+        "Salida SOLO JSON:\n"
         '{"ok": true|false, "summary": "one short sentence", "issues": ["metadata: retrieval: ..."]}'
     )
     user_msg = (
@@ -421,10 +421,10 @@ async def _run_skill_test_job(key, name, md, task, url, model, headers, owner, s
 
     messages = [
         {"role": "system", "content":
-            "You are TESTING a skill. Below is a reusable skill (a procedure). Follow it "
-            "to complete the user's task for real, using your available tools, step by "
-            "step. If the skill is wrong, unclear, or references tools that don't exist, "
-            "do your best — the problems will be reviewed afterward.\n\n=== SKILL ===\n" + md},
+            "Estas PROBANDO un skill. Debajo hay un skill reusable (un procedimiento). "
+            "Siguelo para completar la tarea real del usuario, usando tus tools disponibles, "
+            "paso a paso. Si el skill es incorrecto, poco claro o referencia tools que no "
+            "existen, haz tu mejor intento; los problemas se revisaran despues.\n\n=== SKILL ===\n" + md},
         {"role": "user", "content": task},
     ]
     try:
@@ -686,8 +686,8 @@ async def _run_skill_test_once(md: str, task: str, url, model, headers, owner) -
     transcript = []
     messages = [
         {"role": "system", "content":
-            "You are TESTING a skill. Follow this skill's procedure to complete the task "
-            "for real, using your tools, step by step.\n\n=== SKILL ===\n" + md},
+            "Estas PROBANDO un skill. Sigue el procedimiento de este skill para completar "
+            "la tarea real, paso a paso, usando tus tools.\n\n=== SKILL ===\n" + md},
         {"role": "user", "content": task},
     ]
     try:
@@ -721,18 +721,18 @@ async def _improve_skill_md(skill_md: str, verdict: dict, transcript: str, url, 
     from src.llm_core import llm_call_async
     issues = "\n".join("- " + str(i) for i in (verdict.get("issues") or []))
     sys_prompt = (
-        "You are improving a reusable AI SKILL written in Markdown (frontmatter + body). "
-        "A QA reviewer found problems after a test run. Rewrite the SKILL.md to fix them: "
-        "make vague steps concrete, correct or remove references to tools that don't exist, "
-        "ensure the procedure is reproducible. "
-        "Keep the `name` field EXACTLY as-is (it is the skill's identity / filename). You MAY "
-        "correct the OTHER frontmatter — tags, category, when_to_use, description — when the "
-        "reviewer flagged them (issues prefixed 'metadata:') or they don't match the body; keep "
-        "retrieval metadata narrow: remove broad tags that would over-select the skill, and make "
-        "`when_to_use` say when NOT to use the skill if adjacent tasks are easy to confuse. Keep "
-        "valid frontmatter structure. Do NOT invent capabilities the agent lacks. Reason in "
-        "<think></think> first if needed, then output ONLY the full corrected SKILL.md (no "
-        "fences, no commentary)."
+        "Estas mejorando un SKILL reusable de IA escrito en Markdown (frontmatter + body). "
+        "Un revisor de QA encontro problemas tras una corrida de prueba. Reescribe SKILL.md "
+        "para corregirlos: vuelve concretos los pasos vagos, corrige o elimina referencias a "
+        "tools inexistentes y asegura que el procedimiento sea reproducible. "
+        "Conserva el campo `name` EXACTAMENTE igual (es la identidad/nombre de archivo del "
+        "skill). Puedes corregir el OTRO frontmatter (tags, category, when_to_use, description) "
+        "cuando el revisor lo haya marcado (issues con prefijo 'metadata:') o no coincida con "
+        "el cuerpo; manten metadata de retrieval estrecha: quita tags amplios que sobre-seleccionen "
+        "el skill y haz que `when_to_use` tambien diga cuando NO usarlo si hay tareas vecinas que "
+        "se confunden facil. Conserva estructura valida de frontmatter. NO inventes capacidades "
+        "que el agente no tiene. Razona dentro de <think></think> si hace falta y luego devuelve "
+        "SOLO el SKILL.md completo corregido (sin fences, sin comentarios)."
     )
     user_msg = (
         f"=== CURRENT SKILL.md ===\n{skill_md}\n\n"
