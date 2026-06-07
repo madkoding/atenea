@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -244,46 +244,46 @@
   <div id="memory-modal" class="modal hidden">
     <div class="modal-content memory-modal-content" role="dialog" aria-label="Brain" style="background:var(--bg)">
       <div class="modal-header">
-        <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/></svg>Brain</h4>
-        <button class="close-btn" id="close-memory-modal" aria-label="Close memory modal">✖</button>
+        <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/></svg><span data-i18n="memory.brain">Brain</span></h4>
+        <button class="close-btn" id="close-memory-modal" data-i18n-aria-label="common.close" aria-label="Close memory modal">✖</button>
       </div>
       <div class="modal-body memory-modal-body">
         <div class="memory-tabs">
-          <button class="memory-tab active" data-memory-tab="browse"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.5-3 5.7V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.3C6.2 13.5 5 11.4 5 9a7 7 0 0 1 7-7z"/><line x1="10" y1="22" x2="14" y2="22"/></svg>Memories <span id="memory-count" class="memory-count" style="font-size:0.8em;opacity:0.6;font-weight:normal;margin-left:4px">0</span></button>
-          <button class="memory-tab" data-memory-tab="skills"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Skills <span id="skills-count" class="memory-count" style="font-size:0.8em;opacity:0.6;font-weight:normal;margin-left:4px">0</span></button>
-          <button class="memory-tab" data-memory-tab="add"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Add</button>
-          <button class="memory-tab" data-memory-tab="settings"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</button>
+          <button class="memory-tab active" data-memory-tab="browse"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.5-3 5.7V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.3C6.2 13.5 5 11.4 5 9a7 7 0 0 1 7-7z"/><line x1="10" y1="22" x2="14" y2="22"/></svg><span data-i18n="memory.memories">Memories</span> <span id="memory-count" class="memory-count" style="font-size:0.8em;opacity:0.6;font-weight:normal;margin-left:4px">0</span></button>
+          <button class="memory-tab" data-memory-tab="skills"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span data-i18n="shell.skills">Skills</span> <span id="skills-count" class="memory-count" style="font-size:0.8em;opacity:0.6;font-weight:normal;margin-left:4px">0</span></button>
+          <button class="memory-tab" data-memory-tab="add"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span data-i18n="common.add">Add</span></button>
+          <button class="memory-tab" data-memory-tab="settings"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span data-i18n="common.settings">Settings</span></button>
         </div>
         <!-- ── Browse tab ── -->
         <div class="memory-tab-panel" data-memory-panel="browse">
           <div class="admin-card" style="display:flex;flex-direction:column;overflow:hidden;flex:1;min-height:0;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
-              <h2 style="display:flex;align-items:center;gap:6px;margin:0;padding:0;line-height:1;">Memories <span id="memory-count-h2" class="memory-count" style="font-size:0.6em;opacity:0.6;font-weight:normal"></span></h2>
+              <h2 style="display:flex;align-items:center;gap:6px;margin:0;padding:0;line-height:1;"><span data-i18n="memory.memories">Memories</span> <span id="memory-count-h2" class="memory-count" style="font-size:0.6em;opacity:0.6;font-weight:normal"></span></h2>
               <span style="flex:1"></span>
-              <label class="admin-switch" title="Include memories in chat context"><input type="checkbox" id="memory-enabled-header-toggle" checked /><span class="admin-slider"></span></label>
+              <label class="admin-switch" data-i18n-title="memory.include_memories" title="Include memories in chat context"><input type="checkbox" id="memory-enabled-header-toggle" checked /><span class="admin-slider"></span></label>
             </div>
-            <p class="memory-desc doclib-desc" style="margin-top:6px;">Long-term facts the AI remembers across chats — recall, edit, or curate.</p>
+            <p class="memory-desc doclib-desc" data-i18n="memory.long_term_facts" style="margin-top:6px;">Long-term facts the AI remembers across chats — recall, edit, or curate.</p>
             <div class="memory-toolbar">
               <div class="memory-toolbar-row">
                 <select id="memory-sort" class="memory-sort-select" aria-label="Sort memories">
-                  <option value="newest">Newest</option>
-                  <option value="oldest">Oldest</option>
-                  <option value="alpha">A-Z</option>
-                  <option value="uses">Most used</option>
+                  <option value="newest" data-i18n="memory.newest">Newest</option>
+                  <option value="oldest" data-i18n="memory.oldest">Oldest</option>
+                  <option value="alpha" data-i18n="memory.alpha_az">A-Z</option>
+                  <option value="uses" data-i18n="memory.most_used">Most used</option>
                 </select>
-                <button id="memory-select-btn" class="memory-toolbar-btn" title="Select multiple memories">Select</button>
-                <button id="memory-tidy-btn" class="memory-toolbar-btn" title="AI tidy: deduplicate and clean up memories"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px;margin-right:2px;"><path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z"/></svg> Tidy</button>
+                <button id="memory-select-btn" class="memory-toolbar-btn" data-i18n="memory.select" title="Select multiple memories">Select</button>
+                <button id="memory-tidy-btn" class="memory-toolbar-btn" data-i18n="memory.tidy" title="AI tidy: deduplicate and clean up memories"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px;margin-right:2px;"><path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z"/></svg> Tidy</button>
               </div>
               <input type="text" id="memory-search" placeholder="Search memories…" class="memory-search-input" aria-label="Search memories" />
               <div id="memory-category-filters" class="memory-category-filters">
-                <button class="memory-cat-chip active" data-cat="all">all</button>
+                <button class="memory-cat-chip active" data-cat="all" data-i18n="memory.all">all</button>
               </div>
             </div>
             <div id="memory-bulk-bar" class="memory-bulk-bar hidden">
-              <label class="memory-bulk-check-all" style="position:relative;top:0px;"><input type="checkbox" id="memory-select-all" /> All</label>
-              <span id="memory-selected-count">0 Selected</span>
-              <button id="memory-bulk-delete" class="memory-toolbar-btn danger" disabled><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>Delete</button>
-              <button id="memory-bulk-cancel" class="memory-toolbar-btn" title="Cancel (Esc)" style="margin-left:4px;padding:3px 6px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <label class="memory-bulk-check-all" style="position:relative;top:0px;"><input type="checkbox" id="memory-select-all" /> <span data-i18n="memory.all_checkbox">All</span></label>
+              <span id="memory-selected-count" data-i18n="memory.selected_count">0 Selected</span>
+              <button id="memory-bulk-delete" class="memory-toolbar-btn danger" disabled data-i18n="common.delete"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>Delete</button>
+              <button id="memory-bulk-cancel" class="memory-toolbar-btn" data-i18n-title="memory.cancel_esc" title="Cancel (Esc)" style="margin-left:4px;padding:3px 6px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div id="memory-list" class="memory-list"></div>
             <div id="memory-suggestions-body" class="memory-suggestions hidden"></div>
@@ -293,34 +293,34 @@
         <div class="memory-tab-panel hidden" data-memory-panel="add">
           <div class="admin-card">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
-              <h2 style="margin:0;padding:0;line-height:1;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.5-3 5.7V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.3C6.2 13.5 5 11.4 5 9a7 7 0 0 1 7-7z"/><line x1="10" y1="22" x2="14" y2="22"/></svg>Add Memory</h2>
+              <h2 style="margin:0;padding:0;line-height:1;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.5-3 5.7V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.3C6.2 13.5 5 11.4 5 9a7 7 0 0 1 7-7z"/><line x1="10" y1="22" x2="14" y2="22"/></svg><span data-i18n="memory.add_memory">Add Memory</span></h2>
               <span style="flex:1"></span>
-              <button id="memory-import-btn" class="theme-io-btn" title="Import memories from a file" style="height:26px;font-size:12px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Import</button>
-              <button id="memory-export-btn" class="theme-io-btn" title="Export all memories as JSON" style="height:26px;font-size:12px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Export</button>
+              <button id="memory-import-btn" class="theme-io-btn" data-i18n="memory.import_mem" title="Import memories from a file" style="height:26px;font-size:12px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Import</button>
+              <button id="memory-export-btn" class="theme-io-btn" data-i18n="memory.export_mem" title="Export all memories as JSON" style="height:26px;font-size:12px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Export</button>
               <input type="file" id="memory-import-file" accept=".txt,.md,.pdf,.csv,.log,.json,.py,.js,.html" hidden />
             </div>
-            <p class="memory-desc doclib-desc" style="margin:4px 0 6px;">
+            <p class="memory-desc doclib-desc" style="margin:4px 0 6px;" data-i18n="memory.import_memories_file">
               Import a <code>.txt</code>, <code>.md</code>, <code>.pdf</code>, <code>.csv</code>, <code>.log</code>, <code>.json</code>, <code>.py</code>, <code>.js</code>, or <code>.html</code> file &mdash; the AI reads it and suggests candidate memories you can approve.
             </p>
             <div class="memory-add-row" style="margin-top:8px;">
               <div class="skill-ph-wrap" style="flex:1;min-width:0;">
                 <input type="text" id="new-memory-input" placeholder=" " class="memory-add-input skill-hint-input" aria-label="New memory text" />
-                <span class="skill-rich-ph"><span class="k">Add a memory</span> &mdash; e.g. 'I prefer concise replies' <svg class="k" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-left:4px;" aria-hidden="true"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg></span>
+                <span class="skill-rich-ph"><span class="k" data-i18n="memory.add_memory_hint">Add a memory</span> &mdash; e.g. 'I prefer concise replies' <svg class="k" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-left:4px;" aria-hidden="true"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg></span>
               </div>
               <select id="new-memory-category" class="memory-edit-cat-select" aria-label="Memory category"></select>
             </div>
           </div>
           <div class="admin-card">
             <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px;">
-              <h2 style="margin:0;padding:0;line-height:1;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Add Skill</h2>
+              <h2 style="margin:0;padding:0;line-height:1;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span data-i18n="memory.add_skill">Add Skill</span></h2>
             </div>
-            <p class="memory-desc doclib-desc" style="margin-top:6px;">Import a skill from GitHub or <a href="https://skills.sh" target="_blank" rel="noopener noreferrer">skills.sh</a> (folder with <code>SKILL.md</code> and optional templates).</p>
+            <p class="memory-desc doclib-desc" style="margin-top:6px;" data-i18n="memory.or_create_skill">Import a skill from GitHub or <a href="https://skills.sh" target="_blank" rel="noopener noreferrer">skills.sh</a> (folder with <code>SKILL.md</code> and optional templates).</p>
             <div class="memory-add-row" style="margin-top:6px;margin-bottom:10px;">
               <div class="skill-ph-wrap" style="flex:1;min-width:0;">
                 <input type="url" id="skill-import-url" placeholder=" " class="memory-add-input skill-hint-input" aria-label="Skill import URL" />
-                <span class="skill-rich-ph"><span class="k">Import URL</span> — e.g. GitHub tree link to a skill folder</span>
+                <span class="skill-rich-ph"><span class="k" data-i18n="memory.import_skill_url_hint">Import URL — e.g. GitHub tree link to a skill folder</span></span>
               </div>
-              <button type="button" id="skill-import-url-btn" class="theme-io-btn" title="Import skill from URL" style="flex:none;height:28px;font-size:12px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Import</button>
+              <button type="button" id="skill-import-url-btn" class="theme-io-btn" data-i18n="memory.import_skill_btn" title="Import skill from URL" style="flex:none;height:28px;font-size:12px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Import</button>
             </div>
             <p class="memory-desc doclib-desc" style="margin-top:0;">Or create a skill by hand — title, what it solves, and an approach.</p>
             <div class="skill-ph-wrap" style="margin-top:4px;margin-bottom:6px;">
@@ -340,7 +340,7 @@
               <span class="skill-rich-ph"><span class="k">Tags</span> — comma-separated, e.g. python, build, vllm</span>
             </div>
             <div style="display:flex;justify-content:flex-end;">
-              <button id="add-skill-btn" class="confirm-btn confirm-btn-primary">Add Skill</button>
+              <button id="add-skill-btn" class="confirm-btn confirm-btn-primary" data-i18n="memory.add_skill_btn">Add Skill</button>
             </div>
           </div>
         </div>
@@ -348,9 +348,9 @@
         <div class="memory-tab-panel hidden" data-memory-panel="skills">
           <div class="admin-card" style="display:flex;flex-direction:column;overflow:hidden;flex:1;min-height:0;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
-              <h2 style="margin:0;padding:0;line-height:1;">Skills <span id="skills-count-h2" class="memory-count" style="font-size:0.6em;opacity:0.6;font-weight:normal"></span></h2>
+              <h2 style="margin:0;padding:0;line-height:1;" data-i18n="memory.skills_h2">Skills <span id="skills-count-h2" class="memory-count" style="font-size:0.6em;opacity:0.6;font-weight:normal"></span></h2>
               <span style="flex:1"></span>
-              <label class="admin-switch" title="Inject relevant skills into chat context"><input type="checkbox" id="skills-enabled-header-toggle" checked /><span class="admin-slider"></span></label>
+              <label class="admin-switch" data-i18n-title="memory.inject_skills" title="Inject relevant skills into chat context"><input type="checkbox" id="skills-enabled-header-toggle" checked /><span class="admin-slider"></span></label>
             </div>
             <p class="memory-desc doclib-desc" style="margin-top:6px;">Reusable procedures the AI can call via /skill — sort by confidence to surface the proven ones.</p>
             <div class="memory-toolbar">
@@ -374,20 +374,20 @@
                     <option value="filter:conf70">Confidence ≤ 70%</option>
                   </optgroup>
                 </select>
-                <button id="skills-select-btn" class="memory-toolbar-btn" title="Select multiple skills">Select</button>
-                <button id="skills-audit-btn" class="memory-toolbar-btn" title="Test every skill, auto-fix the weak ones, flag what still fails"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px;margin-right:3px;"><path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z"/></svg>Audit all</button>
+                <button id="skills-select-btn" class="memory-toolbar-btn" data-i18n="memory.select_multiple_skills" title="Select multiple skills">Select</button>
+                <button id="skills-audit-btn" class="memory-toolbar-btn" data-i18n="memory.audit_all" title="Test every skill, auto-fix the weak ones, flag what still fails"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px;margin-right:3px;"><path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z"/></svg>Audit all</button>
               </div>
-              <input type="text" id="skills-search" placeholder="Search skills…" class="memory-search-input" aria-label="Search skills" />
+              <input type="text" id="skills-search" placeholder="Search skills…" data-i18n-attr="placeholder:memory.search_skills" class="memory-search-input" aria-label="Search skills" />
             </div>
             <div id="skills-audit-panel" class="skills-audit-panel hidden"></div>
             <div id="skills-bulk-bar" class="memory-bulk-bar hidden">
-              <label class="memory-bulk-check-all" style="position:relative;top:0px;"><input type="checkbox" id="skills-select-all" /> All</label>
-              <span id="skills-selected-count">0 Selected</span>
-              <button id="skills-bulk-publish" class="memory-toolbar-btn" disabled title="Publish selected drafts" style="margin-left:auto;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><polyline points="20 6 9 17 4 12"/></svg>Approve</button>
-              <button id="skills-bulk-audit" class="memory-toolbar-btn" disabled title="Audit selected draft skills"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>Audit</button>
-              <button id="skills-bulk-delete-nonpassing" class="memory-toolbar-btn danger" disabled title="Delete selected duplicates, generic/irrelevant skills, failed audits, and skills below threshold"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11l4 4"/><path d="M14 11l-4 4"/></svg>Delete non passing</button>
-              <button id="skills-bulk-delete" class="memory-toolbar-btn danger" disabled><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>Delete</button>
-              <button id="skills-bulk-cancel" class="memory-toolbar-btn" title="Cancel (Esc)" style="padding:3px 6px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <label class="memory-bulk-check-all" style="position:relative;top:0px;"><input type="checkbox" id="skills-select-all" /> <span data-i18n="memory.all_checkbox">All</span></label>
+              <span id="skills-selected-count" data-i18n="memory.selected_count">0 Selected</span>
+              <button id="skills-bulk-publish" class="memory-toolbar-btn" disabled data-i18n="memory.approve" title="Publish selected drafts" style="margin-left:auto;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><polyline points="20 6 9 17 4 12"/></svg>Approve</button>
+              <button id="skills-bulk-audit" class="memory-toolbar-btn" disabled data-i18n="memory.audit" title="Audit selected draft skills"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>Audit</button>
+              <button id="skills-bulk-delete-nonpassing" class="memory-toolbar-btn danger" disabled data-i18n="memory.delete_non_passing" title="Delete selected duplicates, generic/irrelevant skills, failed audits, and skills below threshold"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11l4 4"/><path d="M14 11l-4 4"/></svg>Delete non passing</button>
+              <button id="skills-bulk-delete" class="memory-toolbar-btn danger" disabled data-i18n="common.delete"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>Delete</button>
+              <button id="skills-bulk-cancel" class="memory-toolbar-btn" data-i18n-title="memory.cancel_esc" title="Cancel (Esc)" style="padding:3px 6px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div id="skills-list" class="memory-list"></div>
           </div>
@@ -396,38 +396,38 @@
         <div class="memory-tab-panel hidden" data-memory-panel="settings">
           <div class="admin-card">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-              <h2 style="margin:0">Auto-extract memories</h2>
+              <h2 style="margin:0" data-i18n="memory.auto_extract_memories">Auto-extract memories</h2>
               <label class="admin-switch" style="flex-shrink:0"><input type="checkbox" id="auto-memory-toggle" checked /><span class="admin-slider"></span></label>
             </div>
-            <span class="admin-toggle-sub" style="display:block;margin-top:6px">Automatically extract memories from conversations.</span>
+            <span class="admin-toggle-sub" style="display:block;margin-top:6px" data-i18n="memory.auto_memories_desc">Automatically extract memories from conversations.</span>
           </div>
           <div class="admin-card">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-              <h2 style="margin:0">Auto-extract skills</h2>
+              <h2 style="margin:0" data-i18n="memory.auto_extract_skills">Auto-extract skills</h2>
               <label class="admin-switch" style="flex-shrink:0"><input type="checkbox" id="auto-skills-toggle" /><span class="admin-slider"></span></label>
             </div>
-            <span class="admin-toggle-sub" style="display:block;margin-top:6px;opacity:0.6">Automatically draft reusable skills from your workflows. Audit all can publish passing skills using the threshold below.</span>
-            <span class="admin-toggle-sub" style="display:block;margin-top:6px;opacity:0.6">The library can grow; cleanup retires weak/duplicate skills only after review.</span>
+            <span class="admin-toggle-sub" style="display:block;margin-top:6px;opacity:0.6" data-i18n="memory.auto_skills_desc">Automatically draft reusable skills from your workflows. Audit all can publish passing skills using the threshold below.</span>
+            <span class="admin-toggle-sub" style="display:block;margin-top:6px;opacity:0.6" data-i18n="memory.library_grows">The library can grow; cleanup retires weak/duplicate skills only after review.</span>
           </div>
           <div class="admin-card">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-              <h2 style="margin:0">Inject Skills</h2>
+              <h2 style="margin:0" data-i18n="memory.inject_skills">Inject Skills</h2>
             </div>
-            <span class="admin-toggle-sub" style="display:block;margin-top:6px;opacity:0.6">Controls how many relevant published or approved skills are added to each agent request.</span>
+            <span class="admin-toggle-sub" style="display:block;margin-top:6px;opacity:0.6" data-i18n="memory.inject_skills_desc">Controls how many relevant published or approved skills are added to each agent request.</span>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px">
-              <span class="admin-toggle-sub" style="margin:0">Max skills per request</span>
+              <span class="admin-toggle-sub" style="margin:0" data-i18n="memory.max_skills_per_request">Max skills per request</span>
               <input type="number" id="skill-max-input" min="0" max="12" step="1" value="3" aria-label="Max skills to inject" style="flex-shrink:0;width:72px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums" />
             </div>
-            <span class="admin-toggle-sub" style="display:block;margin-top:6px;opacity:0.5">Set to 0 to disable skill injection.</span>
+            <span class="admin-toggle-sub" style="display:block;margin-top:6px;opacity:0.5" data-i18n="memory.set_0_disable">Set to 0 to disable skill injection.</span>
           </div>
           <div class="admin-card">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-              <h2 style="margin:0">Auto-approve skills</h2>
+              <h2 style="margin:0" data-i18n="memory.auto_approve_skills">Auto-approve skills</h2>
               <label class="admin-switch" style="flex-shrink:0"><input type="checkbox" id="auto-approve-skills-toggle" checked /><span class="admin-slider"></span></label>
             </div>
-            <span class="admin-toggle-sub" style="display:block;margin-top:6px;opacity:0.6">Audit all publishes passing, necessary skills at or above this confidence. Off = keep audit results as drafts unless manually approved.</span>
+            <span class="admin-toggle-sub" style="display:block;margin-top:6px;opacity:0.6" data-i18n="memory.audit_publishes">Audit all publishes passing, necessary skills at or above this confidence. Off = keep audit results as drafts unless manually approved.</span>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:6px">
-              <span class="admin-toggle-sub" style="margin:0">Minimum confidence</span>
+              <span class="admin-toggle-sub" style="margin:0" data-i18n="memory.minimum_confidence">Minimum confidence</span>
               <span style="display:flex;align-items:center;gap:8px;flex-shrink:0">
                 <span id="skill-confidence-label" class="admin-toggle-sub" style="margin:0;min-width:42px;text-align:right;font-variant-numeric:tabular-nums">&ge; 85%</span>
                 <input type="range" id="skill-confidence-slider" class="preset-range" min="50" max="100" step="5" value="85" style="width:120px;margin:0" />
@@ -443,17 +443,17 @@
   <div id="theme-modal" class="modal hidden">
   <div id="theme-popup" class="modal-content admin-modal-content" role="dialog" aria-label="Theme" style="background:var(--bg)">
     <div class="modal-header theme-popup-header" id="theme-popup-header">
-      <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 0 0 0 20 4 4 0 0 1 0-8 4 4 0 0 0 0-8"/><circle cx="8" cy="9" r="1.5" fill="currentColor"/><circle cx="15" cy="14" r="1.5" fill="currentColor"/><circle cx="9" cy="15" r="1.5" fill="currentColor"/></svg>Theme</h4>
+      <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 0 0 0 20 4 4 0 0 1 0-8 4 4 0 0 0 0-8"/><circle cx="8" cy="9" r="1.5" fill="currentColor"/><circle cx="15" cy="14" r="1.5" fill="currentColor"/><circle cx="9" cy="15" r="1.5" fill="currentColor"/></svg><span data-i18n="theme.theme">Theme</span></h4>
       <button type="button" class="theme-opacity-wrap theme-opacity-toggle hidden" id="theme-opacity-wrap" title="Fade this window to preview the page behind it" aria-pressed="false">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        <span class="theme-opacity-label">Peek</span>
+        <span class="theme-opacity-label" data-i18n="theme.peek">Peek</span>
       </button>
-      <button class="close-btn" id="close-theme-popup" aria-label="Close theme">&#x2716;</button>
+      <button class="close-btn" id="close-theme-popup" data-i18n-aria-label="theme.close_theme" aria-label="Close theme">&#x2716;</button>
     </div>
     <!-- Theme tabs -->
     <div class="admin-tabs" id="theme-tabs">
-      <button class="admin-tab active" data-tab="theme-tab-browse"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 0 0 0 20 4 4 0 0 1 0-8 4 4 0 0 0 0-8"/><circle cx="8" cy="9" r="1.4" fill="currentColor"/><circle cx="15" cy="14" r="1.4" fill="currentColor"/><circle cx="9" cy="15" r="1.4" fill="currentColor"/></svg>Themes</button>
-      <button class="admin-tab" data-tab="theme-tab-customize"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M9.06 11.9l-3.5 3.5a2.85 2.85 0 1 0 4.03 4.03l8.49-8.49a4.5 4.5 0 1 0-6.36-6.36L3.18 12.62"/><path d="M14 7l3 3"/></svg>Customize</button>
+      <button class="admin-tab active" data-tab="theme-tab-browse"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 0 0 0 20 4 4 0 0 1 0-8 4 4 0 0 0 0-8"/><circle cx="8" cy="9" r="1.4" fill="currentColor"/><circle cx="15" cy="14" r="1.4" fill="currentColor"/><circle cx="9" cy="15" r="1.4" fill="currentColor"/></svg><span data-i18n="theme.themes">Themes</span></button>
+      <button class="admin-tab" data-tab="theme-tab-customize"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M9.06 11.9l-3.5 3.5a2.85 2.85 0 1 0 4.03 4.03l8.49-8.49a4.5 4.5 0 1 0-6.36-6.36L3.18 12.62"/><path d="M14 7l3 3"/></svg><span data-i18n="theme.customize">Customize</span></button>
     </div>
 
     <!-- Tab: Browse themes -->
@@ -1152,61 +1152,61 @@
     <div id="custom-preset-modal" class="modal hidden">
       <div class="modal-content preset-modal-content" role="dialog" aria-label="Prompt" style="background:var(--bg)">
         <div class="modal-header">
-          <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></svg>Prompt</h4>
-          <button class="close-btn" id="close-custom-preset" aria-label="Close prompt">✖</button>
+          <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></svg><span data-i18n="shell.prompt">Prompt</span></h4>
+          <button class="close-btn" id="close-custom-preset" data-i18n-aria-label="shell.close_prompt" aria-label="Close prompt">✖</button>
         </div>
         <div class="modal-body preset-modal-body">
           <div id="char-fields-wrap">
             <div class="preset-tabs">
-              <button class="preset-tab active" data-chartab="inject"><svg class="preset-tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></svg><span>Inject</span></button>
-              <button class="preset-tab" data-chartab="character"><svg class="preset-tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Persona</span></button>
-              <button class="preset-tab" data-chartab="group"><svg class="preset-tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Group</span></button>
+              <button class="preset-tab active" data-chartab="inject"><svg class="preset-tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></svg><span data-i18n="presets.inject">Inject</span></button>
+              <button class="preset-tab" data-chartab="character"><svg class="preset-tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span data-i18n="presets.persona">Persona</span></button>
+              <button class="preset-tab" data-chartab="group"><svg class="preset-tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span data-i18n="presets.group">Group</span></button>
             </div>
             <!-- Inject tab (also holds model tuning: temperature + max tokens) -->
             <div class="preset-chartab" data-chartab-panel="inject">
-              <label for="inject-prefix">Prefix</label>
+              <label for="inject-prefix" data-i18n="presets.prefix">Prefix</label>
               <textarea id="inject-prefix" rows="2" placeholder="Added before your message" style="margin-bottom:8px"></textarea>
-              <label for="inject-suffix">Suffix</label>
+              <label for="inject-suffix" data-i18n="presets.suffix">Suffix</label>
               <textarea id="inject-suffix" rows="2" placeholder="Added after your message" style="margin-bottom:12px"></textarea>
               <div class="preset-slider-row">
-                <label>Temperature <span class="preset-hint-icon" title="Controls randomness. Lower values give focused, deterministic answers (good for code). Higher values give more creative, varied responses.">?</span></label>
+                <label data-i18n="presets.temperature">Temperature <span class="preset-hint-icon" title="Controls randomness. Lower values give focused, deterministic answers (good for code). Higher values give more creative, varied responses.">?</span></label>
                 <span class="preset-slider-value" id="temp-value">1.0</span>
               </div>
               <input type="range" class="preset-range" id="custom-temperature" min="0" max="2" step="0.1" value="1.0">
               <div class="preset-temp-hints">
-                <span>Precise / Code</span>
-                <span>Balanced</span>
-                <span>Creative</span>
+                <span data-i18n="presets.precise_code">Precise / Code</span>
+                <span data-i18n="presets.balanced">Balanced</span>
+                <span data-i18n="presets.creative">Creative</span>
               </div>
               <div class="preset-slider-row">
-                <label>Max Tokens <span class="preset-hint-icon" title="Maximum length of the AI response. 'No limit' lets the model decide when to stop.">?</span></label>
-                <span class="preset-slider-value" id="tokens-value">No limit</span>
+                <label data-i18n="presets.max_tokens">Max Tokens <span class="preset-hint-icon" title="Maximum length of the AI response. 'No limit' lets the model decide when to stop.">?</span></label>
+                <span class="preset-slider-value" id="tokens-value" data-i18n="presets.no_limit">No limit</span>
               </div>
               <input type="range" class="preset-range" id="custom-max-tokens" min="256" max="8448" step="256" value="8448">
             </div>
             <!-- Prompt (character/persona) tab -->
             <div class="preset-chartab" data-chartab-panel="character" style="display:none">
-              <label>Persona</label>
+              <label data-i18n="presets.persona">Persona</label>
               <div class="char-name-combo">
                 <select id="char-template-select" class="char-template-select">
-                  <option value="">Select persona...</option>
+                  <option value="" data-i18n="presets.select_persona">Select persona...</option>
                 </select>
-                <button type="button" id="char-new-btn" class="char-action-btn" title="Create a new persona">+ New</button>
+                <button type="button" id="char-new-btn" class="char-action-btn" data-i18n-title="presets.new_persona" title="Create a new persona">+ New</button>
               </div>
               <div id="char-name-row">
-                <label for="custom-character-name">Name</label>
+                <label for="custom-character-name" data-i18n="common.name">Name</label>
                 <div class="char-name-combo">
                   <input type="text" id="custom-character-name" maxlength="50" placeholder="Give your persona a name..." autocomplete="off" style="flex:1">
-                  <button type="button" id="char-delete-template-btn" class="char-action-btn" title="Delete this persona and its memories" style="display:none;margin-top:-6px !important"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>Delete</button>
-                  <button type="button" id="reset-character-btn" class="char-action-btn" title="Reset to default" style="margin-top:-6px !important">&#x21BA; Reset</button>
+                  <button type="button" id="char-delete-template-btn" class="char-action-btn" data-i18n-title="presets.delete_persona" title="Delete this persona and its memories" style="display:none;margin-top:-6px !important"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg><span data-i18n="presets.delete_persona">Delete</span></button>
+                  <button type="button" id="reset-character-btn" class="char-action-btn" data-i18n-title="presets.reset" title="Reset to default" style="margin-top:-6px !important">&#x21BA; <span data-i18n="presets.reset">Reset</span></button>
                 </div>
               </div>
-              <label for="custom-system-prompt">System prompt</label>
+              <label for="custom-system-prompt" data-i18n="presets.system_prompt">System prompt</label>
               <div class="char-prompt-wrap">
                 <textarea id="custom-system-prompt" rows="4" placeholder="Write rough notes and click Expand, or leave empty"></textarea>
-                <button type="button" id="char-expand-btn" class="char-expand-btn" title="AI expand — turn your notes into a full system prompt">
+                <button type="button" id="char-expand-btn" class="char-expand-btn" data-i18n-title="presets.expand" title="AI expand — turn your notes into a full system prompt">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px;margin-right:2px;"><path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z"/></svg>
-                  Expand
+                  <span data-i18n="presets.expand">Expand</span>
                 </button>
               </div>
             </div>
@@ -1215,25 +1215,25 @@
               <div style="display:flex;gap:4px;margin-bottom:8px;">
                 <button type="button" class="compare-parallel-toggle" id="group-mode-btn" style="flex:1;height:auto;width:auto;">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="8" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor"/><circle cx="4" cy="12" r="1.5" fill="currentColor"/><circle cx="4" cy="18" r="1.5" fill="currentColor"/></svg>
-                  <span class="compare-toggle-label">Sequential</span>
+                  <span class="compare-toggle-label" data-i18n="presets.sequential">Sequential</span>
                 </button>
               </div>
               <div id="group-participants" style="display:flex;flex-direction:column;gap:4px;margin-bottom:0;max-height:220px;overflow-y:auto;"></div>
-              <button type="button" id="group-add-btn" class="preset-save-btn" style="width:100%;background:none;border:1px dashed var(--border);color:var(--fg);opacity:0.6;font-size:11px;padding:4px;margin-top:0;">+ Add participant</button>
+              <button type="button" id="group-add-btn" class="preset-save-btn" data-i18n="presets.add_participant" style="width:100%;background:none;border:1px dashed var(--border);color:var(--fg);opacity:0.6;font-size:11px;padding:4px;margin-top:0;">+ Add participant</button>
             </div>
           </div>
         </div>
         <div class="modal-footer">
           <div style="flex:1"></div>
-          <button type="button" id="cancel-custom-preset" style="margin-right:8px;display:none;">Cancel</button>
-          <button type="button" id="save-custom-preset">Start</button>
+          <button type="button" id="cancel-custom-preset" data-i18n="common.cancel" style="margin-right:8px;display:none;">Cancel</button>
+          <button type="button" id="save-custom-preset" data-i18n="presets.start">Start</button>
         </div>
       </div>
     </div>
 
 
   </main>
-  <button id="scroll-bottom-btn" class="scroll-nav-btn" title="Scroll to bottom">▼</button>
+  <button id="scroll-bottom-btn" class="scroll-nav-btn" data-i18n-title="app.scroll_bottom" title="Scroll to bottom">▼</button>
   <script nonce="{{CSP_NONCE}}">
   (function(){
     const container = document.getElementById('chat-history');
@@ -1299,12 +1299,12 @@
   <div id="rename-session-modal" class="modal hidden">
     <div class="modal-content" role="dialog" aria-label="Rename session" style="width: 400px;">
       <div class="modal-header">
-        <h4>Rename Session</h4>
-        <button class="close-btn" id="close-rename-session" aria-label="Close rename session modal">✖</button>
+        <h4 data-i18n="shell.rename_session">Rename Session</h4>
+        <button class="close-btn" id="close-rename-session" data-i18n-aria-label="common.close" aria-label="Close rename session modal">✖</button>
       </div>
       <div class="modal-body">
         <div style="margin-bottom: 12px;">
-          <label for="session-name-input" style="display: block; margin-bottom: 6px; font-weight: 500;">Session Name</label>
+          <label for="session-name-input" style="display: block; margin-bottom: 6px; font-weight: 500;" data-i18n="shell.session_name">Session Name</label>
           <input
             type="text"
             id="session-name-input"
@@ -1313,8 +1313,8 @@
           />
         </div>
         <div style="display: flex; justify-content: flex-end; gap: 8px;">
-          <button id="cancel-rename-session" style="padding: 6px 12px;">Cancel</button>
-          <button id="save-session-name" style="padding: 6px 12px; background: var(--fg); color: var(--bg);">Save</button>
+          <button id="cancel-rename-session" data-i18n="common.cancel" style="padding: 6px 12px;">Cancel</button>
+          <button id="save-session-name" data-i18n="common.save" style="padding: 6px 12px; background: var(--fg); color: var(--bg);">Save</button>
         </div>
       </div>
     </div>
@@ -1325,8 +1325,8 @@
   <div id="cookbook-modal" class="modal hidden">
     <div class="modal-content" role="dialog" aria-label="Cookbook" style="width: min(780px, 92vw); height: 94vh; max-height: 94vh; background: var(--bg);">
       <div class="modal-header">
-        <h4 style="margin:0;margin-right:auto"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>Cookbook</h4>
-        <button class="close-btn" id="close-cookbook-modal" aria-label="Close cookbook">✖</button>
+        <h4 style="margin:0;margin-right:auto"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg><span data-i18n="shell.cookbook">Cookbook</span></h4>
+        <button class="close-btn" id="close-cookbook-modal" data-i18n-aria-label="shell.close_cookbook" aria-label="Close cookbook">✖</button>
       </div>
       <div class="modal-body cookbook-body"></div>
     </div>
