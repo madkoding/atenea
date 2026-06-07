@@ -170,8 +170,15 @@ class ChatProcessor:
         agent_mode: bool = False,
         incognito: bool = False,
         use_skills: bool = True,
+        ui_language: Optional[str] = None,
     ) -> Tuple[List[Dict[str, str]], List[Dict[str, Any]], List[Dict[str, str]]]:
         """Build the context preface for LLM calls.
+
+        Args:
+            ui_language: Optional UI language hint ("es" | "en" | None). When "es",
+                a neutral-Spanish system instruction is appended so the model
+                answers in Spanish while keeping technical anglicisms (chat,
+                tool, prompt, model, RAG, MCP, etc.) verbatim.
 
         Returns:
             Tuple of (preface messages, rag_sources list)
@@ -194,6 +201,17 @@ class ChatProcessor:
                 })
             except Exception:
                 logger.debug("Failed to add current date/time context", exc_info=True)
+        if ui_language == "es":
+            preface.append({
+                "role": "system",
+                "content": (
+                    "Responde siempre en espa\xf1ol neutro (tuteo, sin voseo ni "
+                    "regionalismos). Mant\xe9n en ingl\xe9s los t\xe9rminos t\xe9cnicos "
+                    "que se entiendan mejor as\xed (chat, tool, prompt, model, "
+                    "endpoint, RAG, MCP, skill, agent, etc.). Si el usuario cambia "
+                    "de idioma, s\xedguelo, pero conserva la legibilidad t\xe9cnica."
+                ),
+            })
         preface.append({
             "role": "system",
             "content": UNTRUSTED_CONTEXT_POLICY,

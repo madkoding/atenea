@@ -524,6 +524,7 @@ async def build_chat_context(
         agent_mode=agent_mode,
         incognito=incognito,
         use_skills=skills_enabled,
+        ui_language=uprefs.get("ui_language"),
     )
     if use_rag is not None:
         _preface_kwargs["use_rag"] = use_rag_val

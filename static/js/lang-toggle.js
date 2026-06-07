@@ -1,6 +1,7 @@
 import { init, getLocale, getSupported, setLocale } from '/static/js/i18n.js';
 
 const STORAGE_KEY = 'odysseus-ui-language';
+const SERVER_PREF_KEY = 'ui_language';
 const BUTTON_ID = 'lang-toggle';
 const LABEL_ID = 'lang-toggle-label';
 
@@ -18,10 +19,31 @@ function paint(locale) {
   btn.setAttribute('data-current-locale', locale);
 }
 
+async function fetchServerLocale() {
+  try {
+    const r = await fetch('/api/prefs/' + SERVER_PREF_KEY, { credentials: 'same-origin' });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return j && j.value ? String(j.value) : null;
+  } catch (e) { return null; }
+}
+
+async function saveServerLocale(locale) {
+  try {
+    await fetch('/api/prefs/' + SERVER_PREF_KEY, {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: locale }),
+    });
+  } catch (e) { /* best-effort */ }
+}
+
 async function wire() {
   const btn = document.getElementById(BUTTON_ID);
   if (!btn) return;
-  await init();
+  const serverLocale = await fetchServerLocale();
+  await init({ locale: serverLocale || undefined });
   const locale = getLocale();
   paint(locale);
   btn.addEventListener('click', async () => {
@@ -30,6 +52,7 @@ async function wire() {
     const next = nextLocale(cur, supported);
     await setLocale(next);
     try { localStorage.setItem(STORAGE_KEY, next); } catch (e) {}
+    saveServerLocale(next);
     paint(next);
   });
   document.addEventListener('localechange', (ev) => {

@@ -6,6 +6,7 @@
 // ES6 module — IIFE removed
 
 import Storage from './storage.js';
+import { t as _t } from './i18n.js';
 import uiModule from './ui.js';
 import sessionModule from './sessions.js';
 import chatRenderer from './chatRenderer.js';
@@ -536,7 +537,7 @@ import { createStreamRenderer } from './streamingRenderer.js';
 
     // --- API key guard: warn if message looks like an API key ---
     if (API_KEY_RE.test(msg.trim())) {
-      if (!await window.styledConfirm('This looks like an API key. Sending it to the AI could expose it.\n\nDid you mean to use /setup instead?', { confirmText: 'Send anyway', danger: true })) {
+      if (!await window.styledConfirm(_t('chat.key_warning'), { confirmText: _t('chat.send_anyway'), danger: true })) {
         _releaseSendFlag();
         return;
       }
@@ -1847,7 +1848,7 @@ import { createStreamRenderer } from './streamingRenderer.js';
                 if (!_isBg) {
                   var _selM = _shortModel(json.selected_model || '');
                   var _ansM = _shortModel(json.answered_by || '');
-                  uiModule.showToast('⚠ ' + _selM + ' failed — answered by ' + _ansM, 6000);
+                  uiModule.showToast('⚠ ' + _t('chat.fallback_failed', { src: _selM, dst: _ansM }), 6000);
                   if (holder) {
                     var _rEl = holder.querySelector('.role');
                     if (_rEl) {
@@ -1988,7 +1989,7 @@ import { createStreamRenderer } from './streamingRenderer.js';
                 holder._memoriesUsed = json.data;
               } else if (json.type === 'compacted') {
                 if (!_isBg) {
-                  uiModule.showToast('Context compacted — older messages summarized');
+                  uiModule.showToast(_t('chat.context_compacted'));
                 }
               } else if (json.type === 'metrics') {
                 metrics = json.data;
@@ -2336,7 +2337,7 @@ import { createStreamRenderer } from './streamingRenderer.js';
                   const closeBtn = document.createElement('button');
                   closeBtn.type = 'button';
                   closeBtn.className = 'modal-close ask-user-close';
-                  closeBtn.setAttribute('aria-label', 'Dismiss question');
+                  closeBtn.setAttribute('aria-label', _t('chat.dismiss_question'));
                   closeBtn.textContent = '×';
                   closeBtn.addEventListener('click', () => {
                     card.remove();
@@ -2359,7 +2360,7 @@ import { createStreamRenderer } from './streamingRenderer.js';
                     // Label the choice group with the question for screen readers.
                     card.setAttribute('aria-labelledby', q.id);
                   } else {
-                    card.setAttribute('aria-label', 'Question from the assistant');
+                    card.setAttribute('aria-label', _t('chat.question_from_assistant'));
                   }
 
                   const list = document.createElement('div');
@@ -2413,13 +2414,13 @@ import { createStreamRenderer } from './streamingRenderer.js';
                   const otherInput = document.createElement('input');
                   otherInput.type = 'text';
                   otherInput.className = 'styled-prompt-input ask-user-other-input';
-                  otherInput.placeholder = multi ? 'Other (added to selection)…' : 'Other… (type your own answer)';
-                  otherInput.setAttribute('aria-label', multi ? 'Add a custom option' : 'Type a custom answer');
+                  otherInput.placeholder = multi ? _t('chat.other_placeholder_multi') : _t('chat.other_placeholder');
+                  otherInput.setAttribute('aria-label', multi ? _t('chat.other_aria_multi') : _t('chat.other_aria'));
                   const otherSend = document.createElement('button');
                   otherSend.type = 'button';
                   otherSend.className = 'confirm-btn confirm-btn-primary ask-user-other-send';
-                  otherSend.setAttribute('aria-label', 'Send answer');
-                  otherSend.textContent = multi ? 'Send selection' : 'Send';
+                  otherSend.setAttribute('aria-label', _t('chat.send_answer'));
+                  otherSend.textContent = multi ? _t('common.send') : _t('common.send');
                   const _submit = () => {
                     const free = otherInput.value.trim();
                     if (multi) {
@@ -4290,7 +4291,7 @@ import { createStreamRenderer } from './streamingRenderer.js';
 
       await sessionModule.loadSessions();
       await sessionModule.selectSession(data.id);
-      if (uiModule) uiModule.showToast(`Forked → ${data.name}`);
+      if (uiModule) uiModule.showToast(`${_t('chat.forked')} → ${data.name}`);
     } catch (err) {
       console.error('Fork failed:', err);
       if (uiModule) uiModule.showError('Fork failed: ' + err.message);
@@ -4628,7 +4629,7 @@ import { createStreamRenderer } from './streamingRenderer.js';
       // error output shown before a model was selected, #1428). Just remove the
       // DOM so the "x" works regardless.
       domToRemove.forEach(el => el.remove());
-      if (uiModule) uiModule.showToast('Message deleted');
+      if (uiModule) uiModule.showToast(_t('chat.message_deleted'));
       return;
     }
 
@@ -4640,7 +4641,7 @@ import { createStreamRenderer } from './streamingRenderer.js';
       });
       if (!res.ok) throw new Error('Server error ' + res.status);
       domToRemove.forEach(el => el.remove());
-      if (uiModule) uiModule.showToast('Message deleted');
+      if (uiModule) uiModule.showToast(_t('chat.message_deleted'));
     } catch (err) {
       console.error('Delete failed:', err);
       if (uiModule) uiModule.showError('Delete failed: ' + err.message);
@@ -4725,7 +4726,7 @@ import { createStreamRenderer } from './streamingRenderer.js';
         }
 
         cleanup();
-        if (uiModule) uiModule.showToast('Message edited');
+        if (uiModule) uiModule.showToast(_t('chat.message_edited'));
       } catch (err) {
         console.error('Edit failed:', err);
         if (uiModule) uiModule.showError('Edit failed: ' + err.message);
