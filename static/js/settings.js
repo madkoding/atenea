@@ -1,6 +1,7 @@
-// static/js/settings.js — Settings panel module (ES6)
+﻿// static/js/settings.js — Settings panel module (ES6)
 // User-facing preferences: AI models, search, appearance
 
+import { t as _t } from './i18n.js';
 import uiModule from './ui.js';
 import searchModule from './search.js';
 import { makeWindowDraggable } from './windowDrag.js';
@@ -481,9 +482,9 @@ async function initDefaultChat() {
           default_model_fallbacks: clean
         })
       });
-      msg.textContent = 'Saved'; msg.style.color = 'var(--fg)';
+      msg.textContent = _t('settings.saved'); msg.style.color = 'var(--fg)';
       setTimeout(function() { msg.textContent = ''; }, 2000);
-    } catch (e) { msg.textContent = 'Failed to save'; msg.style.color = 'var(--red)'; }
+    } catch (e) { msg.textContent = _t('settings.failed_to_save'); msg.style.color = 'var(--red)'; }
   }
 
   epSel.addEventListener('change', function() { refreshModels(''); saveDefault(); });
@@ -508,8 +509,8 @@ async function initUtilityModel() {
   var msg = el('set-utilityChatMsg');
   var _endpoints = [];
   var fallbackWidget = null;
-  if (epSel && epSel.options[0]) epSel.options[0].textContent = 'Same as chat';
-  if (modelSel && modelSel.options[0]) modelSel.options[0].textContent = 'Same as chat';
+  if (epSel && epSel.options[0]) epSel.options[0].textContent = _t('settings.same_as_chat');
+  if (modelSel && modelSel.options[0]) modelSel.options[0].textContent = _t('settings.same_as_chat');
 
   try {
     _endpoints = await _fetchModelEndpoints();
@@ -550,9 +551,9 @@ async function initUtilityModel() {
           utility_model: modelSel.value || ''
         })
       });
-      msg.textContent = 'Saved'; msg.style.color = 'var(--fg)';
+      msg.textContent = _t('settings.saved'); msg.style.color = 'var(--fg)';
       setTimeout(function() { msg.textContent = ''; }, 1500);
-    } catch (e) { msg.textContent = 'Failed to save'; msg.style.color = 'var(--red)'; }
+    } catch (e) { msg.textContent = _t('settings.failed_to_save'); msg.style.color = 'var(--red)'; }
   }
 
   epSel.addEventListener('change', function() { refreshModels(''); saveUtility(); });
@@ -648,7 +649,7 @@ async function initTeacherModel() {
       msg.textContent = enabled ? (spec ? 'Saved' : 'Pick an endpoint + model') : 'Disabled';
       msg.style.color = enabled && !spec ? 'var(--red)' : 'var(--fg)';
       setTimeout(function() { msg.textContent = ''; }, 2000);
-    } catch (e) { msg.textContent = 'Failed to save'; msg.style.color = 'var(--red)'; }
+    } catch (e) { msg.textContent = _t('settings.failed_to_save'); msg.style.color = 'var(--red)'; }
   }
 
   if (enabledToggle) {
@@ -721,8 +722,8 @@ async function initImageSettings() {
     try {
       await fetch('/api/auth/settings', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image_gen_enabled: enabledToggle ? enabledToggle.checked : true, image_model: modelSel.value, image_quality: qualSel.value }) });
-      msg.textContent = 'Saved'; msg.style.color = 'var(--fg)'; setTimeout(() => { msg.textContent = ''; }, 2000);
-    } catch (e) { msg.textContent = 'Failed to save'; msg.style.color = 'var(--red)'; }
+      msg.textContent = _t('settings.saved'); msg.style.color = 'var(--fg)'; setTimeout(() => { msg.textContent = ''; }, 2000);
+    } catch (e) { msg.textContent = _t('settings.failed_to_save'); msg.style.color = 'var(--red)'; }
   }
   modelSel.addEventListener('change', saveSettings);
   qualSel.addEventListener('change', saveSettings);
@@ -794,8 +795,8 @@ async function initVisionSettings() {
     try {
       await fetch('/api/auth/settings', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vision_enabled: enabledToggle ? enabledToggle.checked : true, vision_model: vlSel.value }) });
-      msg.textContent = 'Saved'; msg.style.color = 'var(--fg)'; setTimeout(() => { msg.textContent = ''; }, 2000);
-    } catch (e) { msg.textContent = 'Failed to save'; msg.style.color = 'var(--red)'; }
+      msg.textContent = _t('settings.saved'); msg.style.color = 'var(--fg)'; setTimeout(() => { msg.textContent = ''; }, 2000);
+    } catch (e) { msg.textContent = _t('settings.failed_to_save'); msg.style.color = 'var(--red)'; }
   }
   vlSel.addEventListener('change', saveSettings);
   if (enabledToggle) enabledToggle.addEventListener('change', function() { syncVisionDisabled(); saveSettings(); });
@@ -876,7 +877,7 @@ async function initTtsSettings() {
     try {
       await fetch('/api/auth/settings', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tts_enabled: ttsEnabledToggle ? ttsEnabledToggle.checked : true, tts_provider: provSel.value, tts_model: getModel() || 'tts-1', tts_voice: getVoice() || 'alloy', tts_speed: speedSelect.value || '1' }) });
-      ttsMsg.textContent = 'Saved'; ttsMsg.style.color = 'var(--fg)'; setTimeout(() => { ttsMsg.textContent = ''; }, 2000);
+      ttsMsg.textContent = _t('settings.saved'); ttsMsg.style.color = 'var(--fg)'; setTimeout(() => { ttsMsg.textContent = ''; }, 2000);
       if (window.aiTTSManager) window.aiTTSManager.checkAvailability();
     } catch (e) { ttsMsg.textContent = 'Failed to save'; ttsMsg.style.color = 'var(--red)'; }
   }
@@ -906,7 +907,7 @@ async function initTtsSettings() {
   if (previewBtn) {
     var previewAudio = null;
     var previewPlaying = false;
-    function resetPreview() { previewPlaying = false; previewBtn.textContent = 'Preview'; previewBtn.style.borderColor = ''; }
+    function resetPreview() { previewPlaying = false; previewBtn.textContent = _t('settings.preview'); previewBtn.style.borderColor = ''; }
 
     previewBtn.addEventListener('click', async function() {
       if (previewPlaying) {
@@ -916,11 +917,11 @@ async function initTtsSettings() {
       }
       var prov = provSel.value;
       if (prov === 'disabled') {
-        ttsMsg.textContent = 'Select a provider first'; ttsMsg.style.color = 'var(--red, #e55)';
+        ttsMsg.textContent = _t('settings.select_provider_first'); ttsMsg.style.color = 'var(--red, #e55)';
         setTimeout(function() { ttsMsg.textContent = ''; }, 2000); return;
       }
       var testText = 'Hello, this is a test of text to speech.';
-      previewPlaying = true; previewBtn.textContent = 'Loading...';
+      previewPlaying = true; previewBtn.textContent = _t('settings.loading');
       try {
         if (prov === 'browser') {
           if (!('speechSynthesis' in window)) throw new Error('Browser TTS not supported');
@@ -934,7 +935,7 @@ async function initTtsSettings() {
             if (match) utt.voice = match;
           }
           utt.rate = parseFloat(speedSelect.value) || 1;
-          previewBtn.textContent = 'Stop'; previewBtn.style.borderColor = 'var(--red, #e55)';
+          previewBtn.textContent = _t('common.stop'); previewBtn.style.borderColor = 'var(--red, #e55)';
           await new Promise(function(resolve, reject) {
             utt.onend = resolve;
             utt.onerror = function(e) { reject(new Error('Browser TTS: ' + e.error)); };
@@ -950,7 +951,7 @@ async function initTtsSettings() {
           var blob = await res.blob();
           var url = URL.createObjectURL(blob);
           previewAudio = new Audio(url);
-          previewBtn.textContent = 'Stop'; previewBtn.style.borderColor = 'var(--red, #e55)';
+          previewBtn.textContent = _t('common.stop'); previewBtn.style.borderColor = 'var(--red, #e55)';
           await new Promise(function(resolve, reject) {
             previewAudio.onended = function() { URL.revokeObjectURL(url); previewAudio = null; resolve(); };
             previewAudio.onerror = function() { URL.revokeObjectURL(url); previewAudio = null; reject(new Error('Playback failed')); };
@@ -1039,7 +1040,7 @@ async function initSttSettings() {
       await fetch('/api/auth/settings', { method: 'POST', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stt_enabled: enabled, stt_provider: provSel.value, stt_model: getModel() || 'base', stt_language: langInput.value.trim() }) });
-      sttMsg.textContent = 'Saved'; sttMsg.style.color = 'var(--fg)'; setTimeout(() => { sttMsg.textContent = ''; }, 2000);
+      sttMsg.textContent = _t('settings.saved'); sttMsg.style.color = 'var(--fg)'; setTimeout(() => { sttMsg.textContent = ''; }, 2000);
       // Notify voiceRecorder of effective provider and update send button icon
       if (window.voiceRecorderModule) window.voiceRecorderModule._sttProvider = effectiveProvider();
       if (window._updateSendBtnIcon) window._updateSendBtnIcon();
@@ -1195,10 +1196,10 @@ async function initSearchSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      msg.textContent = 'Saved'; msg.style.color = 'var(--fg)';
+      msg.textContent = _t('settings.saved'); msg.style.color = 'var(--fg)';
       setTimeout(refreshStatus, 2000);
       if (searchModule && searchModule.refresh) searchModule.refresh();
-    } catch (e) { msg.textContent = 'Failed to save'; msg.style.color = 'var(--red)'; }
+    } catch (e) { msg.textContent = _t('settings.failed_to_save'); msg.style.color = 'var(--red)'; }
   }
 
   provSel.addEventListener('change', function() { updateVisibility(); saveSearch(); _syncSearchPicker(); });
@@ -1333,9 +1334,9 @@ async function initSearchSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ search_fallback_chain: chain }),
       });
-      msg.textContent = 'Saved'; msg.style.color = 'var(--fg)';
+      msg.textContent = _t('settings.saved'); msg.style.color = 'var(--fg)';
       setTimeout(refreshStatus, 2000);
-    } catch (e) { msg.textContent = 'Failed to save'; msg.style.color = 'var(--red)'; }
+    } catch (e) { msg.textContent = _t('settings.failed_to_save'); msg.style.color = 'var(--red)'; }
     _renderFallbackChain();
   }
   _renderFallbackChain();
@@ -1356,7 +1357,7 @@ async function initSearchSettings() {
       await saveSearch();
       testBtn.disabled = true;
       var orig = testBtn.textContent;
-      testBtn.textContent = 'Testing...';
+      testBtn.textContent = _t('settings.testing');
       msg.textContent = '';
       var t0 = performance.now();
       try {
@@ -1460,7 +1461,7 @@ async function initResearchSettings() {
       msg.textContent = parts.join(' · ');
       msg.style.color = 'var(--fg)';
     } else {
-      msg.textContent = 'Using chat defaults';
+      msg.textContent = _t('settings.using_chat_defaults');
       msg.style.color = 'var(--fg)';
     }
   }
@@ -1489,9 +1490,9 @@ async function initResearchSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      msg.textContent = 'Saved'; msg.style.color = 'var(--fg)';
+      msg.textContent = _t('settings.saved'); msg.style.color = 'var(--fg)';
       setTimeout(showStatus, 2000);
-    } catch (e) { msg.textContent = 'Failed to save'; msg.style.color = 'var(--red)'; }
+    } catch (e) { msg.textContent = _t('settings.failed_to_save'); msg.style.color = 'var(--red)'; }
   }
 
   epSel.addEventListener('change', async function() {
@@ -1547,9 +1548,9 @@ async function initResearchSearchSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ research_search_provider: searchSel.value })
       });
-      msg.textContent = 'Saved'; msg.style.color = 'var(--fg)';
+      msg.textContent = _t('settings.saved'); msg.style.color = 'var(--fg)';
       setTimeout(function() { msg.textContent = ''; }, 2000);
-    } catch (e) { msg.textContent = 'Failed to save'; msg.style.color = 'var(--red)'; }
+    } catch (e) { msg.textContent = _t('settings.failed_to_save'); msg.style.color = 'var(--red)'; }
   }
 
   searchSel.addEventListener('change', saveResearchSearch);
@@ -1592,7 +1593,7 @@ async function initAgentSettings() {
       msg.textContent = (tools > 0 ? 'Limit: ' + tools + ' tool calls' : 'Unlimited tool calls') +
         (rounds != null ? ' · ' + rounds + ' steps/message' : '');
       msg.style.color = 'var(--fg)';
-    } catch (e) { msg.textContent = 'Failed to save'; msg.style.color = 'var(--red)'; }
+    } catch (e) { msg.textContent = _t('settings.failed_to_save'); msg.style.color = 'var(--red)'; }
   }
 
   toolsInput.addEventListener('change', save);
@@ -1894,7 +1895,7 @@ async function initShortcuts() {
     });
 
     btn.classList.add('listening');
-    btn.textContent = 'Press keys...';
+    btn.textContent = _t('settings.press_keys');
     // Show confirm button
     actionBtn.textContent = '\u2713';
     actionBtn.classList.remove('is-reset');
@@ -1903,7 +1904,7 @@ async function initShortcuts() {
     // Hint: tell the user how to commit / cancel the rebind.
     if (hintEl) {
       hintEl.hidden = false;
-      hintEl.textContent = 'press a key';
+      hintEl.textContent = _t('settings.press_a_key');
     }
 
     let pendingCombo = null;
@@ -1952,7 +1953,7 @@ async function initShortcuts() {
       pendingCombo = combo;
       btn.innerHTML = _formatKeyCaps(combo);
       // Now that a combo is captured, prompt to commit with Enter.
-      if (hintEl) hintEl.textContent = '\u21B5 Enter to save';
+      if (hintEl) hintEl.textContent = '\u21B5 ' + _t('settings.enter_to_save');
     }
 
     function cleanup() {
@@ -2020,8 +2021,8 @@ function initAccount() {
       const nw = el('settings-pw-new').value;
       const conf = el('settings-pw-confirm').value;
       msgEl.style.color = '';
-      if (!cur || !nw) { msgEl.textContent = 'Fill in all fields'; msgEl.style.color = 'var(--red)'; return; }
-      if (nw.length < 8) { msgEl.textContent = 'Min 8 characters'; msgEl.style.color = 'var(--red)'; return; }
+      if (!cur || !nw) { msgEl.textContent = _t('settings.fill_all_fields'); msgEl.style.color = 'var(--red)'; return; }
+      if (nw.length < 8) { msgEl.textContent = _t('settings.min_8_chars'); msgEl.style.color = 'var(--red)'; return; }
       if (nw !== conf) { msgEl.textContent = 'Passwords don\'t match'; msgEl.style.color = 'var(--red)'; return; }
       saveBtn.disabled = true;
       try {
@@ -2032,7 +2033,7 @@ function initAccount() {
         });
         if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Failed'); }
         msgEl.style.color = 'var(--green)';
-        msgEl.textContent = 'Password updated';
+        msgEl.textContent = _t('settings.password_updated');
         el('settings-pw-current').value = '';
         el('settings-pw-new').value = '';
         el('settings-pw-confirm').value = '';
@@ -2067,7 +2068,7 @@ function initAccount() {
           el('tfa-disable-btn').addEventListener('click', async () => {
             const pw = el('tfa-disable-pw').value;
             const msg = el('tfa-msg');
-            if (!pw) { msg.textContent = 'Enter your password'; msg.style.color = 'var(--red)'; return; }
+            if (!pw) { msg.textContent = _t('settings.enter_password'); msg.style.color = 'var(--red)'; return; }
             try {
               const r = await fetch('/api/auth/2fa/disable', {
                 method: 'POST', credentials: 'same-origin',
@@ -2113,7 +2114,7 @@ function initAccount() {
               el('tfa-verify-btn').addEventListener('click', async () => {
                 const code = el('tfa-verify-code').value.trim();
                 const vmsg = el('tfa-msg');
-                if (!code) { vmsg.textContent = 'Enter the code'; vmsg.style.color = 'var(--red)'; return; }
+                if (!code) { vmsg.textContent = _t('settings.enter_code'); vmsg.style.color = 'var(--red)'; return; }
                 try {
                   const vr = await fetch('/api/auth/2fa/confirm', {
                     method: 'POST', credentials: 'same-origin',
@@ -2235,7 +2236,7 @@ async function initReminderSettings() {
             setTimeout(() => { pubUrlMsg.textContent = ''; }, 2000);
           }
         } catch (_) {
-          if (pubUrlMsg) { pubUrlMsg.textContent = 'Save failed'; pubUrlMsg.style.color = 'var(--red)'; }
+          if (pubUrlMsg) { pubUrlMsg.textContent = _t('settings.save_failed'); pubUrlMsg.style.color = 'var(--red)'; }
         }
       }, 600);
     });
@@ -2278,7 +2279,7 @@ async function initReminderSettings() {
 
   if (!smtpConfigured && emailOpt) {
     emailOpt.disabled = true;
-    emailOpt.textContent = 'Email (add an account in Integrations)';
+    emailOpt.textContent = _t('settings.email_integration_hint');
   }
 
   // Detect whether ntfy integration exists — try admin endpoint, fall back to
@@ -2304,7 +2305,7 @@ async function initReminderSettings() {
 
   if (!ntfyConfigured && ntfyOpt) {
     ntfyOpt.disabled = true;
-    ntfyOpt.textContent = 'ntfy (add in Integrations first)';
+    ntfyOpt.textContent = _t('settings.ntfy_integration_hint');
   }
 
   // Webhook: available whenever at least one integration with a base_url exists.
@@ -2321,7 +2322,7 @@ async function initReminderSettings() {
   } catch (_) {}
   if (!webhookConfigured && webhookOpt) {
     webhookOpt.disabled = true;
-    webhookOpt.textContent = 'Webhook (add an Integration first)';
+    webhookOpt.textContent = _t('settings.webhook_integration_hint');
   }
 
   const emailFromRow = el('set-reminder-email-from-row');
@@ -2616,7 +2617,7 @@ async function initReminderSettings() {
           } catch {}
         }
       } catch (e) {
-        if (testMsg) { testMsg.textContent = 'Failed: ' + e.message; testMsg.style.color = 'var(--red)'; }
+        if (testMsg) { testMsg.textContent = _t('settings.failed_to_save') + ' ' + e.message; testMsg.style.color = 'var(--red)'; }
       } finally {
         _stopTestSpin();
         testBtn.disabled = false;
@@ -2816,7 +2817,7 @@ async function initEmailAccountsSettings() {
       // Name is optional — fall back to the From address so the list view
       // still has a label to render. Only refuse if both are blank.
       if (!body.name) body.name = body.from_address;
-      if (!body.name) { el('eaf-msg').textContent = 'Need at least a Name or Email'; el('eaf-msg').style.color = 'var(--red)'; return; }
+      if (!body.name) { el('eaf-msg').textContent = _t('settings.need_name_or_email'); el('eaf-msg').style.color = 'var(--red)'; return; }
 
       try {
         const url = isEdit ? `/api/email/accounts/${a.id}` : '/api/email/accounts';
@@ -2828,7 +2829,7 @@ async function initEmailAccountsSettings() {
         });
         const d = await r.json();
         if (d.ok || d.id) {
-          el('eaf-msg').textContent = 'Saved';
+          el('eaf-msg').textContent = _t('settings.saved');
           el('eaf-msg').style.color = 'var(--green,#50fa7b)';
           setTimeout(() => { formEl.style.display = 'none'; renderList(); }, 400);
         } else {
@@ -2836,7 +2837,7 @@ async function initEmailAccountsSettings() {
           el('eaf-msg').style.color = 'var(--red)';
         }
       } catch (e) {
-        el('eaf-msg').textContent = 'Error: ' + e.message;
+        el('eaf-msg').textContent = _t('settings.error_saving') + ': ' + e.message;
         el('eaf-msg').style.color = 'var(--red)';
       }
     });
@@ -2884,7 +2885,7 @@ async function initEmailSettings() {
   // Save email config
   el('set-email-save')?.addEventListener('click', async () => {
     const msg = el('set-email-msg');
-    if (msg) msg.textContent = 'Saving...';
+    if (msg) msg.textContent = _t('settings.saving_ellipsis');
     const data = {
       imap_host: el('set-email-imap-host').value,
       imap_port: parseInt(el('set-email-imap-port').value) || 0,
@@ -2908,14 +2909,14 @@ async function initEmailSettings() {
       if (msg) msg.textContent = result.success ? '✓ Saved' : (result.error || 'Failed');
       setTimeout(() => { if (msg) msg.textContent = ''; }, 3000);
     } catch (e) {
-      if (msg) msg.textContent = 'Failed';
+      if (msg) msg.textContent = _t('settings.failed');
     }
   });
 
   // Save CardDAV config
   el('set-carddav-save')?.addEventListener('click', async () => {
     const msg = el('set-carddav-msg');
-    if (msg) msg.textContent = 'Saving...';
+    if (msg) msg.textContent = _t('settings.saving_ellipsis');
     const data = {
       carddav_url: el('set-carddav-url').value,
       carddav_username: el('set-carddav-user').value,
@@ -2932,7 +2933,7 @@ async function initEmailSettings() {
       if (msg) msg.textContent = result.success ? '✓ Saved' : (result.error || 'Failed');
       setTimeout(() => { if (msg) msg.textContent = ''; }, 3000);
     } catch (e) {
-      if (msg) msg.textContent = 'Failed';
+      if (msg) msg.textContent = _t('settings.failed');
     }
   });
 
@@ -2977,7 +2978,7 @@ async function initEmailSettings() {
         if (msg) msg.textContent = data.error || 'Failed';
       }
     } catch (e) {
-      if (msg) msg.textContent = 'Failed to extract';
+      if (msg) msg.textContent = _t('settings.failed_to_extract');
     } finally {
       if (wp && wp.destroy) { try { wp.destroy(); } catch (_) {} }
       btn.disabled = false;
@@ -2988,7 +2989,7 @@ async function initEmailSettings() {
   // Save writing style manually
   el('set-email-style-save')?.addEventListener('click', async () => {
     const msg = el('set-email-style-msg');
-    if (msg) msg.textContent = 'Saving...';
+    if (msg) msg.textContent = _t('settings.saving_ellipsis');
     try {
       const res = await fetch('/api/email/style', {
         method: 'PUT',
@@ -2999,7 +3000,7 @@ async function initEmailSettings() {
       if (msg) msg.textContent = result.success ? '✓ Saved' : 'Failed';
       setTimeout(() => { if (msg) msg.textContent = ''; }, 3000);
     } catch (e) {
-      if (msg) msg.textContent = 'Failed';
+      if (msg) msg.textContent = _t('settings.failed');
     }
   });
 }
@@ -3101,7 +3102,7 @@ async function initIntegrations() {
   // Start editing
   async function startEdit(id) {
     editingId = id;
-    formTitle.textContent = 'Edit Integration';
+    formTitle.textContent = _t('settings.edit_integration');
     // Fetch full data (with unmasked key from a dedicated edit fetch — we'll just load what we have)
     try {
       const res = await fetch('/api/auth/integrations', { credentials: 'same-origin' });
@@ -3124,7 +3125,7 @@ async function initIntegrations() {
   // Show add form
   addBtn.addEventListener('click', () => {
     editingId = null;
-    formTitle.textContent = 'Add Integration';
+    formTitle.textContent = _t('settings.add_integration');
     presetSel.value = '';
     nameIn.value = '';
     urlIn.value = '';
@@ -3154,15 +3155,15 @@ async function initIntegrations() {
     };
     if (presetSel.value) payload.preset = presetSel.value;
     if (keyIn.value.trim()) payload.api_key = keyIn.value.trim();
-    if (!payload.name) { statusEl.textContent = 'Name required'; statusEl.style.color = 'var(--red)'; return; }
-    if (!payload.base_url) { statusEl.textContent = 'URL required'; statusEl.style.color = 'var(--red)'; return; }
+    if (!payload.name) { statusEl.textContent = _t('settings.name_required'); statusEl.style.color = 'var(--red)'; return; }
+    if (!payload.base_url) { statusEl.textContent = _t('settings.url_required'); statusEl.style.color = 'var(--red)'; return; }
 
     try {
       const url = editingId ? `/api/auth/integrations/${editingId}` : '/api/auth/integrations';
       const method = editingId ? 'PUT' : 'POST';
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), credentials: 'same-origin' });
       if (res.ok) {
-        statusEl.textContent = 'Saved';
+        statusEl.textContent = _t('settings.saved');
         statusEl.style.color = 'var(--green, #98c379)';
         formCard.style.display = 'none';
         await renderList();
@@ -3173,15 +3174,15 @@ async function initIntegrations() {
         statusEl.style.color = 'var(--red)';
       }
     } catch (e) {
-      statusEl.textContent = 'Error saving';
+      statusEl.textContent = _t('settings.error_saving');
       statusEl.style.color = 'var(--red)';
     }
   });
 
   // Test
   testBtn.addEventListener('click', async () => {
-    if (!editingId) { statusEl.textContent = 'Save first, then test'; statusEl.style.color = 'var(--fg)'; return; }
-    statusEl.textContent = 'Testing...';
+    if (!editingId) { statusEl.textContent = _t('settings.save_first'); statusEl.style.color = 'var(--fg)'; return; }
+    statusEl.textContent = _t('settings.testing');
     statusEl.style.color = 'var(--fg)';
     try {
       const res = await fetch(`/api/auth/integrations/${editingId}/test`, { method: 'POST', credentials: 'same-origin' });
@@ -3189,7 +3190,7 @@ async function initIntegrations() {
       statusEl.textContent = data.message || (data.ok ? 'OK' : 'Failed');
       statusEl.style.color = data.ok ? 'var(--green, #98c379)' : 'var(--red)';
     } catch (e) {
-      statusEl.textContent = 'Connection failed';
+      statusEl.textContent = _t('settings.connection_failed');
       statusEl.style.color = 'var(--red)';
     }
   });
@@ -3630,13 +3631,13 @@ async function initUnifiedIntegrations() {
         // level would silently miss, leaving Test perpetually stuck on
         // "Save first" until the form was reopened.
         if (!_editId && saved) _editId = saved.integration?.id || saved.id;
-        el('uf-api-msg').textContent = 'Saved'; el('uf-api-msg').style.color = 'var(--green,#50fa7b)';
+        el('uf-api-msg').textContent = _t('settings.saved'); el('uf-api-msg').style.color = 'var(--green,#50fa7b)';
         await renderList();
         notifyIntegrationsChanged();
-      } catch (_) { el('uf-api-msg').textContent = 'Failed'; el('uf-api-msg').style.color = 'var(--red)'; }
+      } catch (_) { el('uf-api-msg').textContent = _t('settings.failed'); el('uf-api-msg').style.color = 'var(--red)'; }
     });
     el('uf-api-test').addEventListener('click', async () => {
-      if (!_editId) { el('uf-api-msg').textContent = 'Save first'; return; }
+      if (!_editId) { el('uf-api-msg').textContent = _t('settings.save_first_uf'); return; }
       try {
         const r = await fetch(`/api/auth/integrations/${_editId}/test`, { method: 'POST', credentials: 'same-origin' });
         const d = await r.json();
@@ -3648,7 +3649,7 @@ async function initUnifiedIntegrations() {
           el('uf-api-msg').textContent = (d.message || d.error || d.detail || `HTTP ${r.status}`).slice(0, 360);
           el('uf-api-msg').style.color = 'var(--red)';
         }
-      } catch (e) { el('uf-api-msg').textContent = 'Error: ' + e.message; el('uf-api-msg').style.color = 'var(--red)'; }
+      } catch (e) { el('uf-api-msg').textContent = _t('settings.error_saving') + ': ' + e.message; el('uf-api-msg').style.color = 'var(--red)'; }
     });
   }
 
@@ -3806,7 +3807,7 @@ async function initUnifiedIntegrations() {
       if (el('uf-carddav-pass').value) body.carddav_password = el('uf-carddav-pass').value;
       try {
         await fetch('/api/contacts/config', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        el('uf-carddav-msg').textContent = 'Saved';
+        el('uf-carddav-msg').textContent = _t('settings.saved');
         el('uf-carddav-msg').style.color = 'var(--green, #50fa7b)';
         // Refresh both the sub-panel (contacts manager) AND the
         // outer integrations list so the CardDAV row appears
@@ -3815,7 +3816,7 @@ async function initUnifiedIntegrations() {
         await renderList();
         notifyIntegrationsChanged();
       } catch (_) {
-        el('uf-carddav-msg').textContent = 'Failed';
+        el('uf-carddav-msg').textContent = _t('settings.failed');
         el('uf-carddav-msg').style.color = 'var(--red)';
       }
     });
@@ -3840,7 +3841,7 @@ async function initUnifiedIntegrations() {
     const _downloadContacts = async (format) => {
       const btn = el(format === 'csv' ? 'cm-export-csv-btn' : 'cm-export-vcf-btn');
       const orig = btn ? btn.textContent : '';
-      if (btn) { btn.textContent = 'Exporting...'; btn.disabled = true; }
+      if (btn) { btn.textContent = _t('settings.exporting'); btn.disabled = true; }
       try {
         const res = await fetch(`/api/contacts/export?format=${encodeURIComponent(format)}`, { credentials: 'same-origin' });
         if (!res.ok) throw new Error('Export failed');
@@ -4404,7 +4405,7 @@ async function initUnifiedIntegrations() {
         btn.style.borderColor = 'var(--red)';
         btn.style.color = '#fff';
         ico.innerHTML = btn.dataset.origIco;
-        msg.textContent = 'Test error: ' + e.message;
+        msg.textContent = _t('settings.test_error') + ' ' + e.message;
         msg.style.color = 'var(--red)';
       } finally {
         btn.disabled = false;
@@ -4415,7 +4416,7 @@ async function initUnifiedIntegrations() {
       const body = _collectBody();
       // Name is optional — fall back to Email so the list still has a label.
       if (!body.name) body.name = body.from_address;
-      if (!body.name) { el('uf-email-msg').textContent = 'Need at least a Name or Email'; el('uf-email-msg').style.color = 'var(--red)'; return; }
+      if (!body.name) { el('uf-email-msg').textContent = _t('settings.need_name_or_email'); el('uf-email-msg').style.color = 'var(--red)'; return; }
       const saveBtn = el('uf-email-save');
       saveBtn.disabled = true;
       const saveIcoEl = saveBtn.querySelector('.uf-email-save-ico');
@@ -4438,14 +4439,14 @@ async function initUnifiedIntegrations() {
           el('uf-email-msg').style.color = 'var(--red)';
           return;
         }
-        el('uf-email-msg').textContent = 'Saved';
+        el('uf-email-msg').textContent = _t('settings.saved');
         el('uf-email-msg').style.color = 'var(--green,#50fa7b)';
         integrationNotice = 'Email account saved. For more settings, go to Settings > Email.';
         formEl.style.display = 'none';
         await renderList();
         notifyIntegrationsChanged();
       } catch (e) {
-        el('uf-email-msg').textContent = 'Error: ' + e.message;
+        el('uf-email-msg').textContent = _t('settings.error_saving') + ': ' + e.message;
         el('uf-email-msg').style.color = 'var(--red)';
       } finally {
         saveBtn.disabled = false;
@@ -4502,7 +4503,7 @@ async function initUnifiedIntegrations() {
         statusEl.textContent = parts.join(' — ');
         statusEl.style.color = !installed ? 'var(--red)' : d.unlocked ? 'var(--green,#50fa7b)' : '';
       } catch (_) {
-        el('uf-vault-status').textContent = 'Failed to load vault status';
+        el('uf-vault-status').textContent = _t('settings.vault_status_failed');
       }
     }
     await refreshStatus();
@@ -4676,7 +4677,7 @@ async function initUnifiedIntegrations() {
           </div>`;
         // Reconnect
         el('uf-mcp-reconnect').addEventListener('click', async () => {
-          const msg = el('uf-mcp-msg'); msg.textContent = 'Reconnecting...';
+          const msg = el('uf-mcp-msg'); msg.textContent = _t('settings.reconnecting');
           try {
             const r = await fetch(`/api/mcp/servers/${srv.id}/reconnect`, { method: 'POST', credentials: 'same-origin' });
             const d = await r.json();
@@ -4772,11 +4773,11 @@ async function initUnifiedIntegrations() {
             el('uf-mcp-msg').textContent = `Connected (${data.tool_count || 0} tools)`;
             formEl.style.display = 'none'; await renderList();
           } else if (r.ok) {
-            el('uf-mcp-msg').textContent = 'Saved'; formEl.style.display = 'none'; await renderList();
+            el('uf-mcp-msg').textContent = _t('settings.saved'); formEl.style.display = 'none'; await renderList();
           } else {
             el('uf-mcp-msg').textContent = `Failed (${r.status})`;
           }
-        } catch (_) { el('uf-mcp-msg').textContent = 'Failed'; }
+        } catch (_) { el('uf-mcp-msg').textContent = _t('settings.failed'); }
         finally { _setBtnLoading(saveBtn, false, _origLabel); if (cancelBtn) cancelBtn.disabled = false; }
       });
     }
@@ -4903,7 +4904,7 @@ async function initUnifiedIntegrations() {
     el('uf-codex-cancel')?.addEventListener('click', () => { formEl.style.display = 'none'; });
     el('uf-codex-save')?.addEventListener('click', () => {
       const msg = el('uf-codex-msg');
-      if (msg) { msg.textContent = 'Saved'; msg.style.color = 'var(--green, #50fa7b)'; }
+      if (msg) { msg.textContent = _t('settings.saved'); msg.style.color = 'var(--green, #50fa7b)'; }
       setTimeout(() => { formEl.style.display = 'none'; }, 350);
     });
 
@@ -4991,8 +4992,8 @@ async function initUnifiedIntegrations() {
       const btn = el('uf-codex-copy-setup');
       if (!token) {
         if (btn) {
-          btn.textContent = 'Add agent first';
-          setTimeout(() => { const latest = el('uf-codex-copy-setup'); if (latest) latest.textContent = 'Copy setup'; }, 1600);
+          btn.textContent = _t('settings.add_agent_first');
+          setTimeout(() => { const latest = el('uf-codex-copy-setup'); if (latest) latest.textContent = _t('settings.copy_setup'); }, 1600);
         }
         return;
       }
@@ -5001,7 +5002,7 @@ async function initUnifiedIntegrations() {
       if (!btn) return;
       btn.textContent = ok ? 'Copied setup' : 'Select setup';
       if (!ok) _selectTextFallback(setup, 'uf-codex-reveal');
-      setTimeout(() => { const latest = el('uf-codex-copy-setup'); if (latest) latest.textContent = 'Copy setup'; }, 1600);
+      setTimeout(() => { const latest = el('uf-codex-copy-setup'); if (latest) latest.textContent = _t('settings.copy_setup'); }, 1600);
     });
     el('uf-codex-copy-token')?.addEventListener('click', async () => {
       const token = el('uf-codex-token')?.textContent || '';
@@ -5087,7 +5088,7 @@ async function initUnifiedIntegrations() {
             });
             const d = await r.json().catch(() => ({}));
             if (!r.ok) throw new Error(d.detail || 'Failed');
-            if (msg) { msg.textContent = 'Saved'; msg.style.color = 'var(--green, #50fa7b)'; }
+            if (msg) { msg.textContent = _t('settings.saved'); msg.style.color = 'var(--green, #50fa7b)'; }
             await renderList();
           } catch (err) {
             cb.checked = !cb.checked;

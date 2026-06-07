@@ -1,7 +1,8 @@
-/**
+﻿/**
  * Calendar Module — CalDAV-backed month/week/year calendar.
  */
 
+import { t as _t } from './i18n.js';
 import uiModule from './ui.js';
 import spinnerModule from './spinner.js';
 import * as Modals from './modalManager.js';
@@ -1934,7 +1935,7 @@ function _wireAll(body) {
             _qaStatus.appendChild(_qaSpin.element);
           }, 250);
         } catch {
-          _qaSpinTimer = setTimeout(() => { if (_qaStatus) _qaStatus.textContent = 'parsing…'; }, 250);
+          _qaSpinTimer = setTimeout(() => { if (_qaStatus) _qaStatus.textContent = _t('calendar.parsing'); }, 250);
         }
       }
       try {
@@ -2572,7 +2573,7 @@ async function _showCalSettings() {
     const file = e.target.files[0];
     if (!file) return;
     const status = overlay.querySelector('#cal-import-status');
-    status.textContent = 'Importing...';
+    status.textContent = _t('calendar.importing');
     try {
       const fd = new FormData();
       fd.append('file', file);
@@ -2613,7 +2614,7 @@ async function _showCalSettings() {
     const btn = e.currentTarget;
     const status = overlay.querySelector('#cal-settings-sync-status');
     btn.disabled = true;
-    status.textContent = 'Syncing…';
+    status.textContent = _t('calendar.syncing');
     const data = await _syncCaldav(true) || {};
     if (data.errors && data.errors.length) {
       status.textContent = `Sync failed: ${data.errors[0]}`;
