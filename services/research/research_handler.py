@@ -56,6 +56,7 @@ class ResearchHandler:
         llm_model: str,
         max_time: int = 300,
         llm_headers: dict = None,
+        ui_language: str = None,
     ) -> dict:
         """Start research as a background task. Returns task info dict."""
         # Cancel any existing research for this session
@@ -86,6 +87,7 @@ class ResearchHandler:
                     progress_callback=on_progress,
                     _task_entry=entry,
                     llm_headers=llm_headers,
+                    ui_language=ui_language,
                 )
                 entry["result"] = result
                 entry["status"] = "done"
@@ -236,6 +238,7 @@ class ResearchHandler:
         progress_callback=None,
         _task_entry: dict = None,
         llm_headers: dict = None,
+        ui_language: str = None,
     ) -> str:
         """
         Run iterative deep research using the LLM-in-the-loop DeepResearcher.
@@ -246,6 +249,8 @@ class ResearchHandler:
             llm_model: Model name/ID
             max_time: Maximum research time in seconds (default 5 minutes)
             _task_entry: Internal - registry entry to store researcher ref
+            ui_language: Optional UI language ("es") so the report and JSON
+                prose are generated in Spanish. JSON keys stay in English.
 
         Returns:
             Formatted research report with expandable section and summary
@@ -267,6 +272,7 @@ class ResearchHandler:
                 max_time=max_time,
                 max_report_tokens=int(get_setting("research_max_tokens", 8192)),
                 progress_callback=progress_callback,
+                ui_language=ui_language,
             )
             if _task_entry is not None:
                 _task_entry["researcher"] = researcher

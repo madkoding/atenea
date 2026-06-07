@@ -35,6 +35,38 @@ def current_date_context() -> str:
         f"year inferred from training data.\n\n"
     )
 
+
+# --- Spanish fork helper (Fase 4) -----------------------------------------
+# Deep-research prompts rely on English JSON keys (sub_questions, key_topics,
+# rational, evidence, summary, etc.) that the consuming code parses. We can't
+# localize the keys, but we can ask the model to write all prose values
+# (research plan, evolving report, query strings, summaries, sub-questions
+# text) in neutral Spanish when the user has ui_language='es'.
+
+_ES_RESEARCH_DIRECTIVE = (
+    "Idioma de respuesta: el usuario ha elegido espa\xf1ol como idioma de la "
+    "interfaz. Escribe todos los campos de texto, preguntas, sub-preguntas, "
+    "res\xfamenes, el informe evolutivo, el informe final y las consultas de "
+    "b\xfasqueda en espa\xf1ol neutro (tuteo, sin voseo ni regionalismos). "
+    "IMPORTANTE: mant\xe9n en ingl\xe9s las claves JSON y el formato exacto "
+    "que esta instrucci\xf3n espera (por ejemplo \"sub_questions\", "
+    "\"key_topics\", \"success_criteria\", \"rational\", \"evidence\", "
+    "\"summary\", \"YES\"/\"NO\", y los tags de markdown como ## y ###) "
+    "para que el c\xf3digo del backend pueda parsearlos. Mant\xe9n en "
+    "ingl\xe9s los nombres propios de productos, herramientas o tecnolog\xedas "
+    "que se entiendan mejor as\xed.\n\n"
+)
+
+
+def _localize(prompt: str, ui_language: Optional[str]) -> str:
+    """Prepend a Spanish directive when ui_language=='es'."""
+    if not ui_language or not isinstance(ui_language, str):
+        return prompt
+    if ui_language.strip().lower() != "es":
+        return prompt
+    return _ES_RESEARCH_DIRECTIVE + prompt
+
+
 # ---------------------------------------------------------------------------
 # Prompts
 # ---------------------------------------------------------------------------
@@ -209,6 +241,7 @@ class DeepResearcher:
         progress_callback: Optional[Callable] = None,
         search_provider: Optional[str] = None,
         category: Optional[str] = None,
+        ui_language: Optional[str] = None,
     ):
         self.llm_endpoint = llm_endpoint
         self.llm_model = llm_model
@@ -227,6 +260,7 @@ class DeepResearcher:
         self.min_rounds = min_rounds
         self.max_empty_rounds = max_empty_rounds
         self.synthesis_window = synthesis_window
+        self.ui_language = ui_language
         self._progress = progress_callback
         self._cancelled = False
         self._start_time: float = 0
@@ -397,7 +431,7 @@ class DeepResearcher:
     # ------------------------------------------------------------------
     async def _create_plan(self, question: str) -> str:
         """LLM analyzes the question and creates a research plan."""
-        prompt = current_date_context() + RESEARCH_PLAN_PROMPT.format(question=question)
+        prompt = _localize(current_date_context() + RESEARCH_PLAN_PROMPT.format(question=question), self.ui_language)
         try:
             response = await self._llm(
                 [{"role": "user", "content": prompt}],
@@ -472,14 +506,14 @@ class DeepResearcher:
                 "that the report doesn't yet cover well."
             )
 
-        prompt = current_date_context() + QUERY_GEN_PROMPT.format(
+        prompt = _localize(current_date_context() + QUERY_GEN_PROMPT.format(
             question=question,
             research_plan=self.research_plan or "(No plan — search broadly.)",
             report=report or "(No findings yet.)",
             round_num=round_num,
             num_queries=num_queries,
             round_instruction=round_instruction,
-        )
+        ), self.ui_language)
 
         try:
             response = await self._llm(
@@ -629,7 +663,7 @@ class DeepResearcher:
         try:
             response = await self._llm(
                 [
-                    {"role": "user", "content": EXTRACTOR_SYSTEM.format(goal=question)},
+                    {"role": "user", "content": _localize(EXTRACTOR_SYSTEM.format(goal=question), self.ui_language)},
                     untrusted_context_message("webpage", content),
                 ],
                 temperature=0.2,
@@ -671,11 +705,11 @@ class DeepResearcher:
             logger.info(f"Synthesis using last {self.synthesis_window} of {len(findings)} findings")
         findings_text = self._format_findings(window)
 
-        prompt = SYNTHESIZE_PROMPT.format(
+        prompt = _localize(SYNTHESIZE_PROMPT.format(
             question=question,
             report=current_report or "(First round — no report yet.)",
             new_findings=findings_text,
-        )
+        ), self.ui_language)
 
         try:
             return await self._llm(
@@ -699,12 +733,12 @@ class DeepResearcher:
     async def _should_stop(self, question: str, report: str,
                            round_num: int) -> bool:
         """Let the LLM decide whether the report is comprehensive enough."""
-        prompt = STOP_PROMPT.format(
+        prompt = _localize(STOP_PROMPT.format(
             question=question,
             report=report,
             round_num=round_num,
             max_rounds=self.max_rounds,
-        )
+        ), self.ui_language)
 
         try:
             response = await self._llm(
@@ -730,10 +764,10 @@ class DeepResearcher:
     # ------------------------------------------------------------------
     async def _final_report(self, question: str, report: str) -> str:
         """LLM writes a polished final report, retrying if too short."""
-        prompt = FINAL_REPORT_PROMPT.format(
+        prompt = _localize(FINAL_REPORT_PROMPT.format(
             question=question,
             report=report,
-        )
+        ), self.ui_language)
         cat_extra = CATEGORY_PROMPTS.get(self.category or "", "")
         if cat_extra:
             prompt += "\n\n" + cat_extra

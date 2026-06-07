@@ -239,6 +239,7 @@ class ResearchHandler:
         extraction_timeout: int = None,
         extraction_concurrency: int = None,
         owner: str = "",
+        ui_language: str = None,
     ) -> dict:
         """Start research as a background task. Returns task info dict.
 
@@ -322,6 +323,7 @@ class ResearchHandler:
                         category=category,
                         extraction_timeout=extraction_timeout,
                         extraction_concurrency=extraction_concurrency,
+                        ui_language=ui_language,
                     ),
                     timeout=hard_timeout,
                 )
@@ -712,6 +714,7 @@ class ResearchHandler:
         category: str = None,
         extraction_timeout: int = None,
         extraction_concurrency: int = None,
+        ui_language: str = None,
     ) -> str:
         """
         Run iterative deep research using the LLM-in-the-loop DeepResearcher.
@@ -787,6 +790,7 @@ class ResearchHandler:
                 progress_callback=progress_callback,
                 search_provider=search_provider,
                 category=category,
+                ui_language=ui_language,
             )
             if _task_entry is not None:
                 _task_entry["researcher"] = researcher

@@ -21,3 +21,29 @@ Example:
     "summary": "Concise summary of how this information answers the goal"
 }}
 """
+
+
+# --- Spanish fork helper (Fase 4) -----------------------------------------
+# Same JSON-key constraint as deep_research: keys stay in English, prose
+# values are localized. The consumer (deep_research.py) wraps the prompt via
+# _localize() before sending; this module-level helper is provided for any
+# direct caller that wants the same behavior without depending on deep_research.
+
+_ES_EXTRACTOR_DIRECTIVE = (
+    "Idioma de respuesta: el usuario ha elegido espa\xf1ol como idioma de la "
+    "interfaz. Escribe los valores de los campos \"rational\" y \"summary\" "
+    "en espa\xf1ol neutro (tuteo, sin voseo ni regionalismos). IMPORTANTE: "
+    "mant\xe9n en ingl\xe9s las claves JSON (\"rational\", \"evidence\", "
+    "\"summary\") exactamente como se muestra, para que el c\xf3digo del "
+    "backend pueda parsearlos.\n\n"
+)
+
+
+def _localize(prompt: str, ui_language) -> str:
+    """Prepend a Spanish directive when ui_language=='es'."""
+    if not ui_language or not isinstance(ui_language, str):
+        return prompt
+    if ui_language.strip().lower() != "es":
+        return prompt
+    return _ES_EXTRACTOR_DIRECTIVE + prompt
+
