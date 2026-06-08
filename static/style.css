@@ -196,19 +196,6 @@ body {
 }
 
 /* Colorful OS emoji – ensure emoji-capable font is in the stack */
-body.liquid-glass .msg.msg-user,
-body.liquid-glass .msg.msg-ai {
-  background: color-mix(in srgb, var(--panel, #1a1a2e) 55%, transparent);
-  backdrop-filter: blur(16px) saturate(1.8);
-  filter: url(#liquid-glass);
-}
-body.liquid-glass .modal-content,
-body.liquid-glass .admin-modal-content,
-body.liquid-glass .settings-modal-content {
-  background: color-mix(in srgb, var(--panel, #1a1a2e) 55%, transparent);
-  backdrop-filter: blur(16px) saturate(1.8);
-  filter: url(#liquid-glass);
-}
 
 /* ── Per-zone font-family overrides ── */
 .sidebar, .sidebar .section-title-label, .sidebar .list-item .grow,
