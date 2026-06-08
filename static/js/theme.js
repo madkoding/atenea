@@ -521,6 +521,11 @@ export function applyFrostedGlass(on) {
   document.body.classList.toggle('theme-frosted', !!on);
 }
 
+/** Toggle frosted glass specifically for the chat message area */
+export function applyFrostedChat(on) {
+  document.body.classList.toggle('theme-frosted-chat', !!on);
+}
+
 // Read current size multiplier for JS effects (canvas-based).
 function _getEffectSize() {
   const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bg-effect-size'));
@@ -575,6 +580,7 @@ export function save(name, colors, opts) {
     if (opts.bgEffectIntensity !== undefined && opts.bgEffectIntensity !== 1) obj.bgEffectIntensity = opts.bgEffectIntensity;
     if (opts.bgEffectSize !== undefined && opts.bgEffectSize !== 1) obj.bgEffectSize = opts.bgEffectSize;
     if (opts.frosted) obj.frosted = true;
+    if (opts.frostedChat) obj.frostedChat = true;
     if (opts.fontSidebar) obj.fontSidebar = opts.fontSidebar;
     if (opts.fontContent) obj.fontContent = opts.fontContent;
     if (opts.fontTerminal) obj.fontTerminal = opts.fontTerminal;
@@ -799,6 +805,8 @@ export function initThemeUI() {
     if (sz) opts.bgEffectSize = parseFloat(sz.value) / 100;
     const fr = document.getElementById('theme-frosted-toggle');
     if (fr) opts.frosted = !!fr.checked;
+    const fch = document.getElementById('theme-frosted-chat-toggle');
+    if (fch) opts.frostedChat = !!fch.checked;
     const sbs = document.getElementById('theme-font-sidebar');
     const cfs = document.getElementById('theme-font-content');
     const tfs = document.getElementById('theme-font-terminal');
@@ -1263,6 +1271,9 @@ export function initThemeUI() {
   const _initFrosted = (saved && saved.frosted !== undefined)
     ? !!saved.frosted
     : (saved && THEME_DEFAULT_FROSTED[saved.name] === true);
+  const _initFrostedChat = (saved && saved.frostedChat !== undefined)
+    ? !!saved.frostedChat
+    : false;
   const _initFontSidebar = (saved && saved.fontSidebar) || '';
   const _initFontContent = (saved && saved.fontContent) || '';
   const _initFontTerminal = (saved && saved.fontTerminal) || '';
@@ -1278,6 +1289,7 @@ export function initThemeUI() {
   applyBgEffectIntensity(_initEffectIntensity);
   applyBgEffectSize(_initEffectSize);
   applyFrostedGlass(_initFrosted);
+  applyFrostedChat(_initFrostedChat);
   applyBgPattern(_initPattern, _initBgCustom);
   applyFontZones(_initFontSidebar, _initFontContent, _initFontTerminal);
   applyFontSizes(_initFontSizeSidebar, _initFontSizeContent, _initFontSizeTerminal);
@@ -1379,6 +1391,15 @@ export function initThemeUI() {
     frostedToggle.checked = _initFrosted;
     frostedToggle.addEventListener('change', () => {
       applyFrostedGlass(frostedToggle.checked);
+      const s = getSaved(); if (s) _saveFull(s.name, s.colors);
+    });
+  }
+
+  const frostedChatToggle = document.getElementById('theme-frosted-chat-toggle');
+  if (frostedChatToggle) {
+    frostedChatToggle.checked = _initFrostedChat;
+    frostedChatToggle.addEventListener('change', () => {
+      applyFrostedChat(frostedChatToggle.checked);
       const s = getSaved(); if (s) _saveFull(s.name, s.colors);
     });
   }

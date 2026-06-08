@@ -195,8 +195,31 @@ body {
   background-repeat: var(--bg-custom-repeat, no-repeat);
 }
 
+/* Colorful OS emoji – ensure emoji-capable font is in the stack */
+body.text-emojis {
+  -webkit-emoji-style: text;
+  emoji-style: text;
+}
+body.text-emojis .chat-messages,
+body.text-emojis .message-content,
+body.text-emojis .terminal-output {
+  font-family: inherit, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla";
+}
+
 /* ── Per-zone font-family overrides ── */
-.sidebar { font-family: var(--font-sidebar, var(--font-family, 'Fira Code', monospace)); }
+.sidebar, .sidebar .section-title-label, .sidebar .list-item .grow,
+.sidebar-brand-title, .sidebar .user-bar-name,
+.sidebar .dropdown-item, .sidebar .section-title {
+  font-family: var(--font-sidebar, var(--font-family, 'Fira Code', monospace));
+}
+.modal-content, .admin-modal-content, .settings-modal-content,
+.memory-modal-content, .preset-modal-content,
+.doclib-modal-content, .gallery-modal-content,
+.cp-popover, .overflow-menu, .search-popup,
+.doc-pane, .research-pane, .calendar-pane, .cookbook-pane,
+.notes-pane, .email-reader {
+  font-family: var(--font-family, 'Fira Code', monospace);
+}
 .chat-messages, .chat-input-wrap, .chat-top-bar, #chat-container {
   font-family: var(--font-content, var(--font-family, 'Fira Code', monospace));
 }
@@ -206,7 +229,19 @@ pre, code, .markdown-code, .message-content pre, .message-content code {
 }
 
 /* ── Per-zone font-size overrides ── */
-.sidebar { font-size: var(--font-size-sidebar, inherit); }
+.sidebar, .sidebar .section-title-label, .sidebar .list-item .grow,
+.sidebar-brand-title, .sidebar .user-bar-name,
+.sidebar .dropdown-item, .sidebar .section-title {
+  font-size: var(--font-size-sidebar, inherit);
+}
+.modal-content, .admin-modal-content, .settings-modal-content,
+.memory-modal-content, .preset-modal-content,
+.doclib-modal-content, .gallery-modal-content,
+.cp-popover, .overflow-menu, .search-popup,
+.doc-pane, .research-pane, .calendar-pane, .cookbook-pane,
+.notes-pane, .email-reader {
+  font-size: inherit;
+}
 .chat-messages, .chat-input-wrap, .chat-top-bar, #chat-container {
   font-size: var(--font-size-content, inherit);
 }
@@ -35870,6 +35905,15 @@ body.theme-frosted .doc-pane-floating {
    the actual page content behind the modal. */
 body.theme-frosted .modal {
   background: color-mix(in srgb, #000 12%, transparent) !important;
+}
+
+/* ── Frosted Chat (separate toggle — affects only the chat message area) ── */
+body.theme-frosted-chat #chat-container,
+body.theme-frosted-chat .chat-messages,
+body.theme-frosted-chat .thinking-section {
+  background: color-mix(in srgb, var(--panel, var(--bg)) 28%, transparent) !important;
+  backdrop-filter: blur(18px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
 }
 
 /* Mobile only: lift the Dependencies "Server" dropdown's selected text up ~2px. */
