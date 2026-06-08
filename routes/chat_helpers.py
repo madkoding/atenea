@@ -1,10 +1,12 @@
 """Shared helpers for chat routes — context building, post-response tasks, auth resolution."""
 
 import asyncio
+import functools
 import json
 import logging
 import os
 import re
+import time
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
@@ -21,6 +23,27 @@ from routes.prefs_routes import _load_for_user as load_prefs_for_user
 from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
+
+
+@functools.lru_cache(maxsize=1)
+def _cached_enabled_endpoints(ttl: float) -> list:
+    """Cached query for enabled endpoints. TTL in seconds to invalidate cache."""
+    db = SessionLocal()
+    try:
+        endpoints = db.query(ModelEndpoint).filter(
+            ModelEndpoint.is_enabled == True
+        ).all()
+        return [
+            {"id": ep.id, "name": ep.name, "base_url": ep.base_url, "api_key": ep.api_key}
+            for ep in endpoints
+        ]
+    finally:
+        db.close()
+
+
+def get_enabled_endpoints_cached(ttl: float = 60.0) -> list:
+    """Get enabled endpoints with in-memory cache that refreshes every `ttl` seconds."""
+    return _cached_enabled_endpoints(time.monotonic() // ttl)
 
 
 # ── Data containers ────────────────────────────────────────────────────── #
@@ -190,74 +213,67 @@ async def auto_name_session(session_manager, sess):
         logger.error(f"Auto-name failed for {sess.id}: {e}\n{traceback.format_exc()}")
 
 
-def try_fallback_endpoint(sess, session_id: str) -> dict | None:
+async def try_fallback_endpoint(sess, session_id: str) -> dict | None:
     """Find an alternative working endpoint when the current one fails.
 
     Returns {"model": ..., "endpoint_url": ..., "endpoint_name": ...} or None.
     """
-    import requests as _req
+    import httpx as _httpx
     from src.endpoint_resolver import build_chat_url, build_headers, build_models_url, normalize_base
 
     current_url = sess.endpoint_url or ""
-    db = SessionLocal()
-    try:
-        endpoints = db.query(ModelEndpoint).filter(
-            ModelEndpoint.is_enabled == True
-        ).all()
-    finally:
-        db.close()
+    endpoints_data = get_enabled_endpoints_cached(ttl=60.0)
 
-    for ep in endpoints:
-        base = normalize_base(ep.base_url)
-        # Skip current endpoint
-        if current_url and base in current_url:
-            continue
-        # Quick ping
-        ping_url = build_models_url(base)
-        headers = build_headers(ep.api_key, base)
-        try:
-            r = _req.get(ping_url, headers=headers, timeout=5)
-            r.raise_for_status()
-            data = r.json()
-            models = [m.get("id") for m in (data.get("data") or []) if m.get("id")]
-            if not models:
-                models = [
-                    m.get("name") or m.get("model")
-                    for m in (data.get("models") or [])
-                    if m.get("name") or m.get("model")
-                ]
-            if not models:
+    async with _httpx.AsyncClient(timeout=5.0) as client:
+        for ep_data in endpoints_data:
+            base = normalize_base(ep_data["base_url"])
+            # Skip current endpoint
+            if current_url and base in current_url:
                 continue
-            # Found a working endpoint — update session
-            new_model = models[0]
-            chat_url = build_chat_url(base)
-            new_headers = build_headers(ep.api_key, base)
-
-            sess.model = new_model
-            sess.endpoint_url = chat_url
-            sess.headers = new_headers
-
-            # Persist
-            _db = SessionLocal()
+            # Quick ping
+            ping_url = build_models_url(base)
+            headers = build_headers(ep_data["api_key"], base)
             try:
-                _db.query(DBSession).filter(DBSession.id == session_id).update({
+                r = await client.get(ping_url, headers=headers)
+                r.raise_for_status()
+                data = r.json()
+                models = [m.get("id") for m in (data.get("data") or []) if m.get("id")]
+                if not models:
+                    models = [
+                        m.get("name") or m.get("model")
+                        for m in (data.get("models") or [])
+                        if m.get("name") or m.get("model")
+                    ]
+                if not models:
+                    continue
+                # Found a working endpoint — update session
+                new_model = models[0]
+                chat_url = build_chat_url(base)
+                new_headers = build_headers(ep_data["api_key"], base)
+
+                sess.model = new_model
+                sess.endpoint_url = chat_url
+                sess.headers = new_headers
+
+                # Persist
+                _db = SessionLocal()
+                try:
+                    _db.query(DBSession).filter(DBSession.id == session_id).update({
+                        "model": new_model,
+                        "endpoint_url": chat_url,
+                        "headers": json.dumps(new_headers),
+                    })
+                    _db.commit()
+                finally:
+                    _db.close()
+
+                return {
                     "model": new_model,
                     "endpoint_url": chat_url,
-                    "headers": json.dumps(new_headers),
-                })
-                _db.commit()
-            finally:
-                _db.close()
-
-            logger.info(f"Fallback: switched session {session_id} from {current_url} to {ep.name} ({new_model})")
-            return {
-                "model": new_model,
-                "endpoint_url": chat_url,
-                "endpoint_name": ep.name,
-            }
-        except Exception:
-            continue
-
+                    "endpoint_name": ep_data["name"],
+                }
+            except Exception:
+                continue
     return None
 
 

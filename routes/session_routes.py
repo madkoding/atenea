@@ -279,7 +279,7 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
                 mode_map[row.id] = row.mode
                 msg_count_map[row.id] = row.message_count or 0
             # Sessions with active documents that have content
-            from sqlalchemy import func
+            from sqlalchemy import func, select
             doc_session_ids = set(
                 r[0] for r in db.query(Document.session_id)
                 .filter(Document.is_active == True,
