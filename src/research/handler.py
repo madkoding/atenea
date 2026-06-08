@@ -10,6 +10,7 @@ Includes a task registry so research survives page refreshes and can be cancelle
 import asyncio
 import json
 import logging
+import os
 import re
 import time
 from pathlib import Path
@@ -696,10 +697,24 @@ class ResearchHandler:
 
     @staticmethod
     async def _probe_endpoint(endpoint: str, model: str, headers: dict = None):
-        """Quick probe to verify the LLM endpoint/model responds before research."""
+        """Quick probe to verify the LLM endpoint/model responds before research.
+
+        The probe is intentionally short and minimal but uses a generous
+        ``probe_timeout`` (default 120s) because the first call to a local
+        runtime (Ollama, vLLM, llama.cpp) often triggers a cold-load of the
+        model weights that can take 60-90s on a desktop GPU. A 15s timeout
+        here is too tight — a perfectly healthy endpoint that just needs
+        warm-up looks like a 502 to the research job. Real research calls
+        use the LLM's own per-request budget on top of this probe.
+        """
         from src.llm_core import llm_call_async
+        probe_timeout = int(os.environ.get("RESEARCH_PROBE_TIMEOUT", "120"))
         try:
-            logger.info(f"Probing {model} at {endpoint} (has_auth={bool(headers and 'Authorization' in (headers or {}))})")
+            logger.info(
+                f"Probing {model} at {endpoint} "
+                f"(has_auth={bool(headers and 'Authorization' in (headers or {}))}, "
+                f"timeout={probe_timeout}s)"
+            )
             await llm_call_async(
                 url=endpoint,
                 model=model,
@@ -707,12 +722,12 @@ class ResearchHandler:
                 temperature=0,
                 max_tokens=5,
                 headers=headers,
-                timeout=15,
+                timeout=probe_timeout,
                 max_retries=1,
             )
             logger.info(f"Endpoint probe OK: {model}")
         except Exception as e:
-            logger.error(f"Probe failed for {model}: {e}")
+            logger.error(f"Probe failed for {model}: {e!r}")
             raise RuntimeError(_format_probe_failure(model, e)) from e
 
     async def call_research_service(
