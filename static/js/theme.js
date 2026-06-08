@@ -486,6 +486,10 @@ export function applyBgFit(fit, position) {
   if (position) root.style.setProperty('--bg-custom-position', position); else root.style.removeProperty('--bg-custom-position');
 }
 
+export function applyLiquidGlass(on) {
+  document.body.classList.toggle('liquid-glass', !!on);
+}
+
 const _BG_CLASSES = ['bg-pattern-dots',
   'bg-pattern-synapse', 'bg-pattern-rain', 'bg-pattern-constellations',
   'bg-pattern-perlin-flow',
@@ -584,6 +588,7 @@ export function save(name, colors, opts) {
     if (opts.fontSizeContent) obj.fontSizeContent = opts.fontSizeContent;
     if (opts.fontSizeTerminal) obj.fontSizeTerminal = opts.fontSizeTerminal;
     if (opts.bgCustom) obj.bgCustom = opts.bgCustom;
+    if (opts.liquidGlass) obj.liquidGlass = true;
     if (opts.bgFit && opts.bgFit !== 'cover') obj.bgFit = opts.bgFit;
     if (opts.bgPosition && opts.bgPosition !== 'center') obj.bgPosition = opts.bgPosition;
   }
@@ -817,6 +822,8 @@ export function initThemeUI() {
     if (szt && Number(szt.value) > 0) opts.fontSizeTerminal = Number(szt.value);
     const bgc = document.getElementById('theme-bg-custom-select');
     if (bgc && bgc.value) opts.bgCustom = bgc.value;
+    const lgTog = document.getElementById('theme-liquid-glass-toggle');
+    if (lgTog) opts.liquidGlass = !!lgTog.checked;
     const bf = document.getElementById('theme-bg-fit-select');
     const bp = document.getElementById('theme-bg-position-select');
     if (bf && ps && ps.value === 'custom') opts.bgFit = bf.value;
@@ -1273,6 +1280,7 @@ export function initThemeUI() {
   const _initFontSizeContent = (saved && saved.fontSizeContent) || 0;
   const _initFontSizeTerminal = (saved && saved.fontSizeTerminal) || 0;
   const _initBgCustom = (saved && saved.bgCustom) || '';
+  const _initLiquidGlass = (saved && saved.liquidGlass) || false;
   const _initBgFit = (saved && saved.bgFit) || 'cover';
   const _initBgPosition = (saved && saved.bgPosition) || 'center';
   applyFontDensity(_initFont, _initDensity);
@@ -1284,6 +1292,7 @@ export function initThemeUI() {
   applyBgPattern(_initPattern, _initBgCustom);
   applyFontZones(_initFontSidebar, _initFontContent, _initFontTerminal);
   applyFontSizes(_initFontSizeSidebar, _initFontSizeContent, _initFontSizeTerminal);
+  applyLiquidGlass(_initLiquidGlass);
   applyBgFit(_initBgFit, _initBgPosition);
 
   const fontSelect = document.getElementById('theme-font-select');
@@ -1515,6 +1524,17 @@ export function initThemeUI() {
       });
     }
   })();
+
+  // ── Liquid Glass toggle ──
+  const lgToggle = document.getElementById('theme-liquid-glass-toggle');
+  if (lgToggle) {
+    const nl = lgToggle.cloneNode(true); lgToggle.parentNode.replaceChild(nl, lgToggle);
+    nl.checked = _initLiquidGlass;
+    nl.addEventListener('change', () => {
+      applyLiquidGlass(nl.checked);
+      const s = getSaved(); if (s) _saveFull(s.name, s.colors);
+    });
+  }
 
   // ── Background fit / position ──
   function _wireBgFit() {
