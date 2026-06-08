@@ -31,11 +31,13 @@ DEFAULT_PRIVILEGES = {
     "max_messages_per_day": 0,
     "allowed_models": [],
     "allowed_models_restricted": False,
+    "block_all_models": False,
 }
 
 # Admins get everything
 ADMIN_PRIVILEGES = {k: (True if isinstance(v, bool) else (0 if isinstance(v, int) else [])) for k, v in DEFAULT_PRIVILEGES.items()}
 ADMIN_PRIVILEGES["allowed_models_restricted"] = False
+ADMIN_PRIVILEGES["block_all_models"] = False
 
 from src.constants import AUTH_FILE
 DEFAULT_AUTH_PATH = AUTH_FILE

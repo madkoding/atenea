@@ -1258,17 +1258,22 @@ def function_call_to_tool_block(name: str, arguments: str) -> Optional[ToolBlock
         content = "\n".join(parts)
     elif tool_type == "edit_document":
         blocks = []
-        for edit in args.get("edits", []):
-            blocks.append(
-                f'<<<FIND>>>\n{edit.get("find", "")}\n<<<REPLACE>>>\n{edit.get("replace", "")}\n<<<END>>>'
-            )
+        edits = args.get("edits")
+        if isinstance(edits, list):
+            for edit in edits:
+                blocks.append(
+                    f'<<<FIND>>>\n{edit.get("find", "")}\n<<<REPLACE>>>\n{edit.get("replace", "")}\n<<<END>>>'
+                )
         content = "\n".join(blocks)
     elif tool_type == "suggest_document":
         blocks = []
-        for s in args.get("suggestions", []):
-            blocks.append(
-                f'<<<FIND>>>\n{s.get("find", "")}\n<<<SUGGEST>>>\n{s.get("replace", "")}\n<<<REASON>>>\n{s.get("reason", "")}\n<<<END>>>'
-            )
+        suggestions = args.get("suggestions")
+        if isinstance(suggestions, list):
+            for s in suggestions:
+                if isinstance(s, dict):
+                    blocks.append(
+                        f'<<<FIND>>>\n{s.get("find", "")}\n<<<SUGGEST>>>\n{s.get("replace", "")}\n<<<REASON>>>\n{s.get("reason", "")}\n<<<END>>>'
+                    )
         content = "\n".join(blocks)
     elif tool_type == "update_document":
         content = args.get("content", "")

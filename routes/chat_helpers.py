@@ -111,6 +111,8 @@ def _enforce_chat_privileges(request, sess) -> None:
         return
 
     privs = auth_manager.get_privileges(user) or {}
+    if privs.get("block_all_models"):
+        raise HTTPException(status_code=403, detail="Model access blocked by administrator")
     allowed_raw = privs.get("allowed_models")
     allowed = allowed_raw if isinstance(allowed_raw, list) else []
     restricted = bool(privs.get("allowed_models_restricted")) or bool(allowed)

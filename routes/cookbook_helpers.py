@@ -178,6 +178,41 @@ def _pip_install_no_cache(cmd: str) -> str:
     return cmd.replace("pip install", "pip install --no-cache-dir", 1)
 
 
+def _pip_command(python: str) -> str:
+    """Resolve a python command (e.g. ``python3``, ``/usr/bin/python3``) to a pip command."""
+    if "pip" in python:
+        return python
+    return python.rstrip() + " -m pip"
+
+
+def _pip_install_help_check_from_cmd(pip_cmd: str) -> str:
+    """Return a bash command that checks if this pip supports ``--break-system-packages``."""
+    safe = pip_cmd.replace("'", "'\\''")
+    return f"{safe} install --help 2>/dev/null | grep -q break-system-packages"
+
+
+def _pip_break_system_packages_check(python: str) -> str:
+    """Return a bash command that checks if pip for this Python supports ``--break-system-packages``."""
+    return _pip_install_help_check_from_cmd(_pip_command(python))
+
+
+def _pip_install_command_without_break_system_packages(pip_cmd: str, packages: str) -> str:
+    """Return a pip install command without the ``--break-system-packages`` flag."""
+    return pip_cmd + " install " + packages
+
+
+def _append_pip_install_runner_lines(lines: list, pip_cmd: str, packages: str) -> None:
+    """Append a runtime-guarded pip install block to ``lines``."""
+    help_check = _pip_install_help_check_from_cmd(pip_cmd)
+    lines.append(f"if {pip_cmd} install -q {packages}; then")
+    lines.append("  true")
+    lines.append(f"elif {help_check}; then")
+    lines.append(f"  {pip_cmd} install --break-system-packages -q {packages}")
+    lines.append("else")
+    lines.append("  echo 'WARNING: pip install failed and --break-system-packages not available'")
+    lines.append("fi")
+
+
 def _pip_install_attempt(pip_cmd: str) -> str:
     """Wrap a single pip install command so its exit status survives the
     fallback chain and its stderr is visible in the tmux log on failure.
@@ -222,7 +257,9 @@ def _pip_install_fallback_chain(package: str, *, python_cmd: str = "python3 -m p
         pkg += " --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu"
 
     base = _pip_install_attempt(f"{python_cmd} install -q{upgrade_flag} {pkg}")
-    user = _pip_install_attempt(f"{python_cmd} install --user --break-system-packages -q{upgrade_flag} {pkg}")
+    user = _pip_install_attempt(f"{python_cmd} install --user -q{upgrade_flag} {pkg}")
+    breaksp_check = _pip_install_help_check_from_cmd(python_cmd)
+    breaksp = _pip_install_attempt(f"{python_cmd} install --break-system-packages -q{upgrade_flag} {pkg}")
     # Derive the python executable for the venv detection check.
     # Must use the same interpreter that pip belongs to; hardcoding
     # python3 breaks when pip lives in a venv that only has "python".
@@ -241,7 +278,7 @@ def _pip_install_fallback_chain(package: str, *, python_cmd: str = "python3 -m p
     # masking it as success (the `|| { venv_check || … }` shape from #903
     # swallowed the exit code because venv_check's exit-0 became the group's
     # result).
-    return f"{base} || {{ ! {venv_check} && {user}; }}"
+    return f"{base} || {{ ! {venv_check} && {user}; }} || {{ {breaksp_check} && {breaksp}; }}"
 
 
 def _venv_safe_local_pip_install_cmd(cmd: str, *, local: bool, in_venv: bool) -> str:

@@ -236,6 +236,30 @@ def _is_text_duplicate(new_text: str, existing: list, threshold: float = 0.6) ->
     return False
 
 
+def _parse_extraction_json(raw: str) -> list:
+    text = (raw or "").strip()
+    try:
+        from src.misc.text_helpers import strip_think as _strip_think
+        text = _strip_think(text, prose=True, prompt_echo=True).strip()
+    except Exception:
+        pass
+    if text.startswith("```"):
+        text = text.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+    _start = text.find("[")
+    _end = text.rfind("]")
+    if 0 <= _start < _end:
+        text = text[_start : _end + 1]
+    try:
+        facts = json.loads(text)
+    except json.JSONDecodeError:
+        logger.debug("Memory extraction returned non-JSON: %r", (raw or "")[:120])
+        return []
+    except Exception:
+        logger.debug("Memory extraction returned non-JSON: %r", (raw or "")[:120])
+        return []
+    return facts if isinstance(facts, list) else []
+
+
 async def extract_and_store(
     session,
     memory_manager,
@@ -284,9 +308,23 @@ async def extract_and_store(
 
         fallback_facts = _fallback_memory_candidates(stripped_recent)
 
+        def _flatten_msg(m):
+            c = m.get("content", "")
+            if isinstance(c, list):
+                c = " ".join(
+                    b.get("text", "") for b in c
+                    if isinstance(b, dict) and b.get("type") == "text"
+                )
+            return f"{m.get('role', '?')}: {c}"
+
+        transcript = "\n\n".join(_flatten_msg(m) for m in stripped_recent)
         extraction_messages = [
             {"role": "system", "content": EXTRACT_SYSTEM_PROMPT},
-        ] + stripped_recent
+            {"role": "user", "content": (
+                "Conversation to analyze:\n\n" + transcript
+                + "\n\nReturn the JSON array of durable facts now (or [] if none)."
+            )},
+        ]
 
         facts = []
         try:
@@ -295,19 +333,11 @@ async def extract_and_store(
                 model,
                 extraction_messages,
                 temperature=0.1,
-                max_tokens=500,
+                max_tokens=4096,
                 headers=headers,
             )
 
-            # Parse JSON from response (handle markdown fences if model wraps them)
-            text = raw.strip()
-            if text.startswith("```"):
-                text = text.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
-
-            try:
-                facts = json.loads(text)
-            except json.JSONDecodeError:
-                logger.debug("Memory extraction returned non-JSON")
+            facts = _parse_extraction_json(raw)
         except Exception as e:
             logger.warning(f"LLM memory extraction failed; using fallback candidates if available: {e}")
 

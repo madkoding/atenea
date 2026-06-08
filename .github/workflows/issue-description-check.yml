@@ -4,18 +4,19 @@ on:
   issues:
     types: [opened, edited, reopened]
 
-permissions:
-  issues: write
-
 jobs:
   check:
     name: Check issue description
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     # Skip bots (Dependabot, release-drafter, etc.)
     if: ${{ github.event.issue.user.type != 'Bot' }}
     steps:
       - uses: actions/checkout@v4
         with:
+          persist-credentials: false
           sparse-checkout: .github/scripts
 
       - uses: actions/github-script@v7

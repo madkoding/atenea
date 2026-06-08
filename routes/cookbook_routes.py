@@ -1351,10 +1351,13 @@ def setup_cookbook_routes() -> APIRouter:
                 "  fi; "
                 "fi; "
                 "command -v tmux >/dev/null 2>&1 || echo 'WARNING: tmux missing and auto-install failed (need passwordless sudo). Install manually.'; "
-                # Install Python bits. Try system install first; fall back to --user --break-system-packages on PEP 668 systems.
+                # Install Python bits. Try system install first; fall back to --user, then guarded
+                # --break-system-packages on PEP 668 systems.
                 "pip install -q huggingface_hub hf_transfer 2>/dev/null || "
-                "pip install --user --break-system-packages -q huggingface_hub hf_transfer 2>/dev/null || "
-                "pip3 install --user --break-system-packages -q huggingface_hub hf_transfer 2>/dev/null; "
+                "pip install --user -q huggingface_hub hf_transfer 2>/dev/null || "
+                "pip3 install --user -q huggingface_hub hf_transfer 2>/dev/null || "
+                "(pip install --help 2>/dev/null | grep -q break-system-packages && pip install --break-system-packages -q huggingface_hub hf_transfer 2>/dev/null) || "
+                "(pip3 install --help 2>/dev/null | grep -q break-system-packages && pip3 install --break-system-packages -q huggingface_hub hf_transfer 2>/dev/null); "
                 "python3 -c 'from huggingface_hub import snapshot_download; print(\"OK\")'"
             )
             cmd = f"ssh {pf}{host} '{setup_script}'"

@@ -24,7 +24,9 @@ def extract_urls(text: str) -> List[str]:
     urls = re.findall(url_pattern, text)
     cleaned_urls = []
     for url in urls:
-        url = re.sub(r'[.,;:!?\)]+$', '', url)
+        url = re.sub(r'[.,;:!?]+$', '', url)
+        while url.endswith(')') and url.count(')') > url.count('('):
+            url = re.sub(r'[.,;:!?]+$', '', url[:-1])
         cleaned_urls.append(url)
     return cleaned_urls
 

@@ -155,22 +155,21 @@ def setup_api_token_routes() -> APIRouter:
             payload = await request.json()
         except Exception:
             payload = {}
-        scope_list = _normalize_scopes(payload.get("scopes"))
-        scopes_value = ",".join(scope_list)
         with get_db_session() as db:
             token = db.query(ApiToken).filter(ApiToken.id == token_id).first()
             if not token:
                 raise HTTPException(404, "Token not found")
             if isinstance(payload.get("name"), str) and payload["name"].strip():
                 token.name = payload["name"].strip()[:MAX_NAME_LEN]
-            token.scopes = scopes_value
+            if "scopes" in payload:
+                token.scopes = ",".join(_normalize_scopes(payload["scopes"]))
             db.add(token)
             response = {
                 "id": token_id,
                 "name": getattr(token, "name", ""),
                 "owner": getattr(token, "owner", None),
                 "token_prefix": getattr(token, "token_prefix", ""),
-                "scopes": scope_list,
+                "scopes": [s.strip() for s in (token.scopes or "").split(",") if s.strip()],
             }
         _invalidate_cache(request)
         return response

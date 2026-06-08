@@ -115,9 +115,8 @@ Usa lenguaje preciso. Muestra relaciones causales de forma explicita. Cuantifica
     def save(self, presets: Dict[str, Any]) -> bool:
         """Save presets to file"""
         try:
-            os.makedirs(os.path.dirname(self.presets_file), exist_ok=True)
-            with open(self.presets_file, 'w', encoding="utf-8") as f:
-                json.dump(presets, f, indent=2)
+            from core.atomic_io import atomic_write_json
+            atomic_write_json(self.presets_file, presets, indent=2)
             self.presets = presets
             return True
         except Exception as e:

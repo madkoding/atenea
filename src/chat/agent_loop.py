@@ -1165,7 +1165,7 @@ def _build_base_prompt(
 
 
 
-def _resolve_tool_blocks(round_response: str, native_tool_calls: list, round_num: int):
+def _resolve_tool_blocks(round_response: str, native_tool_calls: list, round_num: int, is_api_model: bool = False):
     """Choose native function calls or fenced code block parsing. Returns (tool_blocks, used_native)."""
     used_native = False
     if native_tool_calls:
@@ -1182,7 +1182,7 @@ def _resolve_tool_blocks(round_response: str, native_tool_calls: list, round_num
         if tool_blocks:
             used_native = True
     if not used_native:
-        tool_blocks = parse_tool_blocks(round_response)
+        tool_blocks = parse_tool_blocks(round_response, skip_fenced=is_api_model)
         if tool_blocks:
             logger.info(f"Agent round {round_num}: {len(tool_blocks)} fenced tool block(s) detected")
 
@@ -2109,7 +2109,7 @@ async def stream_agent_loop(
                 yield chunk
             # Intercept [DONE] — don't forward until all rounds finish
 
-        tool_blocks, used_native = _resolve_tool_blocks(round_response, native_tool_calls, round_num)
+        tool_blocks, used_native = _resolve_tool_blocks(round_response, native_tool_calls, round_num, is_api_model=_is_api_model)
 
         # Force-answer round: we told the model to STOP calling tools and
         # answer. If it ignored that and emitted a (possibly DSML) tool
@@ -2188,7 +2188,7 @@ async def stream_agent_loop(
 
         # Save cleaned round text for history persistence
         # Keep <think> blocks so they render in the thinking section on reload
-        cleaned_round = strip_tool_blocks(round_response).strip()
+        cleaned_round = strip_tool_blocks(round_response, skip_fenced=(_is_api_model and not used_native)).strip()
         round_texts.append(cleaned_round)
 
         if not tool_blocks:
