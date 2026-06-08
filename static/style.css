@@ -35907,10 +35907,9 @@ body.theme-frosted .modal {
   background: color-mix(in srgb, #000 12%, transparent) !important;
 }
 
-/* ── Frosted Chat (separate toggle — affects only the chat message area) ── */
-body.theme-frosted-chat #chat-container,
-body.theme-frosted-chat .chat-messages,
-body.theme-frosted-chat .thinking-section {
+/* ── Frosted Chat (separate toggle — affects chat history + input bar) ── */
+body.theme-frosted-chat #chat-history,
+body.theme-frosted-chat .chat-input-bar {
   background: color-mix(in srgb, var(--panel, var(--bg)) 28%, transparent) !important;
   backdrop-filter: blur(18px) saturate(160%) !important;
   -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
