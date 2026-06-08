@@ -16,7 +16,7 @@ from core.models import ChatMessage
 from src.runtime.request_models import ChatRequest
 from src.llm_core import llm_call_async, stream_llm, stream_llm_with_fallback
 from src.chat.agent_loop import stream_agent_loop
-from src.agent.runs import is_active, start, stop, subscribe
+import src.agent.runs as agent_runs
 from src.chat.model_context import estimate_tokens
 from src.chat.helpers import coerce_message_and_session
 from src.runtime.endpoint_resolver import normalize_base as _normalize_base, build_chat_url
