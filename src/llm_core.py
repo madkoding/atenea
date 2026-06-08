@@ -18,13 +18,11 @@ class LLMConfig:
     """Configuration constants for LLM operations."""
     DEFAULT_TIMEOUT = 30
     DEFAULT_TEMPERATURE = 1.0
-    # 16000 matches the response budget the rest of the app assumes for
-    # long-form completions (research reports, deep_research syntheses,
-    # agent turns with full tool transcripts). Previously 0, which left
-    # ``num_predict`` unset and let Ollama fall back to its tiny default
-    # (usually 128), causing multi-thousand-token generations to be cut
-    # off mid-sentence.
-    DEFAULT_MAX_TOKENS = 16000
+    # 0 = "do not set num_predict on the Ollama payload". Each Ollama
+    # deployment configures its own response budget (typically via the
+    # OLLAMA_NUM_PREDICT env var or the model's Modelfile ``num_predict``
+    # parameter). Odysseus does not pick a budget for the runtime.
+    DEFAULT_MAX_TOKENS = 0
     MAX_RETRIES = 3
     RETRY_DELAY = 0.5
     STREAM_TIMEOUT = 300
