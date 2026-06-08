@@ -568,10 +568,7 @@
         <div class="theme-fd-row">
           <div class="theme-fd-group" style="flex:1;">
             <label class="theme-fd-label">Global Font</label>
-            <select id="theme-font-select" class="theme-fd-select" aria-label="Font">
-              <option value="mono">Monospace</option>
-              <option value="sans">Sans-serif</option>
-              <option value="serif">Serif</option>
+            <select id="theme-font-select" class="theme-fd-select theme-font-picker" aria-label="Font">
             </select>
           </div>
           <div class="theme-fd-group">
@@ -594,29 +591,20 @@
         <div class="theme-fd-row" id="theme-font-zones-row">
           <div class="theme-fd-group" style="flex:1;">
             <label class="theme-fd-label">Sidebar Font</label>
-            <select id="theme-font-sidebar" class="theme-fd-select" aria-label="Sidebar Font">
+            <select id="theme-font-sidebar" class="theme-fd-select theme-font-picker" aria-label="Sidebar Font">
               <option value="">Global</option>
-              <option value="mono">Monospace</option>
-              <option value="sans">Sans-serif</option>
-              <option value="serif">Serif</option>
             </select>
           </div>
           <div class="theme-fd-group" style="flex:1;">
             <label class="theme-fd-label">Content Font</label>
-            <select id="theme-font-content" class="theme-fd-select" aria-label="Content Font">
+            <select id="theme-font-content" class="theme-fd-select theme-font-picker" aria-label="Content Font">
               <option value="">Global</option>
-              <option value="mono">Monospace</option>
-              <option value="sans">Sans-serif</option>
-              <option value="serif">Serif</option>
             </select>
           </div>
           <div class="theme-fd-group" style="flex:1;">
             <label class="theme-fd-label">Terminal Font</label>
-            <select id="theme-font-terminal" class="theme-fd-select" aria-label="Terminal Font">
+            <select id="theme-font-terminal" class="theme-fd-select theme-font-picker" aria-label="Terminal Font">
               <option value="">Global</option>
-              <option value="mono">Monospace</option>
-              <option value="sans">Sans-serif</option>
-              <option value="serif">Serif</option>
             </select>
           </div>
         </div>
@@ -636,6 +624,17 @@
             <input type="range" id="theme-font-size-terminal" class="theme-fd-range" min="0" max="20" step="1" value="0">
             <output class="theme-fd-range-val" for="theme-font-size-terminal">Auto</output>
           </div>
+        </div>
+        <div class="theme-fd-row">
+          <div class="theme-fd-group">
+            <label class="theme-fd-label" for="theme-colorful-emoji-toggle">Colorful emoji</label>
+            <label class="admin-switch" style="margin-top:4px;">
+              <input type="checkbox" id="theme-colorful-emoji-toggle">
+              <span class="admin-slider"></span>
+            </label>
+          </div>
+          <div class="theme-fd-group" style="flex:1;"></div>
+          <div class="theme-fd-group" style="flex:1;"></div>
         </div>
         <div class="theme-fd-row">
           <div class="theme-fd-group" style="flex:1 1 0;">
@@ -682,6 +681,33 @@
               <button id="theme-bg-custom-clear-btn" class="color-reset-btn" type="button" title="Remove custom background">&#x21BA;</button>
             </div>
             <input type="file" id="theme-bg-custom-file-input" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml" style="display:none;">
+          </div>
+        </div>
+        <div class="theme-fd-row" id="theme-bg-fit-row" style="display:none;margin-top:4px;">
+          <div class="theme-fd-group" style="flex:1 1 0;">
+            <label class="theme-fd-label">Background Fit</label>
+            <select id="theme-bg-fit-select" class="theme-fd-select">
+              <option value="cover">Cover (cubrir)</option>
+              <option value="contain">Contain (contener)</option>
+              <option value="100% 100%">Stretch (estirar)</option>
+              <option value="repeat">Repeat (repetir)</option>
+              <option value="auto">Original size</option>
+              <option value="50% 50%">Centered</option>
+            </select>
+          </div>
+          <div class="theme-fd-group" style="flex:1 1 0;">
+            <label class="theme-fd-label">Background Position</label>
+            <select id="theme-bg-position-select" class="theme-fd-select">
+              <option value="center">Center</option>
+              <option value="top">Top</option>
+              <option value="bottom">Bottom</option>
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+              <option value="top left">Top-Left</option>
+              <option value="top right">Top-Right</option>
+              <option value="bottom left">Bottom-Left</option>
+              <option value="bottom right">Bottom-Right</option>
+            </select>
           </div>
         </div>
       </div>

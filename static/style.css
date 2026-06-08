@@ -189,10 +189,10 @@ body.bg-pattern-sparkles {
 /* ── Per-zone custom background image ── */
 body {
   background-image: var(--bg-custom-image, none);
-  background-size: cover;
-  background-position: center;
+  background-size: var(--bg-custom-fit, cover);
+  background-position: var(--bg-custom-position, center);
   background-attachment: fixed;
-  background-repeat: no-repeat;
+  background-repeat: var(--bg-custom-repeat, no-repeat);
 }
 
 /* ── Per-zone font-family overrides ── */
@@ -200,7 +200,8 @@ body {
 .chat-messages, .chat-input-wrap, .chat-top-bar, #chat-container {
   font-family: var(--font-content, var(--font-family, 'Fira Code', monospace));
 }
-.terminal, #terminal-container, .terminal-output, .xterm, .xterm-viewport {
+.terminal, #terminal-container, .terminal-output, .xterm, .xterm-viewport,
+pre, code, .markdown-code, .message-content pre, .message-content code {
   font-family: var(--font-terminal, var(--font-family, 'Fira Code', monospace)) !important;
 }
 
@@ -209,7 +210,8 @@ body {
 .chat-messages, .chat-input-wrap, .chat-top-bar, #chat-container {
   font-size: var(--font-size-content, inherit);
 }
-.terminal, #terminal-container, .terminal-output, .xterm, .xterm-viewport {
+.terminal, #terminal-container, .terminal-output, .xterm, .xterm-viewport,
+pre, code, .markdown-code, .message-content pre, .message-content code {
   font-size: var(--font-size-terminal, inherit) !important;
 }
 

@@ -37,9 +37,54 @@ const CUSTOM_THEMES_KEY = 'odysseus-custom-themes';
 
 const FONT_MAP = {
   mono: "'Fira Code', monospace",
+  'jetbrains-mono': "'JetBrains Mono', 'Fira Code', monospace",
+  'cascadia-code': "'Cascadia Code', 'Fira Code', monospace",
+  'source-code-pro': "'Source Code Pro', 'Fira Code', monospace",
+  'iosevka': "Iosevka, 'Fira Code', monospace",
   sans: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+  inter: "'Inter', system-ui, sans-serif",
+  roboto: "'Roboto', system-ui, sans-serif",
+  'open-sans': "'Open Sans', system-ui, sans-serif",
+  nunito: "Nunito, system-ui, sans-serif",
+  poppins: "Poppins, system-ui, sans-serif",
+  lato: "Lato, system-ui, sans-serif",
   serif: "Georgia, 'Times New Roman', serif",
+  'source-serif': "'Source Serif 4', Georgia, serif",
+  merriweather: "Merriweather, Georgia, serif",
+  'playfair': "'Playfair Display', Georgia, serif",
+  lora: "Lora, Georgia, serif",
 };
+const FONT_LABELS = {
+  mono:'Monospace', 'jetbrains-mono':'JetBrains Mono', 'cascadia-code':'Cascadia Code',
+  'source-code-pro':'Source Code Pro', iosevka:'Iosevka',
+  sans:'Sans-serif', inter:'Inter', roboto:'Roboto', 'open-sans':'Open Sans',
+  nunito:'Nunito', poppins:'Poppins', lato:'Lato',
+  serif:'Serif', 'source-serif':'Source Serif', merriweather:'Merriweather',
+  playfair:'Playfair Display', lora:'Lora',
+};
+function _populateFontSelects() {
+  const picks = document.querySelectorAll('.theme-font-picker');
+  if (!picks.length) return;
+  const existing = new Set();
+  picks[0].querySelectorAll('option').forEach(o => { if (o.value) existing.add(o.value); });
+  for (const [key, label] of Object.entries(FONT_LABELS)) {
+    if (existing.has(key)) continue;
+    const opt = document.createElement('option');
+    opt.value = key; opt.textContent = label;
+    picks[0].appendChild(opt);
+  }
+  // Zone picks (with "Global" first option already in HTML) — skip value=""
+  for (let i = 1; i < picks.length; i++) {
+    const zoneExisting = new Set();
+    picks[i].querySelectorAll('option').forEach(o => { if (o.value) zoneExisting.add(o.value); });
+    for (const [key, label] of Object.entries(FONT_LABELS)) {
+      if (zoneExisting.has(key)) continue;
+      const opt = document.createElement('option');
+      opt.value = key; opt.textContent = label;
+      picks[i].appendChild(opt);
+    }
+  }
+}
 const DEFAULT_FONT = 'mono';
 const DEFAULT_DENSITY = 'comfortable';
 const MAX_CUSTOM_THEMES = 8;
@@ -428,6 +473,23 @@ export function applyBgCustom(name) {
   }
 }
 
+export function applyBgFit(fit, position) {
+  const root = document.documentElement;
+  if (fit) {
+    const isRepeat = fit === 'repeat';
+    root.style.setProperty('--bg-custom-fit', isRepeat ? 'auto' : fit);
+    root.style.setProperty('--bg-custom-repeat', isRepeat ? 'repeat' : 'no-repeat');
+  } else {
+    root.style.removeProperty('--bg-custom-fit');
+    root.style.removeProperty('--bg-custom-repeat');
+  }
+  if (position) root.style.setProperty('--bg-custom-position', position); else root.style.removeProperty('--bg-custom-position');
+}
+
+export function applyColorfulEmojis(on) {
+  document.body.classList.toggle('text-emojis', !!on);
+}
+
 const _BG_CLASSES = ['bg-pattern-dots',
   'bg-pattern-synapse', 'bg-pattern-rain', 'bg-pattern-constellations',
   'bg-pattern-perlin-flow',
@@ -479,11 +541,16 @@ export function applyBgPattern(pattern, bgCustomName) {
   const sg = document.getElementById('theme-bg-size-group');
   if (ig) ig.style.display = hide ? 'none' : '';
   if (sg) sg.style.display = hide ? 'none' : '';
-  // Show/hide the custom background row
+  // Show/hide the custom background row and fit row
   const cr = document.getElementById('theme-bg-custom-row');
   if (cr) cr.style.display = p === 'custom' ? '' : 'none';
+  const fr = document.getElementById('theme-bg-fit-row');
+  if (fr) fr.style.display = p === 'custom' ? '' : 'none';
   if (p === 'custom') {
     applyBgCustom(bgCustomName || '');
+    const bf = document.getElementById('theme-bg-fit-select');
+    const bp = document.getElementById('theme-bg-position-select');
+    applyBgFit(bf ? bf.value : 'cover', bp ? bp.value : 'center');
   } else {
     applyBgCustom(null);
   }
@@ -515,6 +582,9 @@ export function save(name, colors, opts) {
     if (opts.fontSizeContent) obj.fontSizeContent = opts.fontSizeContent;
     if (opts.fontSizeTerminal) obj.fontSizeTerminal = opts.fontSizeTerminal;
     if (opts.bgCustom) obj.bgCustom = opts.bgCustom;
+    if (opts.colorfulEmoji) obj.colorfulEmoji = true;
+    if (opts.bgFit && opts.bgFit !== 'cover') obj.bgFit = opts.bgFit;
+    if (opts.bgPosition && opts.bgPosition !== 'center') obj.bgPosition = opts.bgPosition;
   }
   Storage.setJSON(LS_KEY, obj);
   _syncToServer(obj);
@@ -743,6 +813,12 @@ export function initThemeUI() {
     if (szt && Number(szt.value) > 0) opts.fontSizeTerminal = Number(szt.value);
     const bgc = document.getElementById('theme-bg-custom-select');
     if (bgc && bgc.value) opts.bgCustom = bgc.value;
+    const emojiTog = document.getElementById('theme-colorful-emoji-toggle');
+    if (emojiTog) opts.colorfulEmoji = !!emojiTog.checked;
+    const bf = document.getElementById('theme-bg-fit-select');
+    const bp = document.getElementById('theme-bg-position-select');
+    if (bf && ps && ps.value === 'custom') opts.bgFit = bf.value;
+    if (bp && ps && ps.value === 'custom') opts.bgPosition = bp.value;
     return opts;
   }
   function _saveFull(name, colors) { save(name, colors, _getOpts()); }
@@ -786,6 +862,11 @@ export function initThemeUI() {
         applyBgPattern(p, bgc);
         applyFontZones(sf, cf, tf);
         applyFontSizes(ssz, csz, tsz);
+        const ce = (ct && ct.colorfulEmoji) || false;
+        const bfVal = (ct && ct.bgFit) || 'cover';
+        const bpVal = (ct && ct.bgPosition) || 'center';
+        applyColorfulEmojis(ce);
+        applyBgFit(bfVal, bpVal);
         const fs = document.getElementById('theme-font-select');
         const ds = document.getElementById('theme-density-select');
         const ps = document.getElementById('theme-bg-pattern-select');
@@ -1167,6 +1248,9 @@ export function initThemeUI() {
   // Initial sync of reset button visibility
   syncResetButtons();
 
+  // Populate font selects from FONT_MAP
+  _populateFontSelects();
+
   // Font, density, background pattern controls
   const _initFont = (saved && saved.font) || DEFAULT_FONT;
   const _initDensity = (saved && saved.density) || DEFAULT_DENSITY;
@@ -1186,6 +1270,9 @@ export function initThemeUI() {
   const _initFontSizeContent = (saved && saved.fontSizeContent) || 0;
   const _initFontSizeTerminal = (saved && saved.fontSizeTerminal) || 0;
   const _initBgCustom = (saved && saved.bgCustom) || '';
+  const _initColorfulEmoji = (saved && saved.colorfulEmoji) || false;
+  const _initBgFit = (saved && saved.bgFit) || 'cover';
+  const _initBgPosition = (saved && saved.bgPosition) || 'center';
   applyFontDensity(_initFont, _initDensity);
   applyBgEffectColor(_initEffectColor);
   applyBgEffectIntensity(_initEffectIntensity);
@@ -1194,6 +1281,8 @@ export function initThemeUI() {
   applyBgPattern(_initPattern, _initBgCustom);
   applyFontZones(_initFontSidebar, _initFontContent, _initFontTerminal);
   applyFontSizes(_initFontSizeSidebar, _initFontSizeContent, _initFontSizeTerminal);
+  applyColorfulEmojis(_initColorfulEmoji);
+  applyBgFit(_initBgFit, _initBgPosition);
 
   const fontSelect = document.getElementById('theme-font-select');
   const densitySelect = document.getElementById('theme-density-select');
@@ -1415,6 +1504,51 @@ export function initThemeUI() {
       });
     }
   })();
+
+  // ── Colorful emoji toggle ──
+  const emojiToggle = document.getElementById('theme-colorful-emoji-toggle');
+  if (emojiToggle) {
+    const ne = emojiToggle.cloneNode(true); emojiToggle.parentNode.replaceChild(ne, emojiToggle);
+    ne.checked = _initColorfulEmoji;
+    ne.addEventListener('change', () => {
+      applyColorfulEmojis(ne.checked);
+      const s = getSaved(); if (s) _saveFull(s.name, s.colors);
+    });
+  }
+
+  // ── Background fit / position ──
+  function _wireBgFit() {
+    const bf = document.getElementById('theme-bg-fit-select');
+    const bp = document.getElementById('theme-bg-position-select');
+    const row = document.getElementById('theme-bg-fit-row');
+    const ps = document.getElementById('theme-bg-pattern-select');
+    function _toggleRow() {
+      if (row) row.style.display = ps && ps.value === 'custom' ? '' : 'none';
+    }
+    _toggleRow();
+    if (ps) ps.addEventListener('change', _toggleRow);
+    if (bf) {
+      const nb = bf.cloneNode(true); bf.parentNode.replaceChild(nb, bf);
+      nb.value = _initBgFit;
+      nb.addEventListener('change', () => {
+        const bf2 = document.getElementById('theme-bg-fit-select');
+        const bp2 = document.getElementById('theme-bg-position-select');
+        applyBgFit(bf2 ? bf2.value : 'cover', bp2 ? bp2.value : 'center');
+        const s = getSaved(); if (s) _saveFull(s.name, s.colors);
+      });
+    }
+    if (bp) {
+      const nb = bp.cloneNode(true); bp.parentNode.replaceChild(nb, bp);
+      nb.value = _initBgPosition;
+      nb.addEventListener('change', () => {
+        const bf2 = document.getElementById('theme-bg-fit-select');
+        const bp2 = document.getElementById('theme-bg-position-select');
+        applyBgFit(bf2 ? bf2.value : 'cover', bp2 ? bp2.value : 'center');
+        const s = getSaved(); if (s) _saveFull(s.name, s.colors);
+      });
+    }
+  }
+  _wireBgFit();
 
   // --- Color Harmony Generator (inside Advanced section) ---
   const harmonyGenBtnEl = document.getElementById('harmony-generate-btn');
