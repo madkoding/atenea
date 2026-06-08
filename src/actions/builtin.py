@@ -186,11 +186,17 @@ async def action_consolidate_memory(owner: str, **kwargs) -> Tuple[str, bool]:
                                 cleaned["text"] = text
                             cleaned_by_id[mid] = cleaned
 
+                        # Delete only memories the model EXPLICITLY dropped, never
+                        # ones it merely omitted from `keep`. Treating the
+                        # complement of `keep` as deletions meant a model that
+                        # forgot to re-list an id (common) silently destroyed that
+                        # memory. Honor the explicit `drop` set instead.
                         drop_ids = {
                             d.get("id")
                             for d in drop_items
                             if isinstance(d, dict) and d.get("id") in by_id
                         }
+                        # Never delete a memory the model only saw truncated.
                         drop_ids -= truncated_ids
 
                         if drop_ids or cleaned_by_id:
