@@ -248,6 +248,7 @@ def _imap_connect(account: str | None = None):
             try:
                 conn.starttls()
             except Exception:
+                # Don't leak the open plain socket on a rejected STARTTLS. (#3174)
                 try:
                     conn.shutdown()
                 except Exception:
@@ -258,6 +259,8 @@ def _imap_connect(account: str | None = None):
     try:
         conn.login(cfg["imap_user"], cfg["imap_password"])
     except Exception:
+        # A failed login otherwise orphans the connected socket; close it
+        # before propagating (shutdown() is the pre-auth low-level close). (#3174)
         try:
             conn.shutdown()
         except Exception:
@@ -795,6 +798,8 @@ def _smtp_connect(account=None, cfg=None):
         try:
             conn.starttls()
         except Exception:
+            # Don't leak the open plain socket on a rejected STARTTLS. SMTP has
+            # no shutdown(); close() is the low-level socket close (no QUIT). (#3174)
             try:
                 conn.close()
             except Exception:
@@ -816,6 +821,8 @@ def _smtp_connect(account=None, cfg=None):
         try:
             conn.login(cfg["smtp_user"], cfg["smtp_password"])
         except Exception:
+            # A failed login otherwise orphans the connected socket; close it
+            # before propagating (SMTP has no shutdown(); close() = socket close). (#3174)
             try:
                 conn.close()
             except Exception:
