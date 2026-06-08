@@ -35910,8 +35910,10 @@ body.theme-frosted .modal {
 /* ── Frosted Chat (separate toggle — message bubbles glass effect) ── */
 body.theme-frosted-chat .msg.msg-user,
 body.theme-frosted-chat .msg.msg-ai {
+  background: color-mix(in srgb, var(--panel, var(--bg)) 40%, transparent) !important;
   backdrop-filter: blur(18px) saturate(160%) !important;
   -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
+  border-color: color-mix(in srgb, var(--fg) 20%, transparent) !important;
 }
 
 /* Mobile only: lift the Dependencies "Server" dropdown's selected text up ~2px. */
