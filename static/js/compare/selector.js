@@ -1,5 +1,6 @@
 // compare/selector.js — model selection modal
 import state from './state.js';
+import { t as _t } from '../i18n.js';
 import Storage from '../storage.js';
 import { fetchModels, _persistSelections, getExcludedModels } from './models.js';
 import { showScoreboard } from './scoreboard.js';
@@ -91,7 +92,7 @@ async function showModelSelector() {
     const headerMinBtn = document.createElement('button');
     headerMinBtn.type = 'button';
     headerMinBtn.className = 'modal-minimize-btn minimize-btn';
-    headerMinBtn.title = 'Minimize';
+    headerMinBtn.title = _t('compare.minimize');
     headerMinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="18" x2="19" y2="18"/></svg>';
     headerMinBtn.style.margin = '0';
 
@@ -117,11 +118,11 @@ async function showModelSelector() {
     blindBtn.type = 'button';
     blindBtn.className = 'compare-blind-toggle active';
     blindBtn.title = 'Blind Mode — hide model names until you vote';
-    blindBtn.innerHTML = EYE_CLOSED + _toggleLabel('Blind');
+    blindBtn.innerHTML = EYE_CLOSED + _toggleLabel(_t('compare.blind'));
     blindBtn.addEventListener('click', () => {
       state._blindMode = !state._blindMode;
       blindBtn.classList.toggle('active', state._blindMode);
-      blindBtn.innerHTML = (state._blindMode ? EYE_CLOSED : EYE_OPEN) + _toggleLabel('Blind');
+      blindBtn.innerHTML = (state._blindMode ? EYE_CLOSED : EYE_OPEN) + _toggleLabel(_t('compare.blind'));
       // Turning off blind mode reveals shuffled models
       if (!state._blindMode && _shuffled) {
         _shuffled = false;
@@ -147,10 +148,10 @@ async function showModelSelector() {
     parallelBtn.addEventListener('click', () => {
       state._parallel = !state._parallel;
       parallelBtn.classList.toggle('active', state._parallel);
-      parallelBtn.innerHTML = (state._parallel ? ICON_PARALLEL : ICON_SEQUENTIAL) + _toggleLabel(state._parallel ? 'Parallel' : 'Sequential');
-      parallelBtn.title = state._parallel ? 'Switch to one at a time' : 'Run side by side';
+      parallelBtn.innerHTML = (state._parallel ? ICON_PARALLEL : ICON_SEQUENTIAL) + _toggleLabel(state._parallel ? 'Parallel' : _t('compare.sequential'));
+      parallelBtn.title = state._parallel ? _t('compare.one_at_a_time') : _t('compare.run_side_by_side');
       renderModelRows();
-      uiModule.showToast('Mode: ' + (state._parallel ? 'Parallel' : 'Sequential'));
+      uiModule.showToast('Mode: ' + (state._parallel ? 'Parallel' : _t('compare.sequential')));
       _updateModeLabel();
       _setModeHint(state._parallel
         ? '<span style="color:#5b8def">Parallel</span>: all models answer at once, side by side.'
@@ -163,7 +164,7 @@ async function showModelSelector() {
     diceBtn.type = 'button';
     diceBtn.className = 'compare-dice-toggle';
     diceBtn.title = 'Shuffle — randomly pick models for each slot';
-    diceBtn.innerHTML = ICON_DICE + _toggleLabel('Shuffle');
+    diceBtn.innerHTML = ICON_DICE + _toggleLabel(_t('compare.shuffle'));
     diceBtn.addEventListener('click', () => {
       if (!_modelsLoaded) return;
       // Toggle off if already shuffled
@@ -193,7 +194,7 @@ async function showModelSelector() {
       if (!state._blindMode) {
         state._blindMode = true;
         blindBtn.classList.add('active');
-        blindBtn.innerHTML = EYE_CLOSED + _toggleLabel('Blind');
+        blindBtn.innerHTML = EYE_CLOSED + _toggleLabel(_t('compare.blind'));
       }
       renderModelRows();
       uiModule.showToast(state._blindMode ? 'Mode: Shuffle on · Blind on' : 'Mode: Shuffle on');
@@ -221,7 +222,7 @@ async function showModelSelector() {
     saveBtn.type = 'button';
     saveBtn.className = 'compare-save-toggle';
     saveBtn.title = 'Save — keep sessions after closing compare';
-    saveBtn.innerHTML = SAVE_ICON + _toggleLabel('Save');
+    saveBtn.innerHTML = SAVE_ICON + _toggleLabel(_t('common.save'));
     saveBtn.addEventListener('click', () => {
       state._saveOnClose = !state._saveOnClose;
       saveBtn.classList.toggle('active', state._saveOnClose);
@@ -238,11 +239,11 @@ async function showModelSelector() {
     resetBtn.type = 'button';
     resetBtn.className = 'compare-reset-toggle';
     resetBtn.title = 'Reset — restore all defaults';
-    resetBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>' + _toggleLabel('Reset');
+    resetBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>' + _toggleLabel(_t('compare.reset'));
     resetBtn.addEventListener('click', () => {
       state._blindMode = true;
       blindBtn.classList.add('active');
-      blindBtn.innerHTML = EYE_CLOSED + _toggleLabel('Blind');
+      blindBtn.innerHTML = EYE_CLOSED + _toggleLabel(_t('compare.blind'));
       _shuffled = false;
       diceBtn.classList.remove('active');
       state._continueChat = false;
@@ -322,7 +323,7 @@ async function showModelSelector() {
     const _modes = [
       { id: 'chat', label: 'Chat', icon: CHAT_ICON },
       { id: 'agent', label: 'Agent', icon: _ICON_AGENT },
-      { id: 'search', label: 'Search', icon: _ICON_SEARCH },
+      { id: 'search', label: _t('common.search'), icon: _ICON_SEARCH },
       { id: 'research', label: 'Research', icon: _ICON_RESEARCH },
     ];
     _modes.forEach(m => {
@@ -362,7 +363,7 @@ async function showModelSelector() {
       if (mode === 'search' || mode === 'research') {
         state._parallel = false;
         parallelBtn.classList.remove('active');
-        parallelBtn.innerHTML = ICON_SEQUENTIAL + _toggleLabel('Sequential');
+        parallelBtn.innerHTML = ICON_SEQUENTIAL + _toggleLabel(_t('compare.sequential'));
       } else {
         state._parallel = true;
         parallelBtn.classList.add('active');
@@ -384,7 +385,7 @@ async function showModelSelector() {
     const _loadingDiv = document.createElement('div');
     _loadingDiv.style.cssText = 'color:color-mix(in srgb, var(--fg) 40%, transparent);font-size:0.85em;padding:12px 0;text-align:left;';
     if (spinnerModule) {
-      const _loadSpinner = spinnerModule.create('Loading models', 'right');
+      const _loadSpinner = spinnerModule.create(_t('compare.loading_models'), 'right');
       _loadingDiv.appendChild(_loadSpinner.createElement());
       _loadSpinner.start();
     } else {
@@ -465,7 +466,7 @@ async function showModelSelector() {
         if (matches.length === 0) {
           const empty = document.createElement('div');
           empty.style.cssText = 'padding:8px 12px;color:color-mix(in srgb, var(--fg) 40%, transparent);font-size:0.82em;font-style:italic;';
-          empty.textContent = 'No matches';
+          empty.textContent = _t('compare.no_matches');
           dropdown.appendChild(empty);
           return;
         }
@@ -721,7 +722,7 @@ async function showModelSelector() {
           const mask = document.createElement('div');
           mask.className = 'cmp-form-control';
           mask.style.cssText = 'flex:1;opacity:0.4;font-style:italic;';
-          mask.textContent = 'Hidden';
+          mask.textContent = _t('compare.hidden');
           row.appendChild(mask);
         } else if (filtered.length >= 5) {
           const picker = _buildSearchablePicker(filtered, sel, idx, (chosen) => {
@@ -758,7 +759,7 @@ async function showModelSelector() {
         if (needsProviders && researchProviders.length > 0 && !_shuffled) {
           const provSelect = document.createElement('select');
           provSelect.className = 'cmp-form-control cmp-prov-select';
-          provSelect.title = 'Search provider';
+          provSelect.title = _t('compare.search_provider');
           researchProviders.forEach((p, pi) => {
             const optEl = document.createElement('option');
             optEl.value = p.id;
@@ -951,7 +952,7 @@ async function showModelSelector() {
       });
       probeCard.appendChild(probeList);
       const skipBtn = document.createElement('button');
-      skipBtn.textContent = 'Skip';
+      skipBtn.textContent = _t('compare.skip');
       skipBtn.className = 'cmp-btn-secondary';
       skipBtn.style.cssText = 'padding:4px 14px;font-size:11px;opacity:0.5;transition:opacity 0.15s;margin-top:8px;';
       skipBtn.addEventListener('mouseenter', () => { skipBtn.style.opacity = '1'; });
@@ -1000,11 +1001,11 @@ async function showModelSelector() {
       }
       async function _probeOne(m) {
         if (_isImageModel(m.model)) {
-          return { status: 'ok', model: m.model, skipped: true, skipReason: 'Image' };
+          return { status: 'ok', model: m.model, skipped: true, skipReason: _t('compare.image') };
         }
         // Search mode — probe the LLM model normally (don't skip)
         if (state._compareMode === 'search' && !m.model) {
-          return { status: 'ok', model: m.model, skipped: true, skipReason: 'No model' };
+          return { status: 'ok', model: m.model, skipped: true, skipReason: _t('compare.no_model') };
         }
         const res = await fetch(`${state.API_BASE}/api/probe-selected`, {
           method: 'POST', credentials: 'same-origin',
@@ -1012,7 +1013,7 @@ async function showModelSelector() {
           body: JSON.stringify({ models: [{ endpoint_id: m.endpointId || '', model: m.model, endpoint: m.endpoint || '', with_tools: state._compareMode === 'agent' }] }),
         });
         const data = await res.json();
-        return (data.results || [])[0] || { status: 'fail', error: 'No response' };
+        return (data.results || [])[0] || { status: 'fail', error: _t('compare.no_response') };
       }
 
       // Helper: update a probe row's visual state
@@ -1027,7 +1028,7 @@ async function showModelSelector() {
           spinner.textContent = '\u2713';
           spinner.classList.remove('fail');
           spinner.classList.add('ok');
-          status.textContent = result.skipped ? (result.skipReason || 'Skipped') : (result.latency_ms ? `${result.latency_ms}ms` : 'OK');
+          status.textContent = result.skipped ? (result.skipReason || _t('compare.skipped')) : (result.latency_ms ? `${result.latency_ms}ms` : 'OK');
           status.classList.remove('fail');
           status.classList.add('ok');
           row.classList.remove('fail');
@@ -1054,17 +1055,17 @@ async function showModelSelector() {
           detail.style.cssText = 'grid-column:1/-1;display:flex;align-items:flex-start;gap:6px;padding:4px 10px 6px;font-size:10px;opacity:0.6;background:color-mix(in srgb, var(--color-error, #f44) 5%, transparent);border-radius:4px;margin-top:-2px;';
           const errSpan = document.createElement('span');
           // Truncate long error messages
-          const errText = (result.error || 'Failed');
+          const errText = (result.error || _t('common.failed'));
           errSpan.textContent = errText.length > 80 ? errText.slice(0, 80) + '...' : errText;
           errSpan.title = errText;
           errSpan.style.cssText = 'flex:1;line-height:1.4;';
           detail.appendChild(errSpan);
           // Track timeout for retry doubling
           if (!row._probeTimeout) row._probeTimeout = 15000;
-          if (result.error === 'Timeout') row._probeTimeout = Math.min(row._probeTimeout * 2, 120000);
+          if (result.error === _t('compare.timeout')) row._probeTimeout = Math.min(row._probeTimeout * 2, 120000);
           const retryBtn = document.createElement('button');
           retryBtn.className = 'compare-probe-action-btn';
-          const retryLabel = result.error === 'Timeout' ? `Retry ${Math.round(row._probeTimeout / 1000)}s` : 'Retry';
+          const retryLabel = result.error === _t('compare.timeout') ? `Retry ${Math.round(row._probeTimeout / 1000)}s` : _t('compare.retry');
           retryBtn.textContent = retryLabel;
           retryBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
@@ -1079,12 +1080,12 @@ async function showModelSelector() {
             spinner.style.color = '';
             row._waveInterval = setInterval(() => { w2 = (w2 + 1) % waveFrames2.length; spinner.textContent = waveFrames2[w2]; }, 100);
             row.classList.remove('fail');
-            const r2 = await Promise.race([_probeOne(modelsToProbe[idx]), new Promise(r => setTimeout(() => r({ status: 'fail', error: 'Timeout' }), row._probeTimeout))]);
+            const r2 = await Promise.race([_probeOne(modelsToProbe[idx]), new Promise(r => setTimeout(() => r({ status: 'fail', error: _t('compare.timeout') }), row._probeTimeout))]);
             _updateRow(idx, r2);
           });
           const swapBtn = document.createElement('button');
           swapBtn.className = 'compare-probe-action-btn';
-          swapBtn.textContent = 'Swap';
+          swapBtn.textContent = _t('compare.swap');
           swapBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             _clearProbeWaves();
@@ -1105,7 +1106,7 @@ async function showModelSelector() {
         const results = await Promise.all(modelsToProbe.map(m =>
           Promise.race([
             _probeOne(m),
-            new Promise(r => setTimeout(() => r({ status: 'fail', error: 'Timeout' }), 15000))
+            new Promise(r => setTimeout(() => r({ status: 'fail', error: _t('compare.timeout') }), 15000))
           ])
         ));
         if (_probeSkipped) return;
@@ -1149,7 +1150,7 @@ async function showModelSelector() {
               for (let attempt = 0; attempt < 3 && poolIdx < pool.length; attempt++) {
                 const replacement = pool[poolIdx++];
                 const probePromise = _probeOne({ model: replacement.id, endpoint: replacement.url, endpointId: replacement.endpointId });
-                const timeoutPromise = new Promise(r => setTimeout(() => r({ status: 'timeout', error: 'Swap timed out' }), 10000));
+                const timeoutPromise = new Promise(r => setTimeout(() => r({ status: 'timeout', error: _t('compare.swap_timeout') }), 10000));
                 const probeResult = await Promise.race([probePromise, timeoutPromise]);
                 if (probeResult.status === 'ok') {
                   selections[i] = { model: replacement.id, endpoint: replacement.url, endpointId: replacement.endpointId, name: replacement.name };
@@ -1166,7 +1167,7 @@ async function showModelSelector() {
                   const spinner = row.querySelector('.compare-probe-spinner');
                   const status = row.querySelector('.compare-probe-status');
                   if (spinner) { spinner.textContent = '\u2717'; spinner.classList.add('fail'); spinner.style.color = ''; }
-                  if (status) { status.textContent = 'No replacement'; }
+                  if (status) { status.textContent = _t('compare.no_replacement'); }
                 }
               }
             }
@@ -1233,7 +1234,7 @@ async function showModelSelector() {
                 status.textContent = 'OK'; status.classList.add('ok');
               } else {
                 spinner.textContent = '\u2717'; spinner.classList.add('fail');
-                status.textContent = result.error || 'Failed'; status.classList.add('fail');
+                status.textContent = result.error || _t('common.failed'); status.classList.add('fail');
                 row.classList.add('fail');
                 searchAllOk = false;
               }
@@ -1276,7 +1277,7 @@ async function showModelSelector() {
           goBackBtn.style.cssText = 'padding:5px 12px;font-size:12px;display:inline-flex;align-items:center;';
           goBackBtn.addEventListener('click', () => { _clearProbeWaves(); probeOverlay.remove(); startBtn.disabled = false; startBtn.innerHTML = _CMP_START_LABEL; startBtn.style.opacity = '1'; });
           const startAnywayBtn = document.createElement('button');
-          startAnywayBtn.textContent = 'Start Anyway';
+          startAnywayBtn.textContent = _t('compare.start_anyway');
           startAnywayBtn.className = 'cmp-btn-primary';
           startAnywayBtn.style.cssText = 'padding:5px 12px;font-size:12px;';
           startAnywayBtn.addEventListener('click', () => { _clearProbeWaves(); probeOverlay.remove(); cleanup(true); });

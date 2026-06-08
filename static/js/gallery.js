@@ -3,6 +3,7 @@
  */
 
 import uiModule from './ui.js';
+import { t as _t } from './i18n.js';
 import { openEditor, closeEditor, isEditorOpen } from './galleryEditor.js';
 import spinnerModule from './spinner.js';
 import { makeWindowDraggable } from './windowDrag.js';
@@ -297,7 +298,7 @@ async function _handleGalleryDrop(e) {
           });
           const data = await res.json();
           if (data && data.id) album = { id: data.id, name: data.name || entry.name };
-        } catch (err) { console.error('Failed to create album for', entry.name, err); }
+        } catch (err) { console.error(_t('gallery.create_album_for_failed'), entry.name, err); }
       }
       if (!album) continue;
       const files = await _walkEntryForImages(entry);
@@ -335,7 +336,7 @@ async function _handleGalleryDrop(e) {
   if (looksLikeFolderUri) {
     uiModule.showError('Browsers can’t read folders dropped from native file managers (Thunar/Nautilus). Use the "Upload album" tile in the Albums tab instead.');
   } else if (entries.length || dtItems.length) {
-    uiModule.showToast('No images found in that drop');
+    uiModule.showToast(_t('gallery.no_images_drop'));
   }
 }
 
@@ -489,7 +490,7 @@ function _ensureAlbumsToolbar(container) {
   });
   container.querySelector('#gallery-albums-bulk-delete').addEventListener('click', (e) => {
     e.stopPropagation();
-    if (!_albumSelected.size) { uiModule.showToast('Select albums first'); return; }
+    if (!_albumSelected.size) { uiModule.showToast(_t('gallery.select_albums_first')); return; }
     _bulkDeleteAlbums([..._albumSelected]);
   });
 }
@@ -704,9 +705,9 @@ function _wireAlbumsEvents(scope) {
       if (r.ok) {
         await _fetchAlbums();
         _renderAlbumsTab();
-        if (uiModule) uiModule.showToast('Album renamed');
+        if (uiModule) uiModule.showToast(_t('gallery.album_renamed'));
       } else if (uiModule) {
-        uiModule.showError('Rename failed');
+        uiModule.showError(_t('gallery.rename_failed'));
       }
     });
     pop.querySelector('[data-action="delete"]')?.addEventListener('click', async (e) => {
@@ -726,7 +727,7 @@ function _wireAlbumsEvents(scope) {
         await _fetchAlbums();
         _renderAlbumsTab();
         _renderAlbums();
-        if (uiModule) uiModule.showToast('Album deleted');
+        if (uiModule) uiModule.showToast(_t('gallery.album_deleted'));
       } else if (uiModule) {
         uiModule.showError('Delete failed');
       }
@@ -735,7 +736,7 @@ function _wireAlbumsEvents(scope) {
 
   document.getElementById('gallery-albums-new')?.addEventListener('click', async () => {
     const name = (uiModule.styledPrompt
-      ? await uiModule.styledPrompt('Name your new album.', { title: 'New album', placeholder: 'e.g. Vacation 2026', confirmText: 'Create' })
+      ? await uiModule.styledPrompt('Name your new album.', { title: _t('gallery.new_album'), placeholder: 'e.g. Vacation 2026', confirmText: _t('common.create') })
       : prompt('Album name:'));
     if (!name?.trim()) return;
     await fetch(`${API_BASE}/api/gallery/albums`, {
@@ -759,7 +760,7 @@ function _wireAlbumsEvents(scope) {
       const images = all.filter(_isMediaFile);
       picker.remove();
       if (!images.length) {
-        if (uiModule) uiModule.showToast('No images or videos in that folder');
+        if (uiModule) uiModule.showToast(_t('gallery.no_images_folder'));
         return;
       }
       // Derive folder name from the first file's relative path (e.g.
@@ -784,7 +785,7 @@ function _wireAlbumsEvents(scope) {
         }
       }
       if (!album) {
-        if (uiModule) uiModule.showError('Could not create album');
+        if (uiModule) uiModule.showError(_t('gallery.create_album_failed'));
         return;
       }
       await _bulkUpload(images, album.id);
@@ -1125,7 +1126,7 @@ function _renderEditorLanding() {
     // openEditor() now returns a Promise — it's async because the size
     // prompt is a styled modal. Await it before checking whether the
     // editor actually opened (the user may have cancelled).
-    await openEditor(null, null, null, 'New canvas');
+    await openEditor(null, null, null, _t('gallery.new_canvas'));
     if (!isEditorOpen()) _renderEditorLanding();
   });
   document.getElementById('gallery-editor-pick')?.addEventListener('click', () => {
@@ -1201,7 +1202,7 @@ function _renderGrid() {
       .replace(/\.[^.]+$/, '')       // drop extension
       .replace(/[_-]+/g, ' ')
       .trim();
-    const labelText = (img.prompt || '').trim() || fallbackName || 'Photo';
+    const labelText = (img.prompt || '').trim() || fallbackName || _t('gallery.photo');
     const promptPreview = labelText.length > 60 ? labelText.substring(0, 58) + '...' : labelText;
     const favCls = img.favorite ? ' gallery-fav-active' : '';
     html += `
@@ -1349,7 +1350,7 @@ function _openDetail(img) {
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
         Edit
       </button>
-      <button class="gallery-detail-back gallery-detail-fav-header${img.favorite ? ' active' : ''}" id="gallery-detail-fav-header" title="${img.favorite ? 'Unfavorite' : 'Favorite'}" aria-label="Favorite" aria-pressed="${img.favorite ? 'true' : 'false'}" style="display:inline-flex;align-items:center;justify-content:center;padding:4px 8px;">
+      <button class="gallery-detail-back gallery-detail-fav-header${img.favorite ? ' active' : ''}" id="gallery-detail-fav-header" title="${img.favorite ? _t('gallery.unfavorite') : _t('gallery.favorite')}" aria-label="Favorite" aria-pressed="${img.favorite ? 'true' : 'false'}" style="display:inline-flex;align-items:center;justify-content:center;padding:4px 8px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="${img.favorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
       </button>
       <div class="gallery-detail-menu-wrap">
@@ -1359,11 +1360,11 @@ function _openDetail(img) {
         <div class="gallery-detail-menu dropdown" id="gallery-detail-menu" hidden>
           <button class="dropdown-item-compact" id="gallery-fav-detail">
             <span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="${img.favorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
-            ${img.favorite ? 'Favorited' : 'Favorite'}
+            ${img.favorite ? _t('gallery.favorited') : _t('gallery.favorite')}
           </button>
           <button class="dropdown-item-compact" id="gallery-ai-tag-btn" data-mode="${aiTags ? 'clear' : 'tag'}">
             <span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>
-            ${aiTags ? 'Clear AI tags' : 'AI Tag'}
+            ${aiTags ? _t('gallery.clear_ai_tags') : 'AI Tag'}
           </button>
           <button class="dropdown-item-compact" id="gallery-download-btn">
             <span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
@@ -1463,7 +1464,7 @@ function _openDetail(img) {
     const remaining = existing.filter(e => e.toLowerCase() !== String(tag).toLowerCase());
     const cleaned = remaining.join(', ');
     const ok = await _patchImage(img.id, { tags: cleaned });
-    if (!ok) { if (uiModule) uiModule.showError('Failed to remove tag'); return; }
+    if (!ok) { if (uiModule) uiModule.showError(_t('gallery.remove_tag_failed')); return; }
     img.tags = cleaned;
     img.user_tags = cleaned;
     chip.remove();
@@ -1518,7 +1519,7 @@ function _openDetail(img) {
     const headerBtn = document.getElementById('gallery-detail-fav-header');
     if (headerBtn) {
       headerBtn.setAttribute('aria-pressed', data.favorite ? 'true' : 'false');
-      headerBtn.setAttribute('title', data.favorite ? 'Unfavorite' : 'Favorite');
+      headerBtn.setAttribute('title', data.favorite ? _t('gallery.unfavorite') : _t('gallery.favorite'));
       const svg = headerBtn.querySelector('svg');
       if (svg) svg.setAttribute('fill', data.favorite ? 'currentColor' : 'none');
     }
@@ -1558,14 +1559,14 @@ function _openDetail(img) {
       cleanup();
       if (data.ok) {
         img.ai_tags = clearMode ? '' : data.ai_tags;
-        uiModule.showToast(clearMode ? 'AI tags cleared' : 'AI tags added');
+        uiModule.showToast(clearMode ? _t('gallery.ai_tags_cleared') : _t('gallery.ai_tags_added'));
         _openDetail(img); // re-render detail
       } else {
-        uiModule.showError(data.error || (clearMode ? 'Clear failed' : 'AI tagging failed'));
+        uiModule.showError(data.error || (clearMode ? _t('gallery.clear_failed') : _t('gallery.ai_tag_failed')));
       }
     } catch (e2) {
       cleanup();
-      uiModule.showError(clearMode ? 'Clear failed' : 'AI tagging failed');
+      uiModule.showError(clearMode ? _t('gallery.clear_failed') : _t('gallery.ai_tag_failed'));
     }
   });
 
@@ -1667,7 +1668,7 @@ function _openDetail(img) {
       const editorContainer = document.getElementById('gallery-editor-container');
       if (editorContainer) editorContainer.style.display = 'flex';
       const baseFilename = (img.filename || '').replace(/\.[^.]+$/, '');
-      const label = img.prompt?.trim() || baseFilename || 'Photo';
+      const label = img.prompt?.trim() || baseFilename || _t('gallery.photo');
       openEditor(img.url, img.id, null, label);
     } catch (e) {
       console.error('[edit] failed:', e);
@@ -1708,7 +1709,7 @@ function _openDetail(img) {
         credentials: 'same-origin',
         body: JSON.stringify({ angle }),
       });
-      if (!r.ok) { cleanup(); uiModule.showError('Rotate failed'); return; }
+      if (!r.ok) { cleanup(); uiModule.showError(_t('gallery.rotate_failed')); return; }
       // Cache-bust the image in the detail view, then wait for the new
       // image to actually load before clearing the spinner so the user
       // doesn't see a flash of the old/blank image.
@@ -1721,11 +1722,11 @@ function _openDetail(img) {
         });
       }
       cleanup();
-      uiModule.showToast('Rotated');
+      uiModule.showToast(_t('gallery.rotated'));
       _fetchLibrary(false);
     } catch (e) {
       cleanup();
-      uiModule.showError('Rotate failed');
+      uiModule.showError(_t('gallery.rotate_failed'));
     }
   };
   document.getElementById('gallery-rotate-btn')?.addEventListener('click', () => _rotate(90));
@@ -1742,13 +1743,13 @@ function _openDetail(img) {
         body: JSON.stringify({ cover_id: img.id }),
       });
       if (r.ok) {
-        uiModule.showToast('Album cover updated');
+        uiModule.showToast(_t('gallery.album_cover_updated'));
         await _fetchAlbums();
       } else {
-        uiModule.showError('Failed to set cover');
+        uiModule.showError(_t('gallery.set_cover_failed'));
       }
     } catch (e) {
-      uiModule.showError('Failed to set cover');
+      uiModule.showError(_t('gallery.set_cover_failed'));
     }
   });
 
@@ -1756,7 +1757,7 @@ function _openDetail(img) {
     if (!await uiModule.styledConfirm('Delete this photo? This cannot be undone.', { confirmText: 'Delete', danger: true })) return;
     const ok = await _deleteImage(img.id);
     if (!ok) {
-      uiModule.showError('Failed to delete photo');
+      uiModule.showError(_t('gallery.delete_photo_failed'));
       return;
     }
     detail.style.display = 'none';
@@ -1764,7 +1765,7 @@ function _openDetail(img) {
     _total = Math.max(0, _total - 1);
     _renderGrid();
     _renderStats();
-    if (uiModule) uiModule.showToast('Photo deleted');
+    if (uiModule) uiModule.showToast(_t('gallery.photo_deleted'));
   });
 
   // Tag input — Enter saves; also strips a leading '#' from each tag so
@@ -1783,12 +1784,12 @@ function _openDetail(img) {
           credentials: 'same-origin',
           body: JSON.stringify({ name: newName }),
         });
-        if (!r.ok) throw new Error('Failed');
+        if (!r.ok) throw new Error(_t('common.failed'));
         img.prompt = newName;
-        if (uiModule) uiModule.showToast('Renamed');
+        if (uiModule) uiModule.showToast(_t('gallery.renamed'));
         window.dispatchEvent(new CustomEvent('gallery-refresh'));
       } catch {
-        if (uiModule) uiModule.showError('Failed to rename');
+        if (uiModule) uiModule.showError(_t('gallery.rename_failed'));
       }
     };
     _nameInput.addEventListener('keydown', (e) => {
@@ -1830,7 +1831,7 @@ function _openDetail(img) {
       if (!added.length) return;
       const cleaned = merged.join(', ');
       const ok = await _patchImage(img.id, { tags: cleaned });
-      if (!ok) { if (uiModule) uiModule.showError('Failed to save tags'); return; }
+      if (!ok) { if (uiModule) uiModule.showError(_t('gallery.save_tags_failed')); return; }
       img.tags = cleaned;
       img.user_tags = cleaned;
       const chips = document.getElementById('gallery-user-tag-chips');
@@ -1843,8 +1844,8 @@ function _openDetail(img) {
           b.textContent = t;
           const x = document.createElement('span');
           x.className = 'gallery-tag-x';
-          x.title = 'Remove tag';
-          x.setAttribute('aria-label', 'Remove tag');
+          x.title = _t('gallery.remove_tag');
+          x.setAttribute('aria-label', _t('gallery.remove_tag'));
           x.textContent = '×';
           b.appendChild(x);
           chips.appendChild(b);
@@ -1862,9 +1863,9 @@ function _openDetail(img) {
   document.getElementById('gallery-detail-album').addEventListener('change', async (e) => {
     const albumId = e.target.value;
     const ok = await _patchImage(img.id, { album_id: albumId || '' });
-    if (!ok) { uiModule.showError('Failed to update album'); return; }
+    if (!ok) { uiModule.showError(_t('gallery.update_album_failed')); return; }
     img.album_id = albumId || null;
-    uiModule.showToast(albumId ? 'Added to album' : 'Removed from album');
+    uiModule.showToast(albumId ? _t('gallery.added_to_album') : _t('gallery.removed_from_album'));
   });
 }
 
@@ -2058,8 +2059,8 @@ export function openGallery() {
       const oldText = labelEl.textContent;
       const input = document.createElement('input');
       input.type = 'text';
-      input.value = current === 'Edit' ? '' : current;
-      input.placeholder = 'Edit name';
+      input.value = current === _t('gallery.edit') ? '' : current;
+      input.placeholder = _t('gallery.edit_name');
       input.className = 'gallery-tab-rename-input';
       // Replace only the label span's contents so the icon SVG next to
       // it stays visible during the rename.
@@ -2261,7 +2262,7 @@ export function openGallery() {
           method: 'POST', credentials: 'same-origin',
         });
         listRes = await r.json();
-      } catch (e) { uiModule.showError('Failed to fetch tag queue'); return; }
+      } catch (e) { uiModule.showError(_t('gallery.tag_queue_failed')); return; }
       if (!listRes.ok || !Array.isArray(listRes.image_ids) || listRes.image_ids.length === 0) {
         uiModule.showToast(`No untagged photos in ${scope}`);
         return;
@@ -2270,7 +2271,7 @@ export function openGallery() {
       const untagged = listRes.total_untagged || total;
       if (!await uiModule.styledConfirm(
         `Tag ${total} of ${untagged} untagged photo${total > 1 ? 's' : ''} in ${scope}?`,
-        { confirmText: 'Tag All' }
+        { confirmText: _t('gallery.tag_all') }
       )) return;
 
       const bar = document.getElementById('gallery-tag-bar');
@@ -2343,7 +2344,7 @@ export function openGallery() {
       if (moreMenu) { moreMenu.hidden = true; moreMenu.style.display = 'none'; }
       if (!await uiModule.styledConfirm(
         'Remove all AI-generated tags from every photo? Your own tags are kept.',
-        { confirmText: 'Clear AI Tags', danger: true }
+        { confirmText: _t('gallery.clear_ai_tags'), danger: true }
       )) return;
       clearAiTagsBtn.disabled = true;
       try {
@@ -2351,7 +2352,7 @@ export function openGallery() {
           method: 'POST', credentials: 'same-origin',
         });
         const d = await r.json();
-        if (!d.ok) throw new Error(d.error || 'Clear failed');
+        if (!d.ok) throw new Error(d.error || _t('gallery.clear_failed'));
         uiModule.showToast(`Cleared AI tags on ${d.cleared} photo${d.cleared === 1 ? '' : 's'}`);
         await _fetchLibrary(false);
       } catch (e) {
@@ -2530,9 +2531,9 @@ export function openGallery() {
     const _delIco = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
     const _cancelIco = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
     const items = [
-      { label: 'Favorite', icon: _favIco, action: () => _bulkFavorite(_selectedIds()) },
+      { label: _t('gallery.favorite'), icon: _favIco, action: () => _bulkFavorite(_selectedIds()) },
       { label: 'Add tag…', icon: _tagIco, action: () => _bulkTag(_selectedIds()) },
-      { label: 'Download', icon: _dlIco, action: () => _bulkDownload(_selectedIds()) },
+      { label: _t('gallery.download'), icon: _dlIco, action: () => _bulkDownload(_selectedIds()) },
       { label: 'Delete', icon: _delIco, danger: true, action: () => _bulkDelete(_selectedIds()) },
       { separator: true },
       { label: 'Cancel', icon: _cancelIco, action: () => _exitSelectMode() },
@@ -2568,7 +2569,7 @@ export function openGallery() {
     // the anchor, so the button itself has to do its own dismiss.
     const existing = document.querySelector('.gallery-bulk-menu');
     if (existing) { existing.remove(); return; }
-    if (!_selectedIds().length) { uiModule.showToast('Select photos first'); return; }
+    if (!_selectedIds().length) { uiModule.showToast(_t('gallery.select_photos_first')); return; }
     _showGalleryBulkMenu(e.currentTarget);
   });
 
@@ -2621,7 +2622,7 @@ export function openGallery() {
         _exitSelectMode();
         if (uiModule) uiModule.showToast(`Downloaded ${ids.length} photos (zip)`);
       } catch (e) {
-        if (uiModule) uiModule.showError('Failed to create zip');
+        if (uiModule) uiModule.showError(_t('gallery.create_zip_failed'));
       }
       return;
     }
@@ -2663,7 +2664,7 @@ export function openGallery() {
   }
 
   async function _bulkTag(ids) {
-    const tag = (await uiModule.styledPrompt('', { title: 'Add tag to selected', placeholder: 'tag', confirmText: 'Add', maxLength: 60 }) || '').trim().replace(/^#+/, '').trim();
+    const tag = (await uiModule.styledPrompt('', { title: _t('gallery.add_tag'), placeholder: 'tag', confirmText: _t('common.add'), maxLength: 60 }) || '').trim().replace(/^#+/, '').trim();
     if (!tag) return;
     let n = 0;
     for (const id of ids) {
@@ -2759,7 +2760,7 @@ export function openGallery() {
 function _doCloseGallery() {
   const editorMounted = !!document.querySelector('#gallery-editor-container .gallery-editor');
   if ((window.__galleryEditLive || isEditorOpen() || editorMounted) && !window.__galleryAllowCloseEditor) {
-    if (uiModule) uiModule.showToast('Close the edit tab first');
+    if (uiModule) uiModule.showToast(_t('gallery.close_edit_tab'));
     return;
   }
   _open = false;

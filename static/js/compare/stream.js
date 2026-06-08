@@ -1,5 +1,6 @@
 // compare/stream.js — SSE streaming to panes
 import state from './state.js';
+import { t as _t } from '../i18n.js';
 import { addFinishBadge } from './vote.js';
 import { getModelCost, safeDisplayImageSrc } from '../chatRenderer.js';
 import markdownModule from '../markdown.js';
@@ -53,7 +54,7 @@ function _renderSearchResults(data) {
       titleLink.rel = 'noopener noreferrer';
     }
     titleLink.className = 'search-result-title';
-    titleLink.textContent = r.title || 'Untitled';
+    titleLink.textContent = r.title || _t('compare.untitled');
     card.appendChild(titleLink);
     if (r.snippet) {
       const s = document.createElement('div');
@@ -76,7 +77,7 @@ function _renderSearchResults(data) {
 async function _runSynthForPane(modelToUse, synthPrompt, synthBody, spinner, hist) {
   // Create temp session for synthesis
   const fd = new FormData();
-  fd.append('name', 'Synthesis');
+  fd.append('name', _t('compare.synthesis'));
   fd.append('endpoint_url', modelToUse.endpoint || '');
   fd.append('model', modelToUse.model || '');
   if (modelToUse.endpointId) {
@@ -88,7 +89,7 @@ async function _runSynthForPane(modelToUse, synthPrompt, synthBody, spinner, his
     const createRes = await fetch(`${state.API_BASE}/api/session`, { method: 'POST', body: fd });
     if (!createRes.ok) {
       const errData = await createRes.json().catch(() => ({}));
-      throw new Error(errData.detail || 'Failed to create session');
+      throw new Error(errData.detail || _t('compare.session_failed'));
     }
     const createData = await createRes.json();
 
@@ -298,7 +299,7 @@ async function streamToPane(paneIdx, sessionId, message, aiMsgEl, opts) {
               } else if (rp.phase === 'writing') {
                 spinner.updateMessage(`Writing report · ${rp.total_sources || 0} sources`);
               } else if (rp.phase === 'error') {
-                spinner.updateMessage(rp.message || 'Research error');
+                spinner.updateMessage(rp.message || _t('compare.research_error'));
               }
             }
 
@@ -306,7 +307,7 @@ async function streamToPane(paneIdx, sessionId, message, aiMsgEl, opts) {
           } else if (json.type === 'research_sources' || json.type === 'web_sources') {
             const sources = json.data || [];
             if (sources.length > 0) {
-              const label = json.type === 'research_sources' ? 'Research' : 'Web';
+              const label = json.type === 'research_sources' ? _t('compare.research') : _t('compare.web');
               const box = document.createElement('div');
               box.className = 'compare-sources-box';
               box.innerHTML = '<span class="sources-label">' + sources.length + ' ' + label + ' sources</span>';
@@ -352,7 +353,7 @@ async function streamToPane(paneIdx, sessionId, message, aiMsgEl, opts) {
               currentToolBlock = null;
             } else {
               // Agent thread node — matches main chat style
-              const _toolLabels = { bash: 'Terminal', python: 'Python', web_search: 'Web Search', read_file: 'Read File', write_file: 'Write File' };
+              const _toolLabels = { bash: 'Terminal', python: 'Python', web_search: _t('compare.web_search'), read_file: 'Read File', write_file: 'Write File' };
               const toolLabel = _toolLabels[toolName.toLowerCase()] || toolName;
               const cmdHtml = cmd ? `<pre class="agent-thread-cmd">${escapeHtml(cmd)}</pre>` : '';
               const node = document.createElement('div');
@@ -408,7 +409,7 @@ async function streamToPane(paneIdx, sessionId, message, aiMsgEl, opts) {
               if (currentToolBlock._waveInterval) { clearInterval(currentToolBlock._waveInterval); currentToolBlock._waveInterval = null; }
               const ok = (json.exit_code === 0 || json.exit_code == null);
               const cmd = json.command || '';
-              const _toolLabels2 = { bash: 'Terminal', python: 'Python', web_search: 'Web Search', read_file: 'Read File', write_file: 'Write File' };
+              const _toolLabels2 = { bash: 'Terminal', python: 'Python', web_search: _t('compare.web_search'), read_file: 'Read File', write_file: 'Write File' };
               const tLabel = _toolLabels2[(json.tool || '').toLowerCase()] || json.tool || '';
               let outHtml = '';
               if (json.output && json.output.trim()) {
@@ -490,7 +491,7 @@ async function streamToPane(paneIdx, sessionId, message, aiMsgEl, opts) {
       const copyBtn = document.createElement('button');
       copyBtn.className = 'footer-copy-btn';
       copyBtn.type = 'button';
-      copyBtn.title = 'Copy prompt';
+      copyBtn.title = _t('compare.copy_prompt');
       copyBtn.textContent = '\u2398';
       copyBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -506,7 +507,7 @@ async function streamToPane(paneIdx, sessionId, message, aiMsgEl, opts) {
       const dlBtn = document.createElement('button');
       dlBtn.className = 'footer-copy-btn';
       dlBtn.type = 'button';
-      dlBtn.title = 'Download image';
+      dlBtn.title = _t('compare.download_image');
       dlBtn.textContent = '\u2913';
       dlBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -655,7 +656,7 @@ async function streamToPane(paneIdx, sessionId, message, aiMsgEl, opts) {
       } else {
         // Timed out or errored — show failed badge
         const badge = document.getElementById('cmp-badge-' + paneIdx);
-        if (badge) { badge.textContent = timedOut ? 'Timeout' : 'Failed'; badge.style.color = 'var(--color-error)'; }
+        if (badge) { badge.textContent = timedOut ? _t('compare.timeout') : _t('common.failed'); badge.style.color = 'var(--color-error)'; }
       }
     }
     // Auto-grade against expected answer — stamps ✓ or ✗ on the pane header.
@@ -702,7 +703,7 @@ function _stampGradeBadge(paneIdx, response, expected) {
   if (prev) prev.remove();
   const badge = document.createElement('span');
   badge.className = 'pane-grade-badge ' + (pass ? 'pass' : 'fail');
-  badge.title = pass ? 'Response contains the expected answer' : 'Expected answer not found in response';
+  badge.title = pass ? _t('compare.answer_found') : _t('compare.answer_not_found');
   badge.textContent = pass ? '✓' : '✗';
   // Insert just before the finish badge if present, else after the title
   const finBadge = header.querySelector('.pane-finish-badge');

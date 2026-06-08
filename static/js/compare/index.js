@@ -11,6 +11,7 @@
 
 // ── Submodule imports ──
 import state from './state.js';
+import { t as _t } from '../i18n.js';
 import { EVAL_PROMPTS, WAVE_FRAMES,
   ICON_DICE, ICON_EXPAND, ICON_COLLAPSE, ICON_CLOSE,
   ICON_REROLL, ICON_COPY, ICON_PLAY, ICON_CODE,
@@ -304,7 +305,7 @@ async function _buildCompareUI() {
   const headerLabel = document.createElement('span');
   headerLabel.style.cssText = 'font-size:10px;font-weight:400;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;';
   const _modeLabel = ({ search: ' search providers', agent: ' agents', research: ' research models' }[state._compareMode] || ' models');
-  headerLabel.textContent = 'Comparing' + _modeLabel + (state._blindMode ? ' (blind)' : '') + ' · ' + state._timeout + 's timeout';
+  headerLabel.textContent = _t('compare.comparing') + _modeLabel + (state._blindMode ? ' (blind)' : '') + ' · ' + state._timeout + 's timeout';
   // Left side: the Compare tool icon (two side-by-side panes, matching the
   // rail/sidebar icon) + the label. Other tool headers carry their icon; this
   // one was missing it.
@@ -325,7 +326,7 @@ async function _buildCompareUI() {
   const checkBtn = document.createElement('button');
   checkBtn.id = 'compare-check-btn';
   checkBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:11px;margin-left:3px;">Probe</span>';
-  checkBtn.title = 'Probe unverified models with a small test request';
+  checkBtn.title = _t('compare.probe_hint');
   checkBtn.style.cssText = _btnCSS;
   checkBtn.addEventListener('click', () => _checkUnprobed());
   headerActions.appendChild(checkBtn);
@@ -346,7 +347,7 @@ async function _buildCompareUI() {
   const exportBtn = document.createElement('button');
   exportBtn.id = 'compare-export-btn';
   exportBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span style="font-size:11px;margin-left:3px;">Export</span>';
-  exportBtn.title = 'Export options';
+  exportBtn.title = _t('compare.export_options');
   exportBtn.style.cssText = _btnCSS;
   exportBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -358,7 +359,7 @@ async function _buildCompareUI() {
   const shuffleBtn = document.createElement('button');
   shuffleBtn.id = 'compare-shuffle-btn';
   shuffleBtn.innerHTML = ICON_DICE + '<span style="font-size:11px;margin-left:3px;">Shuffle</span>';
-  shuffleBtn.title = 'Shuffle pane positions';
+  shuffleBtn.title = _t('compare.shuffle');
   shuffleBtn.style.cssText = _btnCSS;
   shuffleBtn.addEventListener('click', () => shufflePanePositions());
   headerActions.appendChild(shuffleBtn);
@@ -366,7 +367,7 @@ async function _buildCompareUI() {
   const addBtn = document.createElement('button');
   addBtn.id = 'compare-add-btn';
   addBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span style="font-size:11px;margin-left:3px;">Add</span>';
-  addBtn.title = 'Add model pane';
+  addBtn.title = _t('compare.add_pane');
   addBtn.style.cssText = _btnCSS;
   addBtn.addEventListener('click', () => _addPane(addBtn));
   headerActions.appendChild(addBtn);
@@ -374,7 +375,7 @@ async function _buildCompareUI() {
   const closeBtn = document.createElement('button');
   closeBtn.className = 'compare-close-btn';
   closeBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-  closeBtn.title = 'Close compare mode';
+  closeBtn.title = _t('compare.close');
   // Match Export/Score/Shuffle/Model styling so the X sits flush with
   // the rest of the toolbar instead of being a 24×24 bordered square.
   closeBtn.style.cssText = _btnCSS;
@@ -507,14 +508,14 @@ function _setSendBtn(mode) {
   if (!btn) return;
   if (mode === 'stop') {
     btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
-    btn.title = 'Stop all models';
+    btn.title = _t('compare.stop_all');
     btn.dataset.mode = 'streaming';
     btn.classList.remove('mic-mode', 'newchat-mode');
   } else {
     btn.dataset.mode = '';
     btn.innerHTML = SEND_SVG;
     btn.style.color = '';
-    btn.title = 'Send to all models';
+    btn.title = _t('compare.send_all');
     btn.classList.remove('mic-mode', 'newchat-mode', 'newchat-expanded');
   }
 }
@@ -668,7 +669,7 @@ async function _executeCompare(message) {
           const data = await res.json();
           return { idx: i, data };
         } catch (err) {
-          return { idx: i, data: { results: [], error: err.name === 'AbortError' ? 'Stopped' : err.message } };
+          return { idx: i, data: { results: [], error: err.name === 'AbortError' ? _t('compare.stopped') : err.message } };
         }
       }
 
@@ -1024,7 +1025,7 @@ function _toggleExportMenu(btn) {
   m.className = 'compare-export-menu';
   m.style.cssText = 'position:fixed;z-index:10001;top:' + (r.bottom + 4) + 'px;left:' + r.left + 'px;background:var(--panel,var(--bg));border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.3);padding:4px;font-size:12px;display:flex;flex-direction:column;min-width:170px;';
   const opts = [
-    { label: 'Copy as Markdown', fn: () => _exportCopyMarkdown(btn) },
+    { label: _t('compare.copy_md'), fn: () => _exportCopyMarkdown(btn) },
     { label: 'Download .md',     fn: () => _exportDownloadMarkdown() },
     { label: 'Print / Save PDF', fn: () => _exportPrint() },
   ];
@@ -1062,7 +1063,7 @@ async function _exportCopyMarkdown(_btn) {
       document.body.appendChild(ta);
       ta.select(); document.execCommand('copy'); ta.remove();
     }
-    try { window.uiModule?.showToast?.('Copied comparison to clipboard'); } catch {}
+    try { window.uiModule?.showToast?.(_t('compare.copied')); } catch {}
   } catch (e) {
     try { window.uiModule?.showToast?.('Copy failed'); } catch {}
   }
@@ -1186,7 +1187,7 @@ function _setupEvalPicker() {
   btn.type = 'button';
   btn.id = 'cmp-eval-btn';
   btn.className = 'cmp-eval-btn';
-  btn.title = 'Insert an evaluation prompt';
+  btn.title = _t('compare.eval_prompt');
   btn.innerHTML =
     '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
     + '<span class="cmp-eval-label">Eval prompts</span>'
@@ -1211,7 +1212,7 @@ function _setupEvalPicker() {
     const order = [];
     const groups = {};
     for (const p of list) {
-      const sub = p.sub || 'Other';
+      const sub = p.sub || _t('compare.other');
       if (!groups[sub]) { groups[sub] = []; order.push(sub); }
       groups[sub].push(p);
     }
@@ -1369,7 +1370,7 @@ function removeOverlays() {
 async function showShufflePoolEditor() {
   let models;
   try { models = await fetchModels(); } catch (e) {
-    if (uiModule) uiModule.showError('Failed to load models');
+    if (uiModule) uiModule.showError(_t('compare.load_failed'));
     return;
   }
 
@@ -1413,7 +1414,7 @@ async function showShufflePoolEditor() {
     if (items.length === 0) return;
     const heading = document.createElement('div');
     heading.style.cssText = 'font-size:0.78em;font-weight:600;color:color-mix(in srgb, var(--fg) 50%, transparent);text-transform:uppercase;letter-spacing:0.5px;padding:8px 4px 4px;';
-    heading.textContent = type === 'chat' ? 'Chat Models' : 'Image Models';
+    heading.textContent = type === 'chat' ? _t('compare.chat_models') : _t('compare.image_models');
     list.appendChild(heading);
 
     items.forEach(m => {

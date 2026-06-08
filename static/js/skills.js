@@ -6,6 +6,7 @@
 // /<skill-name> path.
 
 import uiModule from './ui.js';
+import { t as _t } from './i18n.js';
 import * as spinnerModule from './spinner.js';
 
 const API = window.location.origin;
@@ -323,7 +324,7 @@ function _necessityPill(sk) {
   const group = sk._duplicateNames || [];
   const why = sk._duplicateGroup
     ? `Duplicate group #${sk._duplicateGroup}. Recommended keep: ${sk._duplicateKeepName}. Group: ${group.join(', ')}`
-    : (nec.reason || 'May not be worth keeping') + (dup.length ? ' | overlaps: ' + dup.join(', ') : '');
+    : (nec.reason || _t('skills.maybe_discard')) + (dup.length ? ' | overlaps: ' + dup.join(', ') : '');
   return `<span class="memory-cat-badge skill-necessity-pill skill-necessity-${kind}" title="${esc(why)}">${label}</span>`;
 }
 
@@ -390,16 +391,16 @@ function _openSkillMenu(btn, card, sk, name, isPublished) {
     item.addEventListener('click', (e) => { e.stopPropagation(); menu.remove(); onClick(); });
     menu.appendChild(item);
   };
-  if (isPublished) mk(_ICON.unpublish, 'Unpublish', {}, () => _setSkillStatus(name, 'draft'));
-  else mk(_ICON.approve, 'Publish', {}, () => _setSkillStatus(name, 'published'));
+  if (isPublished) mk(_ICON.unpublish, _t('skills.unpublish'), {}, () => _setSkillStatus(name, 'draft'));
+  else mk(_ICON.approve, _t('skills.publish'), {}, () => _setSkillStatus(name, 'published'));
   mk(_ICON.edit, 'Edit', {}, async () => {
     if (!card.classList.contains('doclib-card-expanded')) await _expandSkillCard(card, name);
     _toggleSkillEdit(card, name);
   });
-  mk(_ICON.test, 'Test', {}, () => _testSkill(card, name));
+  mk(_ICON.test, _t('skills.test'), {}, () => _testSkill(card, name));
   // Audit kicks off the bulk audit-all loop (test → judge → fix → retry → demote).
   // Starts at the top of the list and walks down.
-  mk(_ICON.test, 'Audit', {}, () => _auditAllSkills());
+  mk(_ICON.test, _t('skills.audit'), {}, () => _auditAllSkills());
   mk(_ICON.del, 'Delete', { danger: true }, () => _deleteSkill(name, card));
 
   // Select — enters bulk-select mode and pre-selects this skill. Same pattern
@@ -492,7 +493,7 @@ function _buildBuiltinCards() {
     const revertBtn = document.createElement('button');
     revertBtn.className = 'doclib-card-text-btn doclib-card-action-btn doclib-card-text-btn-danger';
     revertBtn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>Revert';
-    revertBtn.title = 'Restore the original shipped instructions';
+    revertBtn.title = _t('skills.restore_original');
     revertBtn.addEventListener('click', (e) => { e.stopPropagation(); _revertBuiltin(b.name); });
 
     const editBtn = document.createElement('button');
@@ -580,11 +581,11 @@ async function _saveBuiltinEdit(card, name) {
 }
 
 async function _revertBuiltin(name) {
-  if (!(await uiModule.styledConfirm(`Revert "${name}" to its original built-in instructions?`, { confirmText: 'Revert', danger: true }))) return;
+  if (!(await uiModule.styledConfirm(`Revert "${name}" to its original built-in instructions?`, { confirmText: _t('skills.revert'), danger: true }))) return;
   try {
     const res = await fetch(`${API}/api/skills/builtin/${encodeURIComponent(name)}`, { method: 'DELETE' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    uiModule.showToast('Reverted to default');
+    uiModule.showToast(_t('skills.reverted'));
     builtinSkills = [];
     await loadSkills();
   } catch (e) { uiModule.showError('Revert failed: ' + e.message); }
@@ -724,7 +725,7 @@ function renderSkillsList() {
     pubBtn.className = 'doclib-card-text-btn doclib-card-action-btn';
     if (isPublished) {
       pubBtn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12l5 5L20 7"/></svg>Unpublish';
-      pubBtn.title = 'Move back to draft';
+      pubBtn.title = _t('skills.move_to_draft');
       pubBtn.addEventListener('click', (e) => { e.stopPropagation(); _setSkillStatus(name, 'draft'); });
     } else {
       pubBtn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Publish';
@@ -737,7 +738,7 @@ function renderSkillsList() {
     // the footer too so it's not buried under the "⋯" menu.
     const testBtn = document.createElement('button');
     testBtn.className = 'doclib-card-text-btn doclib-card-action-btn';
-    testBtn.innerHTML = _svg(_ICON.test, { size: 11 }) + 'Test';
+    testBtn.innerHTML = _svg(_ICON.test, { size: 11 }) + _t('skills.test');
     testBtn.title = 'Test this skill — run it + AI judge';
     testBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -845,7 +846,7 @@ function renderSkillsList() {
   // "Your skills" section — show the header only when there's also a
   // built-in section to distinguish from (otherwise it's just the list).
   if (cards.length) {
-    if (showBuiltin) container.appendChild(_mkSectionHeader('user', 'Your skills', cards.length));
+    if (showBuiltin) container.appendChild(_mkSectionHeader('user', _t('skills.your_skills'), cards.length));
     cards.forEach(c => { c.dataset.skillSection = 'user'; container.appendChild(c); });
   }
 
@@ -1042,7 +1043,7 @@ async function _saveSkillEdit(card, name) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     // Refresh the cached markdown so the preload/expand show the new text.
     _mdCache.set(name, ta.value);
-    uiModule.showToast('Saved');
+    uiModule.showToast(_t('common.saved'));
     await loadSkills();  // re-render (frontmatter changes like name/status may have changed)
   } catch (e) {
     uiModule.showError('Save failed: ' + e.message);
@@ -1070,7 +1071,7 @@ async function _deleteSkill(name, card = null) {
     } else {
       await loadSkills();
     }
-    uiModule.showToast('Skill deleted');
+    uiModule.showToast(_t('skills.deleted_status'));
   } catch (e) { uiModule.showError('Delete failed: ' + e.message); }
 }
 
@@ -1082,7 +1083,7 @@ async function _setSkillStatus(name, status) {
       body: JSON.stringify({ status }),
     });
     await loadSkills();
-    uiModule.showToast(status === 'published' ? 'Skill approved' : 'Skill moved to draft');
+    uiModule.showToast(status === 'published' ? _t('skills.approved_status') : _t('skills.moved_to_draft'));
   } catch (e) { uiModule.showError('Update failed: ' + e.message); }
 }
 
@@ -1278,13 +1279,13 @@ function _renderTestVerdict(el, v, card, name) {
   if (!el) return;
   const verdict = (v && v.verdict) || 'unknown';
   const cls = { pass: 'ok', needs_work: 'warn', fail: 'bad', inconclusive: 'unknown' }[verdict] || 'unknown';
-  const label = { pass: 'PASS', needs_work: 'NEEDS WORK', fail: 'FAIL', inconclusive: 'INCONCLUSIVE', unknown: 'UNCLEAR' }[verdict] || 'UNCLEAR';
+  const label = { pass: _t('skills.pass'), needs_work: _t('skills.needs_work'), fail: _t('skills.fail'), inconclusive: _t('skills.inconclusive'), unknown: _t('skills.unclear') }[verdict] || _t('skills.unclear');
   const conf = v && typeof v.confidence === 'number' ? Math.round(v.confidence * 100) + '%' : '';
   const issues = Array.isArray(v && v.issues) ? v.issues : [];
   // Reflect the skill's current state: if it's already published, the button
   // confirms "Approved" (click to unpublish) rather than offering to approve.
   const isPub = card && card.dataset && card.dataset.skillStatus === 'published';
-  const approveLabel = isPub ? 'Approved' : 'Approve';
+  const approveLabel = isPub ? _t('skills.approved') : _t('skills.approve');
   const approveCls = 'skill-eval-approve' + (isPub ? ' is-approved' : (verdict === 'pass' ? ' suggested' : ''));
   const approveTitle = isPub ? 'Already approved — click to unpublish' : 'Publish — appears in the skills index';
   el.innerHTML =
@@ -1310,7 +1311,7 @@ function _renderTestVerdict(el, v, card, name) {
     const btn = el.querySelector('[data-act="approve"]');
     if (btn) {
       const pub = card.dataset.skillStatus === 'published';
-      btn.textContent = pub ? 'Approved' : 'Approve';
+      btn.textContent = pub ? _t('skills.approved') : _t('skills.approve');
       btn.title = pub ? 'Already approved — click to unpublish' : 'Publish — appears in the skills index';
       btn.classList.toggle('is-approved', pub);
       btn.classList.toggle('suggested', !pub && verdict === 'pass');
@@ -1413,7 +1414,7 @@ async function _auditAllSkills(opts = {}) {
       ? `${names.length} selected ${names.length === 1 ? 'skill' : 'skills'}`
       : `${names.length} visible ${names.length === 1 ? 'skill' : 'skills'}`;
     if (!names.length) {
-      uiModule.showToast(explicitNames ? 'No selected skills to audit' : 'No visible skills to audit');
+      uiModule.showToast(explicitNames ? _t('skills.no_selected') : _t('skills.no_visible'));
       return;
     }
     const confirmed = await _confirmAuditSkills(label);
@@ -1706,7 +1707,7 @@ async function _bulkDeleteNonPassing() {
   const names = targets.map(sk => sk.name || sk.id).filter(Boolean);
   const ok = await uiModule.styledConfirm(
     `Delete ${names.length} selected non-passing ${names.length === 1 ? 'skill' : 'skills'}? This removes duplicates, generic/irrelevant skills, failed audits, and anything below ${thresholdPct}%.`,
-    { confirmText: 'Delete non passing', danger: true }
+    { confirmText: _t('skills.delete_non_passing'), danger: true }
   );
   if (!ok) return;
   let deleted = 0;
@@ -1809,7 +1810,7 @@ async function _showSkillSource(name) {
         body: JSON.stringify({ markdown: ta.value }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      uiModule.showToast('Saved');
+      uiModule.showToast(_t('common.saved'));
       wrap.remove();
       await loadSkills();
     } catch (e) {

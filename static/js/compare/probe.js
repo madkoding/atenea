@@ -1,5 +1,6 @@
 // compare/probe.js — model probe/check system
 import state from './state.js';
+import { t as _t } from '../i18n.js';
 import { WAVE_FRAMES } from './icons.js';
 import uiModule from '../ui.js';
 import spinnerModule from '../spinner.js';
@@ -12,7 +13,7 @@ function _clearProbeWaves() {
 async function _checkUnprobed() {
   const unprobed = state._selectedModels.filter(m => !state._probed.has(m.model));
   if (unprobed.length === 0) {
-    if (uiModule) uiModule.showToast('All models verified');
+    if (uiModule) uiModule.showToast(_t('compare.all_verified'));
     return;
   }
 

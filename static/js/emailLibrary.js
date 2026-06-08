@@ -3,6 +3,7 @@
  * Similar pattern to documentLibrary.js. Shows emails in a grid with search/filter.
  */
 
+import { t as _t } from './i18n.js';
 import spinnerModule from './spinner.js';
 import { styledConfirm, showToast, emptyStateIcon } from './ui.js';
 import { folderDisplayName, sortedFolders } from './emailInbox.js';
@@ -151,14 +152,14 @@ function _wireRecipientChips(root) {
         const copied = await _copyTextToClipboard(email);
         if (!copied) throw new Error('copy failed');
         copyBtn.classList.add('copied');
-        copyBtn.title = 'Copied';
-        showToast?.('Email copied');
+        copyBtn.title = _t('common.copied');
+        showToast?.(_t('email.copied'));
         setTimeout(() => {
           copyBtn.classList.remove('copied');
-          copyBtn.title = 'Copy email';
+          copyBtn.title = _t('email.copy');
         }, 900);
       } catch (_) {
-        showToast?.('Copy failed');
+        showToast?.(_t('email.copy_failed'));
       }
       return;
     }
@@ -279,7 +280,7 @@ function _syncUnreadTabBadge(count) {
       chip.title = `Open ${label}`;
     } else {
       delete chip.dataset.emailUnreadLabel;
-      chip.title = 'Restore Email';
+      chip.title = _t('email.restore');
     }
   });
 }
@@ -302,7 +303,7 @@ function _renderAccountsLoading() {
     wp.element.classList.add('email-accounts-loading-whirlpool');
     const label = document.createElement('span');
     label.className = 'email-accounts-loading-label';
-    label.textContent = 'Accounts';
+    label.textContent = _t('email.accounts');
     strip.appendChild(wp.element);
     strip.appendChild(label);
   } catch (_) {
@@ -485,7 +486,7 @@ async function _deleteEmailAndAdvance(em, card, opts = {}) {
   if (!em || em.uid == null) return;
   if (opts.confirm !== false) {
     const subject = em.subject || '(no subject)';
-    const ok = await styledConfirm(`Delete "${subject}"?`, { confirmText: 'Delete', cancelText: 'Cancel', danger: true });
+    const ok = await styledConfirm(`Delete "${subject}"?`, { confirmText: _t('common.delete'), cancelText: _t('common.cancel'), danger: true });
     if (!ok) return;
   }
   const wasExpanded = !!card?.classList?.contains('doclib-card-expanded');
@@ -867,7 +868,7 @@ export function openEmailLibrary(opts = {}) {
   // expanded inside stays expanded.
   try {
     Modals.register('email-lib-modal', {
-      label: 'Email',
+      label: _t('email.title'),
       icon: 'M2 4h20v16H2zM22 7l-9.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7',
       closeFn: () => {
         const m = document.getElementById('email-lib-modal');
@@ -980,8 +981,8 @@ export function openEmailLibrary(opts = {}) {
   });
   document.getElementById('email-reminders-clear-btn')?.addEventListener('click', async () => {
     const ok = await styledConfirm('Permanently delete all Odysseus reminder emails?', {
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
+      confirmText: _t('common.delete'),
+      cancelText: _t('common.cancel'),
       danger: true,
     });
     if (!ok) return;
@@ -1499,7 +1500,7 @@ async function _loadFolders({ resetMissing = false } = {}) {
     sel.appendChild(sep2);
     const schedOpt = document.createElement('option');
     schedOpt.value = '__scheduled__';
-    schedOpt.textContent = 'Scheduled';
+    schedOpt.textContent = _t('email.scheduled');
     if (state._libFolder === '__scheduled__') schedOpt.selected = true;
     sel.appendChild(schedOpt);
     sel.value = state._libFolder;
@@ -1586,7 +1587,7 @@ function _renderEmailLoading(grid) {
   } catch (_) {}
   const label = document.createElement('div');
   label.className = 'email-loading-label';
-  label.textContent = 'Loading emails';
+  label.textContent = _t('email.loading');
   wrap.appendChild(label);
   grid.appendChild(wrap);
   return sp;
@@ -1615,16 +1616,16 @@ async function _refreshUnreadBadge() {
         const allData = await allRes.json();
         const t = allData.total || 0;
         badge.textContent = `${t} all`;
-        badge.title = 'Show all emails';
+        badge.title = _t('email.show_all_emails');
         badge.style.display = '';
       } catch (_) {
-        badge.textContent = 'Show all';
-        badge.title = 'Show all emails';
+        badge.textContent = _t('email.show_all');
+        badge.title = _t('email.show_all_emails');
         badge.style.display = '';
       }
     } else if (n > 0) {
       badge.textContent = n > 999 ? '999+ unread' : `${n} unread`;
-      badge.title = 'Show unread emails';
+      badge.title = _t('email.show_unread');
       badge.style.display = '';
     } else {
       badge.style.display = 'none';
@@ -1761,12 +1762,12 @@ async function _loadScheduled(grid, sp) {
     // Cancel button
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'memory-item-btn';
-    cancelBtn.title = 'Cancel scheduled send';
+    cancelBtn.title = _t('email.cancel_scheduled');
     cancelBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
     cancelBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const { styledConfirm } = await import('./ui.js');
-      const ok = await styledConfirm(`Cancel scheduled email "${subject}"?`, { confirmText: 'Cancel Send', cancelText: 'Keep', danger: true });
+      const ok = await styledConfirm(`Cancel scheduled email "${subject}"?`, { confirmText: _t('email.cancel_send'), cancelText: _t('email.keep'), danger: true });
       if (!ok) return;
       try {
         await fetch(`${API_BASE}/api/email/scheduled/${it.id}`, { method: 'DELETE' });
@@ -1932,7 +1933,7 @@ function _createCard(em) {
 
   if (em.has_attachments) {
     const att = document.createElement('span');
-    att.title = 'Has attachments';
+    att.title = _t('email.has_attachments');
     att.style.cssText = 'opacity:0.6;flex-shrink:0;display:inline-flex;';
     att.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 17.93 8.8l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
     titleRow.appendChild(att);
@@ -1986,7 +1987,7 @@ function _createCard(em) {
 
   if (em.is_flagged) {
     const star = document.createElement('span');
-    star.title = 'Favorited';
+    star.title = _t('email.favorited');
     star.style.cssText = 'color:var(--accent, var(--red));opacity:0.85;flex-shrink:0;display:inline-flex;';
     star.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
     titleRow.appendChild(star);
@@ -2024,7 +2025,7 @@ function _createCard(em) {
   const headerMenuBtn = document.createElement('button');
   headerMenuBtn.type = 'button';
   headerMenuBtn.className = 'email-card-header-menu';
-  headerMenuBtn.title = 'Actions';
+  headerMenuBtn.title = _t('common.actions');
   headerMenuBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
   headerMenuBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -2055,7 +2056,7 @@ function _createCard(em) {
     actionsWrap.className = 'memory-item-actions';
     const menuBtn = document.createElement('button');
     menuBtn.className = 'memory-item-btn';
-    menuBtn.title = 'Actions';
+    menuBtn.title = _t('common.actions');
     menuBtn.style.position = 'relative';
     menuBtn.style.top = '-1px';
     menuBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
@@ -3087,7 +3088,7 @@ function _showCachedSummary(reader, summary, btn) {
   if (btn) {
     btn.classList.add('active');
     const label = btn.querySelector('.btn-label');
-    if (label) label.textContent = 'Summary';
+    if (label) label.textContent = _t('email.summary');
   }
 }
 
@@ -3826,7 +3827,7 @@ async function _openEmailAsTab(em, folder) {
   document.body.classList.add('email-front');
 
   Modals.register(modalId, {
-    label: 'Email',
+    label: _t('email.title'),
     icon: _EMAIL_ICON_PATH,
     closeFn: () => {
       modal.remove();
@@ -4278,13 +4279,13 @@ async function _summarizeEmail(reader, data, btn) {
       existing.style.display = '';
       if (btn) {
         btn.classList.add('active');
-        btn.querySelector('.btn-label').textContent = 'Summary';
+        btn.querySelector('.btn-label').textContent = _t('email.summary');
       }
     } else {
       existing.style.display = 'none';
       if (btn) {
         btn.classList.remove('active');
-        btn.querySelector('.btn-label').textContent = 'Summary';
+        btn.querySelector('.btn-label').textContent = _t('email.summary');
       }
     }
     return;
@@ -4306,7 +4307,7 @@ async function _summarizeEmail(reader, data, btn) {
     if (btn) {
       btn.classList.add('active');
       const label = btn.querySelector('.btn-label');
-      if (label) label.textContent = 'Summary';
+      if (label) label.textContent = _t('email.summary');
     }
     // No Cancel button — toggling the Summary button again hides this panel
     // (handled by the existing-panel branch above), so it'd be redundant.
@@ -4378,7 +4379,7 @@ async function _generateSummary(reader, data, btn) {
       if (btn) {
         btn.classList.add('active');
         const label = btn.querySelector('.btn-label');
-        if (label) label.textContent = 'Summary';
+        if (label) label.textContent = _t('email.summary');
       }
     } else {
       content.innerHTML = `<span style="color:var(--red)">${_esc(result.error || 'Failed to summarize')}</span>`;
@@ -4485,7 +4486,7 @@ function _showReaderMoreMenu(em, card, reader, anchor) {
   const _contactIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>';
   const actions = [
     {
-      label: 'Open in new tab',
+      label: _t('email.open_tab'),
       icon: _newTabIcon,
       action: async () => {
         const folder = state._libFolder || 'INBOX';
@@ -4495,7 +4496,7 @@ function _showReaderMoreMenu(em, card, reader, anchor) {
     {
       // Save the sender to CardDAV contacts. Pulls name + address off the
       // list-item (em); falls back to splitting the local-part for a name.
-      label: 'Save sender to contacts',
+      label: _t('email.save_sender'),
       icon: _contactIcon,
       action: async () => {
         const email = (em.from_address || em.from || '').trim();
@@ -4560,7 +4561,7 @@ function _showReaderMoreMenu(em, card, reader, anchor) {
       },
     },
     {
-      label: 'Archive',
+      label: _t('email.archive'),
       icon: _archIcon,
       action: async () => {
         try {
@@ -4570,12 +4571,12 @@ function _showReaderMoreMenu(em, card, reader, anchor) {
       },
     },
     {
-      label: 'Remind to reply',
+      label: _t('email.remind_reply'),
       icon: _bellIcon,
       submenu: 'remind',
     },
     {
-      label: 'Move to Spam',
+      label: _t('email.move_spam'),
       icon: _spamIcon,
       action: async () => {
         try {
@@ -4585,7 +4586,7 @@ function _showReaderMoreMenu(em, card, reader, anchor) {
       },
     },
     {
-      label: 'Move to Trash',
+      label: _t('email.move_trash'),
       icon: _trashIcon,
       action: async () => {
         try {
@@ -4595,14 +4596,14 @@ function _showReaderMoreMenu(em, card, reader, anchor) {
       },
     },
     {
-      label: 'Delete Permanently',
+      label: _t('email.delete_perm'),
       icon: _deleteForeverIcon,
       danger: true,
       action: async () => {
         const subject = em.subject || '(no subject)';
         const ok = await styledConfirm(
           `Permanently delete "${subject}"? This cannot be undone.`,
-          { confirmText: 'Delete', cancelText: 'Cancel', danger: true }
+          { confirmText: _t('common.delete'), cancelText: _t('common.cancel'), danger: true }
         );
         if (!ok) return;
         try {
@@ -4675,21 +4676,21 @@ function _showCardMenu(em, anchor) {
 
   const _newTabIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
   const actions = [
-    { label: 'Open', icon: _replyIcon, action: async () => {
+    { label: _t('common.open'), icon: _replyIcon, action: async () => {
       // Just expand inline (same as tapping the row).
       const card = anchor.closest('.doclib-card');
       if (card && !card.classList.contains('doclib-card-expanded')) {
         await _toggleCardPreview(card, em);
       }
     }},
-    { label: 'Open in new tab', icon: _newTabIcon, action: async () => {
+    { label: _t('email.open_tab'), icon: _newTabIcon, action: async () => {
       // Open this email as its own in-app modal that registers a dock
       // chip — multiple emails can be opened simultaneously, each gets
       // its own chip in the minimized dock.
       const folder = state._libFolder || 'INBOX';
       await _openEmailAsTab(em, folder);
     }},
-    { label: 'Remind to reply', icon: _cardBellIcon, submenu: 'remind' },
+    { label: _t('email.remind_reply'), icon: _cardBellIcon, submenu: 'remind' },
   ];
 
   if (!isSentFolder) {
@@ -4724,7 +4725,7 @@ function _showCardMenu(em, anchor) {
       },
     });
     actions.push({
-      label: 'Archive',
+      label: _t('email.archive'),
       icon: _archIcon,
       action: async () => {
         await fetch(`${API_BASE}/api/email/archive/${em.uid}?folder=${encodeURIComponent(state._libFolder)}${_acct()}`, { method: 'POST' });
@@ -4736,7 +4737,7 @@ function _showCardMenu(em, anchor) {
     });
   } else {
     actions.push({
-      label: 'Archive',
+      label: _t('email.archive'),
       icon: _archIcon,
       action: async () => {
         await fetch(`${API_BASE}/api/email/archive/${em.uid}?folder=${encodeURIComponent(state._libFolder)}${_acct()}`, { method: 'POST' });
@@ -4755,7 +4756,7 @@ function _showCardMenu(em, anchor) {
   // center lines up with the SVG icons above (which sit a bit higher).
   const _selectIcon = '<span style="font-size:16px;line-height:1;position:relative;top:-2px;">●</span>';
   actions.push({
-    label: 'Select',
+    label: _t('common.select'),
     icon: _selectIcon,
     action: () => {
       state._selectMode = true;
@@ -4766,9 +4767,9 @@ function _showCardMenu(em, anchor) {
   });
 
   actions.push(
-    { label: 'Delete', icon: _delIcon, danger: true, action: async () => {
+    { label: _t('common.delete'), icon: _delIcon, danger: true, action: async () => {
       const subject = em.subject || '(no subject)';
-      const ok = await styledConfirm(`Delete "${subject}"?`, { confirmText: 'Delete', cancelText: 'Cancel', danger: true });
+      const ok = await styledConfirm(`Delete "${subject}"?`, { confirmText: _t('common.delete'), cancelText: _t('common.cancel'), danger: true });
       if (!ok) return;
       await fetch(`${API_BASE}/api/email/delete/${em.uid}?folder=${encodeURIComponent(state._libFolder)}${_acct()}`, { method: 'DELETE' });
       await _animateEmailCardRemoval([em.uid]);
@@ -4831,9 +4832,9 @@ function _showBulkActionsMenu(anchor) {
   const _unreadIco = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>';
   const _doneIco = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
   const items = [
-    { label: 'Done', icon: _doneIco, action: () => _bulkAction('done') },
-    { label: 'Mark Read', icon: _readIco, action: () => _bulkAction('read') },
-    { label: 'Mark Unread', icon: _unreadIco, action: () => _bulkAction('unread') },
+    { label: _t('common.done'), icon: _doneIco, action: () => _bulkAction('done') },
+    { label: _t('email.mark_read'), icon: _readIco, action: () => _bulkAction('read') },
+    { label: _t('email.mark_unread'), icon: _unreadIco, action: () => _bulkAction('unread') },
   ];
   for (const a of items) {
     const it = document.createElement('div');
@@ -4896,7 +4897,7 @@ async function _bulkAction(action) {
   if (action === 'delete') {
     const ok = await styledConfirm(
       `Delete ${uids.length} selected email${uids.length === 1 ? '' : 's'}?`,
-      { confirmText: 'Delete', cancelText: 'Cancel', danger: true },
+      { confirmText: _t('common.delete'), cancelText: _t('common.cancel'), danger: true },
     );
     if (!ok) return;
   }
@@ -5115,9 +5116,9 @@ function _showLibRemindSubmenu(em, parentDropdown) {
   const nextWeek = new Date(now); nextWeek.setDate(now.getDate()+daysUntilMon); nextWeek.setHours(8,0,0,0);
 
   const presets = [
-    { label: 'Later today', sub: laterToday.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }), date: laterToday },
-    { label: 'Tomorrow', sub: tomorrow.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }), date: tomorrow },
-    { label: 'Next week', sub: nextWeek.toLocaleDateString([], { weekday:'short' }) + ' ' + nextWeek.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }), date: nextWeek },
+    { label: _t('email.later_today'), sub: laterToday.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }), date: laterToday },
+    { label: _t('email.tomorrow'), sub: tomorrow.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }), date: tomorrow },
+    { label: _t('email.next_week'), sub: nextWeek.toLocaleDateString([], { weekday:'short' }) + ' ' + nextWeek.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }), date: nextWeek },
   ];
   for (const p of presets) {
     const item = document.createElement('div');
@@ -5178,7 +5179,7 @@ async function _createEmailReplyReminder(em, dueDate) {
       { text: `Reply to ${from}: ${subject}`, checked: false },
     ],
     content: `Open email: ${deepLink}`,
-    label: 'email reminder',
+    label: _t('email.reminder'),
     due_date: iso,
     source: 'email',
   };

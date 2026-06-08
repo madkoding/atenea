@@ -1,5 +1,6 @@
 // compare/scoreboard.js — vote history display
 import Storage from '../storage.js';
+import { t as _t } from '../i18n.js';
 import state from './state.js';
 import { VOTES_STORAGE_KEY } from './icons.js';
 import themeModule from '../theme.js';
@@ -72,7 +73,7 @@ export function showScoreboard() {
 
   // Mode tabs
   const modes = ['chat', 'agent', 'search', 'research'];
-  const modeLabels = { chat: 'Chat', agent: 'Agent', search: 'Search', research: 'Research' };
+  const modeLabels = { chat: _t('compare.chat'), agent: _t('compare.agent'), search: 'Search', research: _t('compare.research') };
   const tabBar = document.createElement('div');
   tabBar.className = 'compare-mode-tabs';
   tabBar.style.marginBottom = '12px';
@@ -178,7 +179,7 @@ export function showScoreboard() {
   // Clear history button
   const clearBtn = document.createElement('button');
   clearBtn.className = 'scoreboard-clear-btn';
-  clearBtn.textContent = 'Clear History';
+  clearBtn.textContent = _t('compare.clear_history');
   clearBtn.style.cssText = 'display:block;margin:16px 0 4px auto;padding:4px 12px;background:none;border:1px solid var(--border);color:var(--fg);border-radius:4px;cursor:pointer;font-size:11px;opacity:0.4;transition:opacity 0.15s;';
   clearBtn.addEventListener('mouseenter', () => { clearBtn.style.opacity = '1'; });
   clearBtn.addEventListener('mouseleave', () => { clearBtn.style.opacity = '0.6'; });
@@ -190,7 +191,7 @@ export function showScoreboard() {
     confirmLabel.style.cssText = 'font-size:12px;opacity:0.7;';
     confirmLabel.textContent = 'Clear all vote history?';
     const yesBtn = document.createElement('button');
-    yesBtn.textContent = 'Clear';
+    yesBtn.textContent = _t('compare.clear');
     yesBtn.style.cssText = 'padding:4px 12px;background:var(--red);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;';
     yesBtn.addEventListener('click', () => {
       Storage.setJSON(VOTES_STORAGE_KEY, []);

@@ -1,3 +1,5 @@
+import { t as _t } from '../i18n.js';
+
 /**
  * Research job queue — add, start, monitor, cancel research jobs.
  */
@@ -195,16 +197,16 @@ export function formatElapsed(ms) {
 }
 
 export function formatPhase(progress, maxRounds) {
-  if (!progress || !progress.phase) return 'Starting...';
+  if (!progress || !progress.phase) return _t('research.starting');
   const p = progress;
-  const rn = p.round ? (maxRounds ? `Round ${p.round}/${maxRounds}: ` : `Round ${p.round}: `) : '';
+  const rn = p.round ? (maxRounds ? `${_t('research.round')} ${p.round}/${maxRounds}: ` : `${_t('research.round')} ${p.round}: `) : '';
   switch (p.phase) {
-    case 'probing': return 'Probing model...';
-    case 'planning': return 'Planning research strategy...';
-    case 'searching': return `${rn}Searching (${p.queries || 0} queries)`;
-    case 'reading': return `${rn}Reading ${p.total_sources || 0} sources`;
-    case 'analyzing': return `${rn}Analyzing ${p.total_findings || 0} findings`;
-    case 'writing': return `Writing report -- ${p.total_sources || 0} sources`;
+    case 'probing': return _t('research.probing_model');
+    case 'planning': return _t('research.planning_strategy');
+    case 'searching': return `${rn}${_t('research.searching_queries').replace('{n}', p.queries || 0)}`;
+    case 'reading': return `${rn}${_t('research.reading_sources').replace('{n}', p.total_sources || 0)}`;
+    case 'analyzing': return `${rn}${_t('research.analyzing_findings').replace('{n}', p.total_findings || 0)}`;
+    case 'writing': return `${_t('research.writing_report').replace('{n}', p.total_sources || 0)}`;
     default: return p.phase;
   }
 }
@@ -307,7 +309,7 @@ function _finishJob(job, status) {
   job.elapsed = Date.now() - (job.startedAt || Date.now());
   if (status === 'done') {
     if ('Notification' in window && Notification.permission === 'granted') {
-      try { new Notification('Research Complete', { body: job.query.slice(0, 80) }); } catch {}
+      try { new Notification(_t('research.research_complete'), { body: job.query.slice(0, 80) }); } catch {}
     }
     if (_onCompleteCb) _onCompleteCb(job);
   }

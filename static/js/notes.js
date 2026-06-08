@@ -4,6 +4,7 @@
  */
 
 import uiModule from './ui.js';
+import { t as _t } from './i18n.js';
 import { spawnConfetti } from './compare/vote.js';
 import * as Modals from './modalManager.js';
 import { attachColorPicker } from './colorPicker.js';
@@ -346,7 +347,7 @@ function _pickCustomBgImage() {
         const res = await fetch(`${API_BASE}/api/upload`, { method: 'POST', body: fd, credentials: 'same-origin' });
         const data = await res.json();
         const fileId = data.files?.[0]?.id;
-        if (!fileId) throw new Error('Upload failed');
+        if (!fileId) throw new Error(_t('common.upload_failed'));
         finish(`${API_BASE}/api/upload/${fileId}`);
       } catch { finish(null); }
     });
@@ -393,7 +394,7 @@ function _undoArchive(note, prevIdx) {
     const i = _notes.findIndex(n => n.id === note.id);
     if (i >= 0) _notes.splice(i, 1);
     _renderNotes();
-    uiModule.showError('Undo failed');
+    uiModule.showError(_t('notes.undo_failed'));
   });
 }
 
@@ -421,7 +422,7 @@ async function _saveNote(note) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(note),
   });
-  if (!res.ok) throw new Error('Failed to save note');
+  if (!res.ok) throw new Error(_t('notes.save_failed'));
   return await res.json();
 }
 
@@ -438,7 +439,7 @@ async function _patchNote(id, patch) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(patch),
   });
-  if (!res.ok) throw new Error('Failed to update note');
+  if (!res.ok) throw new Error(_t('notes.update_failed'));
   return await res.json();
 }
 
@@ -741,12 +742,12 @@ function _snapToRepeat(currentDate, normRepeat) {
 function _formatRepeatLabel(repeat, originalDate) {
   if (!repeat || repeat === 'none') return '';
   const norm = _normalizeRepeat(repeat, originalDate);
-  if (norm === 'daily') return 'Daily';
-  if (norm === 'yearly') return 'Yearly';
+  if (norm === 'daily') return _t('notes.recur_daily');
+  if (norm === 'yearly') return _t('notes.recur_yearly');
   const parts = norm.split(':');
   if (parts[0] === 'weekly') {
     const wd = parseInt(parts[1], 10);
-    if (isNaN(wd)) return 'Weekly';
+    if (isNaN(wd)) return _t('notes.recur_weekly');
     return `Weekly on ${_DAYS[wd]}s`;
   }
   if (parts[0] === 'monthly') {
@@ -920,7 +921,7 @@ function _checkReminders() {
 }
 
 function _fireReminder(note) {
-  const title = note.title || 'Note reminder';
+  const title = note.title || _t('notes.reminder');
   // Include the verbatim note content so the email/notification actually
   // shows what to do, not just a count. Cap the per-item lines (8 max) and
   // total length so the body stays inbox-friendly.
@@ -1221,7 +1222,7 @@ export function openPanel() {
     const CLOSE_ICON   = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg><span class="notes-header-btn-label">Archive</span>';
     const syncArchiveBtn = () => {
       archiveBtn.classList.toggle('active', _showingArchived);
-      archiveBtn.title = _showingArchived ? 'Exit archive' : 'View archive';
+      archiveBtn.title = _showingArchived ? _t('notes.exit_archive') : _t('notes.view_archive');
       archiveBtn.style.opacity = _showingArchived ? '1' : '0.8';
       // Swap to an X while in archive view so it doubles as a close-back-
       // to-active-notes toggle.
@@ -1257,7 +1258,7 @@ export function openPanel() {
     // Label shows what you'll switch TO — "Grid" while in list, "List" while in grid.
     const _setViewLabel = () => {
       const lbl = viewBtn.querySelector('.notes-header-btn-label');
-      if (lbl) lbl.textContent = _viewMode === 'grid' ? 'List' : 'Grid';
+      if (lbl) lbl.textContent = _viewMode === 'grid' ? _t('notes.view_list') : _t('notes.view_grid');
     };
     _setViewLabel();
     requestAnimationFrame(() => _applyMasonry(document.querySelector('#notes-pane .notes-pane-body')));
@@ -1457,7 +1458,7 @@ function _isPastReminder(n) {
 async function _clearPastReminders() {
   const targets = _notes.filter(n => !n.archived && _isPastReminder(n));
   if (!targets.length) {
-    uiModule.showToast?.('No past reminders to clear');
+    uiModule.showToast?.(_t('notes.no_reminders'));
     return;
   }
   const ok = uiModule?.styledConfirm
@@ -1505,7 +1506,7 @@ function _renderLabels(root = document) {
     // bell-off icon
     ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:2px"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
     : '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:2px"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
-  html += `<button class="${reminderCls}" data-action="reminders" title="${isReminderOn ? 'Showing only reminders — click to show all' : isReminderOff ? 'Hiding reminders — click to show only reminders' : 'Click to filter reminders'}">${reminderIcon}Reminders <span class="notes-label-chip-count">${reminderCount}</span></button>`;
+  html += `<button class="${reminderCls}" data-action="reminders" title="${isReminderOn ? 'Showing only reminders — click to show all' : isReminderOff ? 'Hiding reminders — click to show only reminders' : _t('notes.filter_reminders')}">${reminderIcon}Reminders <span class="notes-label-chip-count">${reminderCount}</span></button>`;
   const showingReminders = _activeFilter === 'reminders';
   if (showingReminders && pastReminderCount > 0) {
     html += `<button class="notes-label-chip notes-label-clear-past" data-action="clear-past-reminders" title="Delete reminders whose time has passed"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Clear past <span class="notes-label-chip-count">${pastReminderCount}</span></button>`;
@@ -1836,7 +1837,7 @@ function _renderNotes() {
     html += `<div class="note-card${note.pinned ? ' note-card-pinned' : ''}${cc}${sel}${goalClass}${reminderGlowClass}${_selectMode ? ' note-card-selectmode' : ''}" draggable="${(_selectMode || _isNotesMobileMode()) ? 'false' : 'true'}" data-note-id="${note.id}"${cardStyle}>
       ${_selectMode ? `<input type="checkbox" class="memory-select-cb note-card-cb" data-note-id="${note.id}" ${_selectedIds.has(note.id) ? 'checked' : ''} />` : ''}
       ${goalPill}
-      <button class="note-card-pin${note.pinned ? ' active' : ''}" data-note-id="${note.id}" title="${note.pinned ? 'Unpin' : 'Pin'}">
+      <button class="note-card-pin${note.pinned ? ' active' : ''}" data-note-id="${note.id}" title="${note.pinned ? _t('notes.unpin') : _t('notes.pin')}">
         <svg width="16" height="16" viewBox="0 0 24 28" fill="${note.pinned ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${note.pinned ? ' style="color:var(--accent,var(--red));"' : ''}><g transform="rotate(${note.pinned ? 0 : 45} 12 14)" style="transition:transform 0.2s ease;"><line x1="12" y1="17" x2="12" y2="27"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17z"/></g></svg>
       </button>
       ${_showingArchived
@@ -2218,7 +2219,7 @@ function _bindCardEvents(body) {
         note.pinned = prevPinned;
         note.sort_order = prevSortOrder;
         _renderNotes();
-        uiModule.showError('Failed to pin');
+        uiModule.showError(_t('notes.pin_failed'));
       });
     });
   });
@@ -2234,7 +2235,7 @@ function _bindCardEvents(body) {
       d.style.background = _dotBg(d.dataset.color, newColor);
     });
     try { await _patchNote(id, { color: newColor || null }); const note = _notes.find(n => n.id === id); if (note) note.color = newColor; }
-    catch { uiModule.showError('Failed to update color'); }
+    catch { uiModule.showError(_t('notes.color_failed')); }
   };
   body.querySelectorAll('.note-card-color-dot').forEach(dot => {
     dot.addEventListener('click', (e) => {
@@ -2314,11 +2315,11 @@ function _bindCardEvents(body) {
       const finish = () => {
         _renderNotes();
         _patchNote(id, { archived: true }).then(() => {
-          uiModule.showToast('Archived', { duration: 6000, action: 'Undo', actionIcon: _undoIcon, onAction: undo, actionHint: 'Ctrl+Z' });
+          uiModule.showToast(_t('notes.archived'), { duration: 6000, action: _t('notes.undo'), actionIcon: _undoIcon, onAction: undo, actionHint: 'Ctrl+Z' });
         }).catch(() => {
           _notes.splice(idx, 0, removed);
           _renderNotes();
-          uiModule.showError('Failed to archive');
+          uiModule.showError(_t('notes.archive_failed'));
         });
       };
       if (card) {
@@ -2341,10 +2342,10 @@ function _bindCardEvents(body) {
       if (idx < 0) return;
       const removed = _notes.splice(idx, 1)[0];
       _renderNotes();
-      _patchNote(id, { archived: false }).then(() => uiModule.showToast('Unarchived')).catch(() => {
+      _patchNote(id, { archived: false }).then(() => uiModule.showToast(_t('notes.unarchived_status'))).catch(() => {
         _notes.splice(idx, 0, removed);
         _renderNotes();
-        uiModule.showError('Failed to unarchive');
+        uiModule.showError(_t('notes.unarchive_failed'));
       });
     });
   });
@@ -2357,10 +2358,10 @@ function _bindCardEvents(body) {
       if (idx < 0) return;
       const removed = _notes.splice(idx, 1)[0];
       _renderNotes();
-      _deleteNoteApi(id).then(() => uiModule.showToast('Deleted')).catch(() => {
+      _deleteNoteApi(id).then(() => uiModule.showToast(_t('notes.deleted_status'))).catch(() => {
         _notes.splice(idx, 0, removed);
         _renderNotes();
-        uiModule.showError('Failed to delete');
+        uiModule.showError(_t('notes.delete_failed'));
       });
     });
   });
@@ -2392,11 +2393,11 @@ function _bindCardEvents(body) {
         _pushUndo({ label: 'archive', run: undo });
         const _undoIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><polyline points="9 14 4 9 9 4"/><path d="M4 9h11a5 5 0 0 1 5 5v0a5 5 0 0 1-5 5H9"/></svg>';
         _patchNote(id, { archived: true }).then(() => {
-          uiModule.showToast('Archived', { duration: 6000, action: 'Undo', actionIcon: _undoIcon, onAction: undo, actionHint: 'Ctrl+Z' });
+          uiModule.showToast(_t('notes.archived'), { duration: 6000, action: _t('notes.undo'), actionIcon: _undoIcon, onAction: undo, actionHint: 'Ctrl+Z' });
         }).catch(() => {
           _notes.splice(curIdx, 0, removed);
           _renderNotes();
-          uiModule.showError('Failed to archive');
+          uiModule.showError(_t('notes.archive_failed'));
         });
       };
       if (card) {
@@ -2417,10 +2418,10 @@ function _bindCardEvents(body) {
       if (idx < 0) return;
       const removed = _notes.splice(idx, 1)[0];
       _renderNotes();
-      _patchNote(id, { archived: false }).then(() => uiModule.showToast('Unarchived')).catch(() => {
+      _patchNote(id, { archived: false }).then(() => uiModule.showToast(_t('notes.unarchived_status'))).catch(() => {
         _notes.splice(idx, 0, removed);
         _renderNotes();
-        uiModule.showError('Failed to unarchive');
+        uiModule.showError(_t('notes.unarchive_failed'));
       });
     });
   });
@@ -2436,7 +2437,7 @@ function _bindCardEvents(body) {
       _deleteNoteApi(id).catch(() => {
         _notes.splice(idx, 0, removed);
         _renderNotes();
-        uiModule.showError('Failed to delete');
+        uiModule.showError(_t('notes.delete_failed'));
       });
     });
   });
@@ -2490,7 +2491,7 @@ function _bindCardEvents(body) {
       _patchNote(noteId, { items: note.items }).catch(() => {
         note.items.splice(idx, 0, removed);
         _renderNotes();
-        uiModule.showError('Failed to remove item');
+        uiModule.showError(_t('notes.remove_item_failed'));
       });
     });
   });
@@ -2520,7 +2521,7 @@ function _bindCardEvents(body) {
       _patchNote(noteId, { items }).catch(() => {
         note.items = items.slice(0, -1);
         _renderNotes();
-        uiModule.showError('Failed to add item');
+        uiModule.showError(_t('notes.add_item_failed'));
       });
     });
   });
@@ -2860,8 +2861,8 @@ function _buildForm(note = null) {
         <button class="note-form-cancel note-form-text-btn note-form-collapsible" title="Cancel">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg><span class="nft-label">Cancel</span>
         </button>
-        <button class="note-form-save note-form-text-btn" title="${isEdit ? 'Update' : 'Save'}">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span class="nft-label">${isEdit ? 'Update' : 'Save'}</span>
+        <button class="note-form-save note-form-text-btn" title="${isEdit ? _t('notes.btn_update') : 'Save'}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span class="nft-label">${isEdit ? _t('notes.btn_update') : 'Save'}</span>
         </button>
       </div>
     </div>
@@ -3096,7 +3097,7 @@ function _buildForm(note = null) {
       { label: 'Later today', sub: _laterTodayDate().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), action: () => _setReminder(_toLocalDatetimeStr(_laterTodayDate())) },
       { label: 'Tomorrow', sub: _tomorrowDate().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), action: () => _setReminder(_toLocalDatetimeStr(_tomorrowDate())) },
       { label: 'Next week', sub: _nextWeekDate().toLocaleDateString([], { weekday: 'short' }) + ' ' + _nextWeekDate().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), action: () => _setReminder(_toLocalDatetimeStr(_nextWeekDate())) },
-      { label: 'Select date and time', sub: '', action: () => _pickCustomDate() },
+      { label: _t('notes.select_datetime'), sub: '', action: () => _pickCustomDate() },
     ];
 
     // Sub-page state for the repeat picker. null = top page.
@@ -3227,7 +3228,7 @@ function _buildForm(note = null) {
         html += '</div>';
         html += '<div class="note-reminder-menu-divider"></div>';
         const ready = nthDraft.n > 0 && nthDraft.w >= 0;
-        const lbl = ready ? `Save: ${_ORDINALS[nthDraft.n - 1]} ${_DAYS[nthDraft.w]}` : 'Pick week and weekday';
+        const lbl = ready ? `Save: ${_ORDINALS[nthDraft.n - 1]} ${_DAYS[nthDraft.w]}` : _t('notes.pick_weekday');
         html += `<button class="note-reminder-menu-item note-reminder-menu-confirm${ready ? '' : ' disabled'}" data-action="nth-save" ${ready ? '' : 'disabled'}><span>${lbl}</span></button>`;
       }
 
@@ -3387,7 +3388,7 @@ function _buildForm(note = null) {
         const res = await fetch(`${API_BASE}/api/upload`, { method: 'POST', body: fd, credentials: 'same-origin' });
         const data = await res.json();
         const fileId = data.files?.[0]?.id;
-        if (!fileId) throw new Error('Upload failed');
+        if (!fileId) throw new Error(_t('common.upload_failed'));
         currentImageUrl = `${API_BASE}/api/upload/${fileId}`;
         // Only ever keep the latest attached photo — drop any existing wrap
         // before inserting a fresh one. Picking a second photo replaces the
@@ -3402,7 +3403,7 @@ function _buildForm(note = null) {
         form.querySelector('.note-form-header').after(wrap);
         wrap.querySelector('.note-form-image-rm').addEventListener('click', () => { wrap.remove(); currentImageUrl = ''; });
         wrap.querySelector('img').src = currentImageUrl;
-      } catch (err) { uiModule.showError('Image upload failed'); }
+      } catch (err) { uiModule.showError(_t('notes.image_upload_failed')); }
       photoInput.value = '';
     });
   }
@@ -3529,7 +3530,7 @@ function _buildForm(note = null) {
       // can't be re-rendered later without the URL.
       const canvas = form.querySelector('.note-form-canvas');
       const url = await _uploadCanvasAsPng(canvas);
-      if (!url) { uiModule.showError('Failed to save drawing'); return; }
+      if (!url) { uiModule.showError(_t('notes.drawing_failed')); return; }
       payload.image_url = url;
     } else if (currentType === 'goal') {
       // Legacy: existing goal-type notes still edit through this branch.
@@ -3605,14 +3606,14 @@ function _buildForm(note = null) {
     const _saveLabelEl = _saveBtnEl0.querySelector('.nft-label');
     const _enterArchive = () => {
       _saveBtnEl0.classList.add('archive-mode');
-      if (_saveLabelEl) _saveLabelEl.textContent = 'Archive';
-      _saveBtnEl0.title = 'Archive';
+      if (_saveLabelEl) _saveLabelEl.textContent = _t('notes.archive');
+      _saveBtnEl0.title = _t('notes.archive');
     };
     const _enterUpdate = () => {
       if (!_saveBtnEl0.classList.contains('archive-mode')) return;
       _saveBtnEl0.classList.remove('archive-mode');
-      if (_saveLabelEl) _saveLabelEl.textContent = 'Update';
-      _saveBtnEl0.title = 'Update';
+      if (_saveLabelEl) _saveLabelEl.textContent = _t('notes.btn_update');
+      _saveBtnEl0.title = _t('notes.btn_update');
     };
     _enterArchive();
     form.addEventListener('input', _enterUpdate, true);
@@ -3635,11 +3636,11 @@ function _buildForm(note = null) {
     _pushUndo({ label: 'archive', run: undo });
     const _undoIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><polyline points="9 14 4 9 9 4"/><path d="M4 9h11a5 5 0 0 1 5 5v0a5 5 0 0 1-5 5H9"/></svg>';
     _patchNote(id, { archived: true }).then(() => {
-      uiModule.showToast('Archived', { duration: 6000, action: 'Undo', actionIcon: _undoIcon, onAction: undo, actionHint: 'Ctrl+Z' });
+      uiModule.showToast(_t('notes.archived'), { duration: 6000, action: _t('notes.undo'), actionIcon: _undoIcon, onAction: undo, actionHint: 'Ctrl+Z' });
     }).catch(() => {
       _notes.splice(idx, 0, removed);
       _renderNotes();
-      uiModule.showError('Failed to archive');
+      uiModule.showError(_t('notes.archive_failed'));
     });
   });
   form.querySelector('.note-form-delete-btn')?.addEventListener('click', async () => {
@@ -3655,8 +3656,8 @@ function _buildForm(note = null) {
     if (idx >= 0) _notes.splice(idx, 1);
     _editingId = null;
     _renderNotes();
-    _deleteNoteApi(id).then(() => uiModule.showToast('Deleted')).catch(() => {
-      uiModule.showError('Failed to delete');
+    _deleteNoteApi(id).then(() => uiModule.showToast(_t('notes.deleted_status'))).catch(() => {
+      uiModule.showError(_t('notes.delete_failed'));
       _fetchNotes().then(() => _renderNotes());
     });
   });
@@ -3931,7 +3932,7 @@ function _wireCanvas(container, initialImageUrl) {
       const rm = document.createElement('button');
       rm.type = 'button';
       rm.className = 'note-form-draw-bg-rm';
-      rm.title = 'Clear photo (regular draw)';
+      rm.title = _t('notes.clear_drawing');
       rm.innerHTML = '&times;';
       rm.addEventListener('click', (e) => {
         e.preventDefault();
@@ -4255,7 +4256,7 @@ function _createNote(type = 'todo') {
   form.classList.add('note-form-new');
   body.prepend(form);
   form.querySelector('.note-form-title').focus();
-  if (restored) uiModule.showToast('Restored unsaved note');
+  if (restored) uiModule.showToast(_t('notes.restored_note'));
 }
 
 // Build the plain-text/markdown form of a note for clipboard copy.
@@ -4338,7 +4339,7 @@ async function _agentSolveNote(id) {
   if (!prompt) { uiModule.showToast('Nothing to solve — note is empty'); return; }
   try {
     const dc = await (await fetch(`${API_BASE}/api/default-chat`, { credentials: 'same-origin' })).json();
-    if (!dc.endpoint_url || !dc.model) { uiModule.showError('No default chat model configured'); return; }
+    if (!dc.endpoint_url || !dc.model) { uiModule.showError(_t('notes.no_chat_model')); return; }
 
     // 1. Create the session server-side (no UI switch). skip_validation
     //    avoids re-probing — the default-chat endpoint is already known good.
@@ -4350,7 +4351,7 @@ async function _agentSolveNote(id) {
     if (dc.endpoint_id) csFd.append('endpoint_id', dc.endpoint_id);
     csFd.append('skip_validation', 'true');
     const csRes = await fetch(`${API_BASE}/api/session`, { method: 'POST', credentials: 'same-origin', body: csFd });
-    if (!csRes.ok) { uiModule.showError('Could not create agent session'); return; }
+    if (!csRes.ok) { uiModule.showError(_t('notes.no_agent_session')); return; }
     const sess = await csRes.json();
     const sid = sess.id;
 
@@ -4433,7 +4434,7 @@ function _editNote(id) {
   const { note: _n, restored } = _applyDraftToNote(note, id);
   const form = _buildForm(_n);
   card.replaceWith(form);
-  if (restored) uiModule.showToast('Restored unsaved changes');
+  if (restored) uiModule.showToast(_t('notes.restored_changes'));
   // Pinned notes live in the first masonry column — the edit form has
   // column-span:all, which can leave the form rendered above the fold or
   // visually buried under neighboring pinned cards. Bring it into view
@@ -4483,7 +4484,7 @@ async function _deleteNote(id) {
     ? await uiModule.styledConfirm('Delete this note?', { confirmText: 'Delete', danger: true })
     : confirm('Delete this note?');
   if (!ok) return;
-  try { await _deleteNoteApi(id); await _fetchNotes(); _renderNotes(); uiModule.showToast('Deleted'); }
+  try { await _deleteNoteApi(id); await _fetchNotes(); _renderNotes(); uiModule.showToast(_t('notes.deleted_status')); }
   catch (err) { uiModule.showError(err.message); }
 }
 
@@ -4528,7 +4529,7 @@ function _openMobileFullscreenEdit(id, fromCard) {
   const { note: _n, restored } = _applyDraftToNote(note, id);
   const form = _buildForm(_n);
   body.appendChild(form);
-  if (restored) uiModule.showToast('Restored unsaved changes');
+  if (restored) uiModule.showToast(_t('notes.restored_changes'));
   document.body.appendChild(overlay);
   _mobileFsOverlay = overlay;
 

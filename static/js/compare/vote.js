@@ -1,5 +1,6 @@
 // compare/vote.js — voting, revealing, confetti
 import Storage from '../storage.js';
+import { t as _t } from '../i18n.js';
 import state from './state.js';
 import { _modelDisplayNames } from './models.js';
 import { getModelCost } from '../chatRenderer.js';
@@ -65,7 +66,7 @@ function buildVoteBar(n) {
 
   const tieBtn = document.createElement('button');
   tieBtn.className = 'compare-vote-btn compare-vote-tie';
-  tieBtn.textContent = 'Tie';
+  tieBtn.textContent = _t('compare.tie');
   if (noPrompt) { tieBtn.disabled = true; tieBtn.style.opacity = '0.25'; }
   tieBtn.addEventListener('click', () => handleVote(-1));
   bar.appendChild(tieBtn);
@@ -75,7 +76,7 @@ function buildVoteBar(n) {
   const scoreBtn = document.createElement('button');
   scoreBtn.className = 'compare-vote-btn compare-score-btn';
   scoreBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Score';
-  scoreBtn.title = 'Scoreboard';
+  scoreBtn.title = _t('compare.scoreboard');
   scoreBtn.addEventListener('click', () => showScoreboard());
   bar.insertBefore(scoreBtn, tieBtn); // furthest left, before Tie
 

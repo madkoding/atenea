@@ -4,6 +4,7 @@
 
 import uiModule from './ui.js';
 import Storage from './storage.js';
+import { t as _t } from './i18n.js';
 import themeModule from './theme.js';
 import markdownModule from './markdown.js';
 import sessionModule from './sessions.js';
@@ -252,7 +253,7 @@ export function notifyResearchComplete(sessionId, query) {
   if (!isHidden && !isOtherSession) return;
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   var body = query ? 'Research on "' + query.substring(0, 60) + '" is ready' : 'Your deep research has completed';
-  var notification = new Notification('Research Complete', {
+  var notification = new Notification(_t('research.research_complete'), {
     body: body,
     tag: 'research-' + sessionId,
   });

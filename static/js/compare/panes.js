@@ -1,5 +1,6 @@
 // compare/panes.js — pane lifecycle, actions, layout
 import state from './state.js';
+import { t as _t } from '../i18n.js';
 import { _persistSelections } from './models.js';
 import { buildVoteBar } from './vote.js';
 import {
@@ -210,7 +211,7 @@ function _autoPreviewHtml(paneIdx, accumulated) {
   // Show the play button
   previewBtn.style.display = '';
   previewBtn.innerHTML = ICON_PLAY;
-  previewBtn.title = 'Run preview';
+  previewBtn.title = _t('compare.run_preview');
 }
 
 /** Toggle between iframe preview and code view for a pane. */
@@ -226,7 +227,7 @@ function togglePanePreview(paneIdx) {
     iframe.style.display = 'none';
     hist.style.display = '';
     btn.innerHTML = ICON_PLAY;
-    btn.title = 'Run preview';
+    btn.title = _t('compare.run_preview');
     btn.classList.remove('active');
   } else {
     // Switch to preview — load on first click
@@ -234,7 +235,7 @@ function togglePanePreview(paneIdx) {
     iframe.style.display = '';
     hist.style.display = 'none';
     btn.innerHTML = ICON_CODE;
-    btn.title = 'Show code';
+    btn.title = _t('compare.show_code');
     btn.classList.add('active');
   }
 }
@@ -441,7 +442,7 @@ async function _createAndAppendPane(m) {
   const headerSpan = document.querySelector('.compare-active > div:first-child span');
   if (headerSpan) {
     const modeLabel = ({ search: ' search providers', agent: ' agents', research: ' research models' }[state._compareMode] || ' models');
-    headerSpan.textContent = 'Comparing' + modeLabel +
+    headerSpan.textContent = _t('compare.comparing') + modeLabel +
       (state._blindMode ? ' (blind)' : '') + ' \u00b7 ' + state._timeout + 's timeout';
   }
 
@@ -532,7 +533,7 @@ function _removePane(paneIdx) {
   const headerSpan = document.querySelector('.compare-active > div:first-child span');
   if (headerSpan) {
     const modeLabel = ({ search: ' search providers', agent: ' agents', research: ' research models' }[state._compareMode] || ' models');
-    headerSpan.textContent = 'Comparing' + modeLabel +
+    headerSpan.textContent = _t('compare.comparing') + modeLabel +
       (state._blindMode ? ' (blind)' : '') + ' \u00b7 ' + state._timeout + 's timeout';
   }
 

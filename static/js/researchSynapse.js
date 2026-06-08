@@ -4,17 +4,19 @@
 // sub-question branches and source leaves that pop in as rounds progress.
 // Driven imperatively by chat.js when SSE research_progress events arrive.
 
+import { t as _t } from './i18n.js';
+
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const PHASE_LABEL = {
-  probing:   'verifying model',
-  planning:  'planning strategy',
-  searching: 'searching',
-  reading:   'reading sources',
-  analyzing: 'analyzing findings',
-  writing:   'writing report',
-  error:     'error',
-  done:      'complete',
+  probing:   'research.synapse_verifying',
+  planning:  'research.synapse_planning',
+  searching: 'research.synapse_searching',
+  reading:   'research.synapse_reading',
+  analyzing: 'research.synapse_analyzing',
+  writing:   'research.synapse_writing',
+  error:     'research.synapse_error',
+  done:      'research.synapse_complete',
 };
 
 function rand(a, b) { return Math.random() * (b - a) + a; }
@@ -35,11 +37,11 @@ export default function createResearchSynapse(container, opts = {}) {
       </svg>
     </div>
     <div class="rs-meta">
-      <span class="rs-status">starting…</span>
+      <span class="rs-status">${_t('research.synapse_starting')}</span>
       <span class="rs-sep">·</span>
-      <span class="rs-round">round <b>0</b></span>
+      <span class="rs-round">${_t('research.synapse_round')} <b>0</b></span>
       <span class="rs-sep">·</span>
-      <span class="rs-sources"><b>0</b> sources</span>
+      <span class="rs-sources"><b>0</b> ${_t('research.synapse_sources')}</span>
       <span class="rs-sep">·</span>
       <span class="rs-timer">00:00</span>
     </div>
@@ -65,7 +67,7 @@ export default function createResearchSynapse(container, opts = {}) {
   rootLabel.setAttribute('y', cy + 28);
   rootLabel.setAttribute('text-anchor', 'middle');
   rootLabel.setAttribute('class', 'rs-label');
-  rootLabel.textContent = _trunc(opts.query || 'query', 28);
+  rootLabel.textContent = _trunc(opts.query || _t('research.synapse_label'), 28);
   nodesG.appendChild(rootLabel);
 
   const subs = []; // { x, y, count }
@@ -171,11 +173,12 @@ export default function createResearchSynapse(container, opts = {}) {
     /** Reflect a phase change in the status text + side effects. */
     setPhase(phase, extra = {}) {
       if (completed) return;
-      const label = PHASE_LABEL[phase] || phase || '';
+      const key = PHASE_LABEL[phase];
+      const label = key ? _t(key) : (phase || '');
       let txt = label;
-      if (phase === 'searching' && extra.queries) txt += ` · ${extra.queries} queries`;
-      else if (phase === 'reading' && extra.title) txt = `reading: ${_trunc(extra.title, 32)}`;
-      else if (phase === 'analyzing' && extra.total_findings) txt += ` · ${extra.total_findings} findings`;
+      if (phase === 'searching' && extra.queries) txt += ` · ${extra.queries} ${_t('research.synapse_queries')}`;
+      else if (phase === 'reading' && extra.title) txt = `${_t('research.synapse_reading')}: ${_trunc(extra.title, 32)}`;
+      else if (phase === 'analyzing' && extra.total_findings) txt += ` · ${extra.total_findings} ${_t('research.synapse_findings')}`;
       statusE.textContent = txt;
       // Visual cue per phase
       if (phase === 'error') wrap.classList.add('rs-error');
@@ -213,7 +216,7 @@ export default function createResearchSynapse(container, opts = {}) {
       if (completed) return;
       completed = true;
       wrap.classList.add('rs-complete');
-      statusE.textContent = 'complete';
+      statusE.textContent = _t('research.synapse_complete');
       if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
     },
 

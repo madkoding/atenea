@@ -1,6 +1,7 @@
 /**
- * Deep Research side panel — open/close, form, job rendering, library.
+ * Deep Research side panel - open/close, form, job rendering, library.
  */
+import { t as _t } from '../i18n.js';
 import * as jobs from './jobs.js';
 import themeModule from '../theme.js';
 import createResearchSynapse from '../researchSynapse.js';
@@ -29,7 +30,7 @@ function _toggleSynapseMinimized() {
     .forEach(h => h.classList.toggle('synapse-collapsed', _synapseMinimized));
   document.querySelectorAll('.research-synapse-toggle').forEach(b => {
     b.classList.toggle('active', _synapseMinimized);
-    b.title = _synapseMinimized ? 'Show visualization' : 'Minimize visualization';
+    b.title = _synapseMinimized ? _t('research.show_viz') : _t('research.hide_viz');
     b.innerHTML = _synapseMinimized ? _vizExpandIcon : _vizCollapseIcon;
   });
 }
@@ -172,7 +173,7 @@ async function _updateResearchCount() {
     if (!res.ok) return;
     const data = await res.json();
     const n = data.total || 0;
-    el.textContent = n + (n === 1 ? ' research' : ' research');
+    el.textContent = n + ' ' + _t('research.research_count');
   } catch {}
 }
 
@@ -325,10 +326,10 @@ export function closePanel() {
 function _buildPanelHTML() {
   const searchProviders = ['', 'searxng', 'duckduckgo', 'tavily', 'brave', 'google', 'serper'];
   const providerOpts = searchProviders.map(p =>
-    `<option value="${p}">${p || 'Default'}</option>`
+    `<option value="${p}">${p || _t('research.default')}</option>`
   ).join('');
 
-  let roundOpts = '<option value="0" selected>Auto</option>';
+  let roundOpts = `<option value="0" selected>${_t('research.category_auto')}</option>`;
   for (let i = 1; i <= 20; i++) {
     roundOpts += `<option value="${i}">${i}</option>`;
   }
@@ -338,54 +339,54 @@ function _buildPanelHTML() {
 
   return `
     <div class="modal-header research-pane-header">
-      <h4><span style="position:relative;top:-1px;left:6px;display:inline-flex;vertical-align:middle;">${_searchIcon}</span><span style="margin-left:6px;">Deep Research</span></h4>
+      <h4><span style="position:relative;top:-1px;left:6px;display:inline-flex;vertical-align:middle;">${_searchIcon}</span><span style="margin-left:6px;">${_t('research.title')}</span></h4>
       <div class="research-pane-header-actions">
-        <button id="research-panel-minimize" class="modal-minimize-btn" type="button" title="Minimize"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="18" x2="19" y2="18"/></svg></button>
-        <button id="research-panel-close" class="close-btn" title="Close">&#x2716;</button>
+        <button id="research-panel-minimize" class="modal-minimize-btn" type="button" title="${_t('research.minimize')}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="18" x2="19" y2="18"/></svg></button>
+        <button id="research-panel-close" class="close-btn" title="${_t('research.close')}">&#x2716;</button>
       </div>
     </div>
     <div class="modal-body research-pane-body" data-no-swipe-dismiss>
       <div class="research-new-job">
         <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px;">
-          <h2 style="margin:0;padding:0;line-height:1;">Research <span id="research-stats" class="memory-count" style="font-size:0.6em;opacity:0.6;font-weight:normal"></span></h2>
+          <h2 style="margin:0;padding:0;line-height:1;">${_t('research.title')} <span id="research-stats" class="memory-count" style="font-size:0.6em;opacity:0.6;font-weight:normal"></span></h2>
         </div>
         <p class="memory-desc doclib-desc" style="margin-top:6px;display:flex;align-items:center;gap:6px;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.8;"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h4v4a2 2 0 0 1-2 2Z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/></svg>
-          <span>Multi-step web research with an LLM-in-the-loop agent</span>
+          <span>${_t('research.desc')}</span>
         </p>
-        <div id="research-no-past-hint" class="memory-desc doclib-desc" style="display:none;margin-top:-2px;font-size:11px;opacity:0.7;">All past research found in <button type="button" class="research-library-link">Library, Research</button></div>
-        <textarea id="research-query" class="research-query" placeholder="e.g. Trace Odysseus's ten-year journey home from Troy — every island, monster, and detour, and why each one cost him" rows="4"></textarea>
+        <div id="research-no-past-hint" class="memory-desc doclib-desc" style="display:none;margin-top:-2px;font-size:11px;opacity:0.7;">${_t('research.past_hint')}<button type="button" class="research-library-link">${_t('research.library_button')}</button></div>
+        <textarea id="research-query" class="research-query" placeholder="${_t('research.query_placeholder')}" rows="4"></textarea>
         <div class="research-category-row" id="research-category-row">
-          <button class="research-cat active" data-cat="" title="LLM auto-detects the best format">Auto</button>
-          <button class="research-cat" data-cat="product">Product</button>
-          <button class="research-cat" data-cat="comparison">Compare</button>
-          <button class="research-cat" data-cat="howto">How-to</button>
-          <button class="research-cat" data-cat="factcheck">Fact-check</button>
+          <button class="research-cat active" data-cat="" title="${_t('research.category_auto_title')}">${_t('research.category_auto')}</button>
+          <button class="research-cat" data-cat="product">${_t('research.category_product')}</button>
+          <button class="research-cat" data-cat="comparison">${_t('research.category_comparison')}</button>
+          <button class="research-cat" data-cat="howto">${_t('research.category_howto')}</button>
+          <button class="research-cat" data-cat="factcheck">${_t('research.category_factcheck')}</button>
         </div>
         <button id="research-settings-toggle" class="research-settings-toggle${chevronCls}">
-          Settings<span class="research-settings-chevron">${_chevronIcon}</span>
+          ${_t('research.settings')}<span class="research-settings-chevron">${_chevronIcon}</span>
         </button>
         <div id="research-settings-body" class="research-settings-row"${settingsHidden}>
           <label class="research-setting">
-            <span class="research-setting-label">Rounds</span>
+            <span class="research-setting-label">${_t('research.rounds')}</span>
             <select id="research-rounds">${roundOpts}</select>
           </label>
           <label class="research-setting">
-            <span class="research-setting-label">Search engine</span>
+            <span class="research-setting-label">${_t('research.search_engine')}</span>
             <select id="research-search-provider">${providerOpts}</select>
           </label>
           <label class="research-setting">
-            <span class="research-setting-label">Endpoint</span>
-            <select id="research-endpoint"><option value="">Default</option></select>
+            <span class="research-setting-label">${_t('research.endpoint')}</span>
+            <select id="research-endpoint"><option value="">${_t('research.default')}</option></select>
           </label>
           <label class="research-setting">
-            <span class="research-setting-label">Model</span>
-            <select id="research-model"><option value="">Default</option></select>
+            <span class="research-setting-label">${_t('research.model')}</span>
+            <select id="research-model"><option value="">${_t('research.default')}</option></select>
           </label>
         </div>
         <div class="research-controls-row">
-          <button id="research-add-btn" class="research-add-btn"><span class="research-add-plus">+</span> Queue</button>
-          <button id="research-start-btn" class="research-start-btn">${_playIcon} Start</button>
+          <button id="research-add-btn" class="research-add-btn"><span class="research-add-plus">+</span> ${_t('research.queue')}</button>
+          <button id="research-start-btn" class="research-start-btn">${_playIcon} ${_t('research.start')}</button>
         </div>
       </div>
       <div id="research-jobs-list" class="research-jobs-list" data-no-swipe-dismiss></div>
@@ -554,7 +555,7 @@ async function _handleStart() {
         _wp.element.style.cssText += ';vertical-align:middle;margin-right:5px;position:relative;top:-1px;';
         startBtn.appendChild(_wp.element);
       } catch {}
-      startBtn.appendChild(document.createTextNode('Starting'));
+      startBtn.appendChild(document.createTextNode(_t('research.starting')));
       startBtn.classList.add('research-start-busy');
     } else {
       startBtn.disabled = false;
@@ -585,7 +586,7 @@ async function _handleStart() {
   if (_mobile) _dismissKeyboard(queryEl); else queryEl.focus();
   _resetCategoryToAuto();
   jobs.startJob(query, settings).catch((e) => {
-    if (typeof uiModule !== 'undefined' && uiModule?.showError) uiModule.showError('Failed to start research');
+    if (typeof uiModule !== 'undefined' && uiModule?.showError) uiModule.showError(_t('research.failed_to_start'));
     queryEl.value = query; // restore so user can retry
   });
 }
@@ -634,7 +635,7 @@ async function _loadEndpoints() {
 function _populateModels(endpointId) {
   const sel = document.getElementById('research-model');
   if (!sel) return;
-  sel.innerHTML = '<option value="">Default</option>';
+  sel.innerHTML = `<option value="">${_t('research.default')}</option>`;
   if (!endpointId) return;
   const ep = _endpoints.find(e => e.id === endpointId);
   if (!ep || !ep.models) return;
@@ -810,8 +811,8 @@ function _renderJobs() {
 
   // ("Clear all" lives inside the Past research section header — see _addSection.)
 
-  _addSection('active', 'Active', active);
-  _addSection('past', 'Past research', recentDone.concat(past));
+  _addSection('active', _t('research.active'), active);
+  _addSection('past', _t('research.past_research'), recentDone.concat(past));
 }
 
 /** Pick parallel vs sequential as a small popover anchored to the
@@ -888,7 +889,7 @@ function _buildJobCard(job) {
 
   if (job.status === 'queued') {
     const rounds = job.settings?.max_rounds;
-    const roundsLabel = !rounds ? 'Auto rounds' : `${rounds} rounds`;
+    const roundsLabel = !rounds ? _t('research.auto_rounds') : `${rounds} ${_t('research.rounds_label')}`;
     const epName = job.settings?._endpointName || '';
     const mName = job.settings?._modelName || '';
     const meta = [mName, epName, roundsLabel].filter(Boolean).join(' -- ');
@@ -898,8 +899,8 @@ function _buildJobCard(job) {
       </div>
       <div class="research-job-queued-meta">${_esc(meta)}</div>
       <div class="research-job-actions">
-        <button class="research-job-action" data-action="start" title="Start">${_playIcon} Start</button>
-        <button class="research-job-action" data-action="edit" title="Edit query">${_editIcon} Edit</button>
+        <button class="research-job-action" data-action="start" title="${_t('research.start')}">${_playIcon} ${_t('research.start')}</button>
+        <button class="research-job-action" data-action="edit" title="${_t('research.edit_query')}">${_editIcon} ${_t('research.edit_query')}</button>
         <button class="research-job-action research-job-action-dim" data-action="remove" title="Remove">${_cancelIcon}</button>
       </div>
     `;
@@ -927,8 +928,8 @@ function _buildJobCard(job) {
         <span class="research-job-query">${_esc(job.query)}</span>${job.category ? `<span class="research-cat-badge">${_esc(job.category)}</span>` : ""}
         ${modelTag}
         <span class="research-job-time">${elapsed}</span>
-        <button class="research-synapse-toggle${_synapseMinimized ? ' active' : ''}" title="${_synapseMinimized ? 'Show visualization' : 'Minimize visualization'}">${_synapseMinimized ? _vizExpandIcon : _vizCollapseIcon}</button>
-        <button class="research-job-cancel" title="Cancel research">${_cancelIcon}</button>
+        <button class="research-synapse-toggle${_synapseMinimized ? ' active' : ''}" title="${_synapseMinimized ? _t('research.show_viz') : _t('research.hide_viz')}">${_synapseMinimized ? _vizExpandIcon : _vizCollapseIcon}</button>
+        <button class="research-job-cancel" title="${_t('research.cancel_research')}">${_cancelIcon}</button>
       </div>
       <div class="research-job-phase">${phase}</div>
       <div class="research-job-synapse-host${_synapseMinimized ? ' synapse-collapsed' : ''}" data-synapse-host="${job.id}"></div>
@@ -979,24 +980,24 @@ function _buildJobCard(job) {
     const failed = srcCount === 0;
     if (failed) card.classList.add('research-job-failed');
     const doneBadge = failed
-      ? `<span class="research-cat-badge research-cat-failed">${_cancelIcon} no results</span>`
-      : (job.category ? `<span class="research-cat-badge">${_esc(job.category)}</span>` : `<span class="research-cat-badge research-cat-standard">standard</span>`);
+      ? `<span class="research-cat-badge research-cat-failed">${_cancelIcon} ${_t('research.no_results')}</span>`
+      : (job.category ? `<span class="research-cat-badge">${_esc(job.category)}</span>` : `<span class="research-cat-badge research-cat-standard">${_t('research.standard')}</span>`);
     const failNote = failed
-      ? `<div class="research-job-failnote">Couldn't extract anything — try rephrasing the question, or switch the search engine in Settings.</div>`
+      ? `<div class="research-job-failnote">${_t('research.couldnt_extract')} — try rephrasing the question, or switch the search engine in Settings.</div>`
       : '';
     card.innerHTML = `
       <div class="research-job-header">
         <span class="research-job-query">${_esc(job.query)}</span>${doneBadge}
         ${modelTag}
-        <span class="research-job-meta">${elapsed} -- ${srcCount} sources</span>
+        <span class="research-job-meta">${elapsed} -- ${srcCount}${_t('research.sources_count')}</span>
       </div>
       ${failNote}
       <div class="research-job-actions">
-        <button class="research-job-action" data-action="copy" title="Copy report to clipboard">${_copyIcon}</button>
-        <button class="research-job-action" data-action="chat" title="Open follow-up chat with this research as context">${_chatIcon} Discuss</button>
-        <button class="research-job-action research-job-action-report" data-action="report" title="Visual report">${_externalIcon} Visual Report</button>
-        <button class="research-job-action research-job-action-dim" data-action="dismiss" title="Clear from list">${_cancelIcon}</button>
-        <button class="research-job-action research-job-action-dim" data-action="delete" title="Delete from disk">${_trashIcon} Delete</button>
+        <button class="research-job-action" data-action="copy" title="${_t('research.copy_report')}">${_copyIcon}</button>
+        <button class="research-job-action" data-action="chat" title="${_t('research.open_followup')}">${_chatIcon} ${_t('research.discuss')}</button>
+        <button class="research-job-action research-job-action-report" data-action="report" title="${_t('research.visual_report')}">${_externalIcon} ${_t('research.visual_report_btn')}</button>
+        <button class="research-job-action research-job-action-dim" data-action="dismiss" title="${_t('research.clear_from_list')}">${_cancelIcon}</button>
+        <button class="research-job-action research-job-action-dim" data-action="delete" title="${_t('research.delete_from_disk')}">${_trashIcon} ${_t('common.delete')}</button>
       </div>
       ${isExpanded ? `<div class="research-job-result">${_renderResult(job)}</div>` : ''}
     `;
@@ -1023,7 +1024,7 @@ function _buildJobCard(job) {
     card.querySelector('[data-action="delete"]').addEventListener('click', async (e) => {
       e.stopPropagation();
       if (window.styledConfirm) {
-        const ok = await window.styledConfirm('Delete this research? This permanently removes it from disk.', { confirmText: 'Delete', danger: true });
+        const ok = await window.styledConfirm(_t('research.delete_confirm'), { confirmText: _t('common.delete'), danger: true });
         if (!ok) return;
       }
       try { await fetch(`${_apiBase}/api/research/${job.id}`, { method: 'DELETE', credentials: 'same-origin' }); } catch {}
@@ -1043,9 +1044,9 @@ function _buildJobCard(job) {
       </div>
       ${errMsg}
       <div class="research-job-actions">
-        <button class="research-job-action" data-action="retry" title="Retry">${_retryIcon} Retry</button>
-        <button class="research-job-action" data-action="edit" title="Edit and retry">${_editIcon} Edit</button>
-        <button class="research-job-action research-job-action-dim" data-action="dismiss" title="Dismiss">${_cancelIcon}</button>
+        <button class="research-job-action" data-action="retry" title="${_t('research.retry')}">${_retryIcon} ${_t('research.retry')}</button>
+        <button class="research-job-action" data-action="edit" title="${_t('research.edit_and_retry')}">${_editIcon} ${_t('research.edit_query')}</button>
+        <button class="research-job-action research-job-action-dim" data-action="dismiss" title="${_t('research.dismiss')}">${_cancelIcon}</button>
       </div>
     `;
     card.querySelector('[data-action="retry"]').addEventListener('click', (e) => {
@@ -1071,15 +1072,15 @@ const _CAT_ICONS = {
 };
 
 const _CAT_LABELS = {
-  product: 'Product',
-  comparison: 'Comparison',
-  howto: 'How-to Guide',
-  landscape: 'Landscape',
-  factcheck: 'Fact-check',
+  product: _t('research.cat_product'),
+  comparison: _t('research.cat_comparison'),
+  howto: _t('research.cat_howto'),
+  landscape: _t('research.cat_landscape'),
+  factcheck: _t('research.cat_factcheck'),
 };
 
 function _renderResult(job) {
-  if (!job.result) return '<div class="research-job-loading">Loading result...</div>';
+  if (!job.result) return `<div class="research-job-loading">${_t('research.loading_result')}</div>`;
   const cat = job.category || '';
   const catIcon = _CAT_ICONS[cat] || '';
   const catLabel = _CAT_LABELS[cat] || '';
@@ -1108,7 +1109,7 @@ function _renderResult(job) {
         ? `<a href="${url}" target="_blank" rel="noopener" class="research-source-link">${title}</a>`
         : `<span class="research-source-link">${title}</span>`;
     }
-    if (job.sources.length > 10) html += `<span class="research-source-more">+${job.sources.length - 10} more</span>`;
+    if (job.sources.length > 10) html += `<span class="research-source-more">+${job.sources.length - 10} ${_t('research.sources_more')}</span>`;
     html += '</div>';
   }
 
@@ -1141,7 +1142,7 @@ async function _copyResult(job, btn) {
   if (job.findings?.length) {
     text += '\n\n---\n## Raw Findings\n';
     for (const f of job.findings) {
-      text += `\n### ${f.title || 'Untitled'}\nSource: ${f.url || ''}\n${f.summary || ''}\n`;
+      text += `\n### ${f.title || _t('chat.untitled')}\n${_t('research.source')}: ${f.url || ''}\n${f.summary || ''}\n`;
     }
   }
   if (job.sources?.length) {
@@ -1188,7 +1189,7 @@ async function _copyResult(job, btn) {
       btn.classList.add('research-job-action-copied');
       setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('research-job-action-copied'); }, 2000);
     } else {
-      btn.innerHTML = `${_cancelIcon} Failed`;
+      btn.innerHTML = `${_cancelIcon} ${_t('research.failed')}`;
       setTimeout(() => { btn.innerHTML = orig; }, 2000);
     }
   }
@@ -1199,7 +1200,7 @@ async function _copyResult(job, btn) {
 async function _chatAboutResearch(researchId, btn) {
   if (!researchId) return;
   const origLabel = btn ? btn.innerHTML : '';
-  if (btn) { btn.disabled = true; btn.innerHTML = `${_chatIcon} Creating…`; }
+  if (btn) { btn.disabled = true; btn.innerHTML = `${_chatIcon} ${_t('research.creating')}`; }
   try {
     const res = await fetch(`${_apiBase}/api/research/spinoff/${researchId}`, {
       method: 'POST', credentials: 'same-origin',
@@ -1220,11 +1221,11 @@ async function _chatAboutResearch(researchId, btn) {
     } else {
       // 200 OK but no session_id — server contract violation. Don't leave
       // the button stuck on 'Creating…'; surface the failure instead.
-      throw new Error('Server returned no session id');
+      throw new Error(_t('research.no_session_id'));
     }
   } catch (e) {
     if (btn) { btn.disabled = false; btn.innerHTML = origLabel; }
-    alert('Could not start follow-up chat: ' + e.message);
+    alert(_t('research.couldnt_start_followup') + e.message);
   }
 }
 

@@ -4,6 +4,7 @@
 // ============================================
 
 import uiModule from './ui.js';
+import { t as _t } from './i18n.js';
 import spinnerModule from './spinner.js';
 import { providerLogo } from './providers.js';
 import { makeWindowDraggable } from './windowDrag.js';
@@ -132,7 +133,7 @@ function _buildServerOpts(excludeLocal = false) {
   // skip that same entry in the loop below — otherwise it appeared twice.
   const _localIdx = _envState.servers.findIndex(_isLocalEntry);
   const _localSrv = _localIdx >= 0 ? _envState.servers[_localIdx] : null;
-  const _localLabel = (_localSrv && _localSrv.name) ? _localSrv.name : 'Local';
+  const _localLabel = (_localSrv && _localSrv.name) ? _localSrv.name : _t('cookbook.local');
   let html = `<option value="local"${!_envState.remoteHost ? ' selected' : ''}>${esc(_localLabel)}</option>`;
   for (let i = 0; i < _envState.servers.length; i++) {
     const s = _envState.servers[i];
@@ -300,7 +301,7 @@ export function _detectBackend(model) {
   const isAppleSilicon = ['metal', 'mps', 'apple'].includes(sysBackend);
   const _nm = `${model.repo_id || ''} ${model.path || ''} ${model.name || ''}`.toLowerCase();
   if (/\bmlx\b|mlx-|_mlx/i.test(_nm) || q.startsWith('MLX')) {
-    return { backend: 'unsupported', label: 'Unsupported' };
+    return { backend: 'unsupported', label: _t('cookbook.unsupported') };
   }
   const isAwqLike = /^AWQ|^GPTQ|^NVFP4/.test(q) || ['FP8', 'FP4', 'MXFP4', 'NF4', 'INT4', 'INT8', 'W4A16', 'W8A8', 'W8A16'].includes(q) || /\b(awq|gptq|fp8|fp4|nvfp4|mxfp4|nf4|int4|int8|w4a16|w8a8|w8a16)\b/i.test(_nm);
   const isGgufLike = model.is_gguf || /^Q[2-8]/.test(q) || /^IQ/.test(q) || q === 'GGUF' || _nm.includes('gguf');
@@ -689,7 +690,7 @@ async function _fetchDependencies() {
       if (pkg.installed) return `<button class="cookbook-dep-tag cookbook-dep-installed cookbook-dep-installed-btn" title="Installed — click for actions"><span class="cookbook-dep-installed-label">Installed</span><span class="cookbook-dep-caret">&#9662;</span></button>`;
       if (isSystemDep) {
         const depTip = esc(pkg.install_hint || 'Install this OS package on the selected server.');
-        const depLabel = pkg.applicable === false ? 'N/A ?' : 'Missing';
+        const depLabel = pkg.applicable === false ? 'N/A ?' : _t('cookbook.missing');
         return `<span class="cookbook-dep-tag cookbook-dep-na" title="${depTip}">${depLabel}</span>`;
       }
       return `<button class="cookbook-dep-tag cookbook-dep-install" data-dep-pip="${esc(pkg.pip)}" data-dep-target="${isLocal ? 'local' : 'remote'}">Install</button>`;
@@ -738,8 +739,8 @@ async function _fetchDependencies() {
     const _serverDeps = pkgs.filter(p => p.target !== 'local');
 
     list.innerHTML = [
-      _viewingRemote ? '' : _section('Odysseus app', 'Run inside the Odysseus app itself.', _appDeps),
-      _section('Server', 'Run on the server chosen above (Local, or a remote box over SSH).', _serverDeps),
+      _viewingRemote ? '' : _section(_t('cookbook.odysseus_app'), 'Run inside the Odysseus app itself.', _appDeps),
+      _section(_t('cookbook.server'), 'Run on the server chosen above (Local, or a remote box over SSH).', _serverDeps),
     ].join('');
 
     // Shared install/update routine — used by the Install button and the
@@ -817,7 +818,7 @@ async function _fetchDependencies() {
         const payload = { repo_id: pipName, _cmd: cmd, remote_host: _envState.remoteHost || '', _dep: true, env_path: _envState.envPath || '' };
         _addTask(data.session_id, 'pip ' + pkgName, 'download', payload);
         if (statusEl) { statusEl.textContent = upgrade ? 'Updating...' : 'Installing...'; statusEl.disabled = true; }
-        uiModule.showToast(`${upgrade ? 'Updating' : 'Installing'} ${pkgName} on ${targetHost}...`);
+        uiModule.showToast(`${upgrade ? _t('cookbook.updating') : _t('cookbook.installing')} ${pkgName} on ${targetHost}...`);
       } catch (err) {
         uiModule.showToast('Install failed: ' + err.message);
       }
@@ -932,11 +933,11 @@ function _wireTabEvents(body) {
       body.querySelectorAll('.cookbook-group').forEach(g => {
         g.classList.toggle('hidden', g.dataset.backendGroup !== backend);
       });
-      if (backend === 'Search') {
+      if (backend === _t('common.search')) {
         _hwfitInit();
         _hwfitFetch();
       }
-      if (backend === 'Serve') {
+      if (backend === _t('cookbook.serve')) {
         _fetchCachedModels();
       }
       if (backend === 'Dependencies') {
@@ -1445,7 +1446,7 @@ function _wireTabEvents(body) {
           // doesn't masquerade as no-fitting-models.
           const msg = lastErr
             ? `Couldn't load trending models (${esc(lastErr)})`
-            : 'No trending models found';
+            : _t('cookbook.no_trending');
           hfList.innerHTML = `<div class="hwfit-loading">${msg}</div>`;
           return;
         }
@@ -1535,13 +1536,13 @@ function _wireTabEvents(body) {
         if (!check) {
           check = document.createElement('span');
           check.className = 'hwfit-hf-check';
-          check.title = 'Token stored';
+          check.title = _t('cookbook.token_stored');
           check.textContent = '✓';
           check.style.cssText = 'font-weight:800;color:var(--green,#50fa7b);font-size:15px;line-height:1;flex-shrink:0;position:relative;top:2px;';
           hfInput.parentNode.insertBefore(check, hfInput);
         }
         const flash = document.createElement('span');
-        flash.textContent = 'Saved';
+        flash.textContent = _t('common.saved');
         flash.style.cssText = 'margin-left:8px;font-size:11px;color:var(--green,#50fa7b);opacity:0;transition:opacity 0.18s;flex-shrink:0;position:relative;top:1px;';
         hfInput.parentNode.appendChild(flash);
         requestAnimationFrame(() => { flash.style.opacity = '1'; });
@@ -1560,10 +1561,10 @@ function _wireTabEvents(body) {
 // (a new server's host is empty, which would otherwise read as "Local").
 export function _serverEntryHtml(s, i, defaultServer, forceRemote, isNew) {
   const isLocal = (forceRemote || isNew) ? false : (!s.host || s.host === 'local');
-  const envOpts = ['none', 'venv'].map(e => `<option value="${e}"${s.env === e ? ' selected' : ''}>${e === 'none' ? 'None' : e}</option>`).join('');
+  const envOpts = ['none', 'venv'].map(e => `<option value="${e}"${s.env === e ? ' selected' : ''}>${e === 'none' ? _t('common.none') : e}</option>`).join('');
   let html = '';
   html += `<div class="cookbook-server-entry" data-idx="${i}" data-platform="${esc(s.platform || '')}">`;
-  const _srvTitle = s.name || (isLocal ? 'Local' : (s.host || `Server ${i + 1}`));
+  const _srvTitle = s.name || (isLocal ? _t('cookbook.local') : (s.host || `Server ${i + 1}`));
   const _srvKey = isLocal ? 'local' : (s.host || '');
   const _isDefaultSrv = (defaultServer || '') === _srvKey;
   const _pIco = _platformIcon(s.platform);
@@ -1578,11 +1579,11 @@ export function _serverEntryHtml(s, i, defaultServer, forceRemote, isNew) {
     // sense once the server is saved.
     html += `<span style="margin-left:auto;display:inline-flex;gap:4px;align-items:center;">${_checkBtn}${_keyBtn}<button class="cookbook-server-cancel-btn" title="Discard this new server" style="height:22px;box-sizing:border-box;display:inline-flex;align-items:center;position:relative;top:-2px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;flex-shrink:0;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cancel</button></span>`;
   } else {
-    html += `<span style="margin-left:auto;display:inline-flex;gap:4px;align-items:center;">${!isLocal ? _checkBtn + _keyBtn : ''}<span class="cookbook-srv-default${_isDefaultSrv ? ' active' : ''}" title="${_isDefaultSrv ? 'Default server — Cookbook opens here' : 'Make this the default server'}" data-srv-key="${esc(_srvKey)}">${_isDefaultSrv ? _MODELDIR_CHECK_ON : _MODELDIR_CHECK_OFF}<span class="cookbook-srv-default-label">default</span></span></span>`;
+    html += `<span style="margin-left:auto;display:inline-flex;gap:4px;align-items:center;">${!isLocal ? _checkBtn + _keyBtn : ''}<span class="cookbook-srv-default${_isDefaultSrv ? ' active' : ''}" title="${_isDefaultSrv ? 'Default server — Cookbook opens here' : _t('cookbook.make_default')}" data-srv-key="${esc(_srvKey)}">${_isDefaultSrv ? _MODELDIR_CHECK_ON : _MODELDIR_CHECK_OFF}<span class="cookbook-srv-default-label">default</span></span></span>`;
   }
   html += `</span>`;
   html += `<div class="cookbook-server-row">`;
-  html += `<input type="text" class="hwfit-sf cookbook-srv-name" value="${esc(s.name || (isLocal ? 'Local' : ''))}" placeholder="Name (optional)" style="width:92px;flex-shrink:0;" />`;
+  html += `<input type="text" class="hwfit-sf cookbook-srv-name" value="${esc(s.name || (isLocal ? _t('cookbook.local') : ''))}" placeholder="Name (optional)" style="width:92px;flex-shrink:0;" />`;
   html += `<input type="text" class="hwfit-sf cookbook-srv-host" value="${isLocal ? '' : esc(s.host || '')}" placeholder="e.g. user@ip" style="width:214.5px;flex-shrink:0;box-sizing:border-box;" ${isLocal ? 'readonly' : ''} />`;
   html += `<input type="text" class="hwfit-sf cookbook-srv-port" value="${esc(s.port || '')}" placeholder="Port" title="SSH port (default 22)" style="width:48px;flex-shrink:0;" ${isLocal ? 'readonly' : ''} />`;
   html += `<select class="hwfit-sf cookbook-srv-env">${envOpts}</select>`;
@@ -1598,7 +1599,7 @@ export function _serverEntryHtml(s, i, defaultServer, forceRemote, isNew) {
     const isDefault = modelDirs[j] === '~/.cache/huggingface/hub';
     const dirVal = isDefault ? '' : modelDirs[j];
     const isTarget = activeDlDir === dirVal;
-    const dlBtn = `<span class="cookbook-modeldir-dl${isTarget ? ' active' : ''}" title="${isTarget ? 'Downloads go here' : 'Send downloads here'}" data-dl-dir="${esc(dirVal)}">${isTarget ? _MODELDIR_CHECK_ON : _MODELDIR_CHECK_OFF}</span>`;
+    const dlBtn = `<span class="cookbook-modeldir-dl${isTarget ? ' active' : ''}" title="${isTarget ? _t('cookbook.downloads_here') : _t('cookbook.send_downloads_here')}" data-dl-dir="${esc(dirVal)}">${isTarget ? _MODELDIR_CHECK_ON : _MODELDIR_CHECK_OFF}</span>`;
     const rmBtn = isDefault ? '' : ' <span class="cookbook-modeldir-rm" title="Remove">✖</span>';
     html += `<span class="cookbook-modeldir-tag${isDefault ? ' cookbook-modeldir-default' : ''}${isTarget ? ' cookbook-modeldir-target' : ''}" data-dir-idx="${j}" data-dir="${esc(modelDirs[j])}">${dlBtn} ${esc(modelDirs[j])}${rmBtn}</span>`;
   }
