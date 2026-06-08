@@ -243,6 +243,16 @@ def _build_dav_client(url: str, username: str, password: str):
 
 
 def _should_prune_window(seen_uids: set, parse_failed: bool) -> bool:
+    """Whether the post-sync prune of vanished CalDAV events is safe to run.
+
+    The prune deletes local ``origin=="caldav"`` rows in the window whose UID the
+    server did not just return. Any parse failure (total or partial) makes
+    ``seen_uids`` an incomplete view of the server, so pruning against it can
+    delete events that still exist upstream but could not be read: a total
+    failure wipes the whole window, a partial failure deletes just the
+    unreadable ones. Only prune on a clean read. An empty ``seen_uids`` after a
+    clean read is a genuinely empty window, which is safe to prune.
+    """
     return not parse_failed
 
 
