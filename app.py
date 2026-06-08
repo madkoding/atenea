@@ -671,7 +671,9 @@ from routes.backup_routes import setup_backup_routes
 app.include_router(setup_backup_routes(memory_manager, preset_manager, skills_manager))
 
 from routes.font_routes import setup_font_routes
+from routes.background_routes import setup_background_routes
 app.include_router(setup_font_routes())
+app.include_router(setup_background_routes())
 
 
 # MCP (Model Context Protocol)

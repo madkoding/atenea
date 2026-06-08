@@ -186,6 +186,33 @@ body.bg-pattern-sparkles {
 }
 
 
+/* ── Per-zone custom background image ── */
+body {
+  background-image: var(--bg-custom-image, none);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+/* ── Per-zone font-family overrides ── */
+.sidebar { font-family: var(--font-sidebar, var(--font-family, 'Fira Code', monospace)); }
+.chat-messages, .chat-input-wrap, .chat-top-bar, #chat-container {
+  font-family: var(--font-content, var(--font-family, 'Fira Code', monospace));
+}
+.terminal, #terminal-container, .terminal-output, .xterm, .xterm-viewport {
+  font-family: var(--font-terminal, var(--font-family, 'Fira Code', monospace)) !important;
+}
+
+/* ── Per-zone font-size overrides ── */
+.sidebar { font-size: var(--font-size-sidebar, inherit); }
+.chat-messages, .chat-input-wrap, .chat-top-bar, #chat-container {
+  font-size: var(--font-size-content, inherit);
+}
+.terminal, #terminal-container, .terminal-output, .xterm, .xterm-viewport {
+  font-size: var(--font-size-terminal, inherit) !important;
+}
+
 /* ── Layout ── */
 
     /* Top bar — session meta + incognito, single row */
@@ -6414,6 +6441,14 @@ pre { background: var(--code-bg, var(--hl-bg, #282c34)) !important; }
       background: var(--red); border: none; cursor: pointer;
     }
     .theme-fd-range:focus { outline: none; }
+    .theme-fd-range-val {
+      display: block; text-align: center; font-size: 10px; opacity: 0.6;
+      margin-top: 2px; font-family: var(--font-family, 'Fira Code', monospace);
+    }
+    #theme-bg-custom-row {
+      padding-top: 4px; border-top: 1px solid var(--border); margin-top: 4px;
+    }
+    #theme-bg-custom-select { min-width: 120px; }
     /* Color Harmony Generator */
     .theme-harmony-row { display: flex; gap: 8px; align-items: flex-end; }
     .harmony-generate-btn {

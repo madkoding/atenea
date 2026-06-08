@@ -566,8 +566,8 @@
       <div class="admin-card">
         <h2>Font & Layout</h2>
         <div class="theme-fd-row">
-          <div class="theme-fd-group">
-            <label class="theme-fd-label">Font</label>
+          <div class="theme-fd-group" style="flex:1;">
+            <label class="theme-fd-label">Global Font</label>
             <select id="theme-font-select" class="theme-fd-select" aria-label="Font">
               <option value="mono">Monospace</option>
               <option value="sans">Sans-serif</option>
@@ -589,6 +589,53 @@
               <span class="admin-slider"></span>
             </label>
           </div>
+            <div class="theme-fd-group" style="flex:1;"></div>
+        </div>
+        <div class="theme-fd-row" id="theme-font-zones-row">
+          <div class="theme-fd-group" style="flex:1;">
+            <label class="theme-fd-label">Sidebar Font</label>
+            <select id="theme-font-sidebar" class="theme-fd-select" aria-label="Sidebar Font">
+              <option value="">Global</option>
+              <option value="mono">Monospace</option>
+              <option value="sans">Sans-serif</option>
+              <option value="serif">Serif</option>
+            </select>
+          </div>
+          <div class="theme-fd-group" style="flex:1;">
+            <label class="theme-fd-label">Content Font</label>
+            <select id="theme-font-content" class="theme-fd-select" aria-label="Content Font">
+              <option value="">Global</option>
+              <option value="mono">Monospace</option>
+              <option value="sans">Sans-serif</option>
+              <option value="serif">Serif</option>
+            </select>
+          </div>
+          <div class="theme-fd-group" style="flex:1;">
+            <label class="theme-fd-label">Terminal Font</label>
+            <select id="theme-font-terminal" class="theme-fd-select" aria-label="Terminal Font">
+              <option value="">Global</option>
+              <option value="mono">Monospace</option>
+              <option value="sans">Sans-serif</option>
+              <option value="serif">Serif</option>
+            </select>
+          </div>
+        </div>
+        <div class="theme-fd-row" id="theme-font-sizes-row">
+          <div class="theme-fd-group" style="flex:1 1 0;">
+            <label class="theme-fd-label">Sidebar Size</label>
+            <input type="range" id="theme-font-size-sidebar" class="theme-fd-range" min="0" max="20" step="1" value="0">
+            <output class="theme-fd-range-val" for="theme-font-size-sidebar">Auto</output>
+          </div>
+          <div class="theme-fd-group" style="flex:1 1 0;">
+            <label class="theme-fd-label">Content Size</label>
+            <input type="range" id="theme-font-size-content" class="theme-fd-range" min="0" max="20" step="1" value="0">
+            <output class="theme-fd-range-val" for="theme-font-size-content">Auto</output>
+          </div>
+          <div class="theme-fd-group" style="flex:1 1 0;">
+            <label class="theme-fd-label">Terminal Size</label>
+            <input type="range" id="theme-font-size-terminal" class="theme-fd-range" min="0" max="20" step="1" value="0">
+            <output class="theme-fd-range-val" for="theme-font-size-terminal">Auto</output>
+          </div>
         </div>
         <div class="theme-fd-row">
           <div class="theme-fd-group" style="flex:1 1 0;">
@@ -603,6 +650,7 @@
               <option value="petals">Petals</option>
               <option value="sparkles">Sparkles</option>
               <option value="embers">Embers</option>
+              <option value="custom">Custom Image</option>
             </select>
           </div>
           <div class="theme-fd-group" style="flex:0 0 auto;align-items:center;">
@@ -621,6 +669,19 @@
           <div class="theme-fd-group" id="theme-bg-size-group" style="flex:1 1 0;">
             <label class="theme-fd-label">Size</label>
             <input type="range" id="theme-bg-size" class="theme-fd-range" min="30" max="250" step="10" value="100">
+          </div>
+        </div>
+        <div class="theme-fd-row" id="theme-bg-custom-row" style="display:none;margin-top:6px;">
+          <div class="theme-fd-group" style="flex:1;">
+            <label class="theme-fd-label">Custom Background</label>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+              <select id="theme-bg-custom-select" class="theme-fd-select" style="flex:1;min-width:120px;">
+                <option value="">Select uploaded image...</option>
+              </select>
+              <button id="theme-bg-custom-upload-btn" class="harmony-generate-btn" type="button" title="Upload new image">Upload</button>
+              <button id="theme-bg-custom-clear-btn" class="color-reset-btn" type="button" title="Remove custom background">&#x21BA;</button>
+            </div>
+            <input type="file" id="theme-bg-custom-file-input" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml" style="display:none;">
           </div>
         </div>
       </div>

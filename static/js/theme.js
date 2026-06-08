@@ -385,6 +385,49 @@ export function applyFontDensity(font, density) {
   if (d !== 'comfortable') document.documentElement.classList.add('density-' + d);
 }
 
+function _resolveFontFamily(font) {
+  if (!font) return null;
+  let family = FONT_MAP[font];
+  if (!family && _customFonts[font]) {
+    _injectFontFace(font, _customFonts[font]);
+    family = "'" + font + "', sans-serif";
+  }
+  return family || null;
+}
+
+export function applyFontZones(sidebarFont, contentFont, terminalFont) {
+  const s = _resolveFontFamily(sidebarFont);
+  const c = _resolveFontFamily(contentFont);
+  const t = _resolveFontFamily(terminalFont);
+  const root = document.documentElement;
+  if (s) root.style.setProperty('--font-sidebar', s); else root.style.removeProperty('--font-sidebar');
+  if (c) root.style.setProperty('--font-content', c); else root.style.removeProperty('--font-content');
+  if (t) root.style.setProperty('--font-terminal', t); else root.style.removeProperty('--font-terminal');
+}
+
+export function applyFontSizes(sidebarSize, contentSize, terminalSize) {
+  const root = document.documentElement;
+  const set = (prop, val) => {
+    if (val !== undefined && val !== null && val !== '' && Number(val) > 0) {
+      root.style.setProperty(prop, Number(val) + 'px');
+    } else {
+      root.style.removeProperty(prop);
+    }
+  };
+  set('--font-size-sidebar', sidebarSize);
+  set('--font-size-content', contentSize);
+  set('--font-size-terminal', terminalSize);
+}
+
+export function applyBgCustom(name) {
+  const root = document.documentElement;
+  if (name) {
+    root.style.setProperty('--bg-custom-image', "url('/api/backgrounds/serve/" + encodeURIComponent(name) + "')");
+  } else {
+    root.style.removeProperty('--bg-custom-image');
+  }
+}
+
 const _BG_CLASSES = ['bg-pattern-dots',
   'bg-pattern-synapse', 'bg-pattern-rain', 'bg-pattern-constellations',
   'bg-pattern-perlin-flow',
@@ -425,19 +468,25 @@ function _getEffectSize() {
 // Patterns where the intensity/size sliders have no visible effect.
 const _STATIC_PATTERNS = new Set(['none', 'dots']);
 
-export function applyBgPattern(pattern) {
+export function applyBgPattern(pattern, bgCustomName) {
   const p = pattern || 'none';
   document.body.classList.remove(..._BG_CLASSES);
-  // Clean up any canvas backgrounds
   document.querySelectorAll('#synapse-canvas, #rain-canvas, #constellations-canvas, #perlin-flow-canvas, #petals-canvas, #sparkles-canvas, #embers-canvas').forEach(c => c.remove());
-  if (p !== 'none') document.body.classList.add('bg-pattern-' + p);
+  if (p !== 'none' && p !== 'custom') document.body.classList.add('bg-pattern-' + p);
   if (_CANVAS_PATTERNS[p]) _CANVAS_PATTERNS[p]();
-  // Hide sliders that do nothing on static patterns.
-  const hide = _STATIC_PATTERNS.has(p);
+  const hide = _STATIC_PATTERNS.has(p) || p === 'custom';
   const ig = document.getElementById('theme-bg-intensity-group');
   const sg = document.getElementById('theme-bg-size-group');
   if (ig) ig.style.display = hide ? 'none' : '';
   if (sg) sg.style.display = hide ? 'none' : '';
+  // Show/hide the custom background row
+  const cr = document.getElementById('theme-bg-custom-row');
+  if (cr) cr.style.display = p === 'custom' ? '' : 'none';
+  if (p === 'custom') {
+    applyBgCustom(bgCustomName || '');
+  } else {
+    applyBgCustom(null);
+  }
 }
 
 export function getSaved() {
@@ -459,6 +508,13 @@ export function save(name, colors, opts) {
     if (opts.bgEffectIntensity !== undefined && opts.bgEffectIntensity !== 1) obj.bgEffectIntensity = opts.bgEffectIntensity;
     if (opts.bgEffectSize !== undefined && opts.bgEffectSize !== 1) obj.bgEffectSize = opts.bgEffectSize;
     if (opts.frosted) obj.frosted = true;
+    if (opts.fontSidebar) obj.fontSidebar = opts.fontSidebar;
+    if (opts.fontContent) obj.fontContent = opts.fontContent;
+    if (opts.fontTerminal) obj.fontTerminal = opts.fontTerminal;
+    if (opts.fontSizeSidebar) obj.fontSizeSidebar = opts.fontSizeSidebar;
+    if (opts.fontSizeContent) obj.fontSizeContent = opts.fontSizeContent;
+    if (opts.fontSizeTerminal) obj.fontSizeTerminal = opts.fontSizeTerminal;
+    if (opts.bgCustom) obj.bgCustom = opts.bgCustom;
   }
   Storage.setJSON(LS_KEY, obj);
   _syncToServer(obj);
@@ -673,6 +729,20 @@ export function initThemeUI() {
     if (sz) opts.bgEffectSize = parseFloat(sz.value) / 100;
     const fr = document.getElementById('theme-frosted-toggle');
     if (fr) opts.frosted = !!fr.checked;
+    const sbs = document.getElementById('theme-font-sidebar');
+    const cfs = document.getElementById('theme-font-content');
+    const tfs = document.getElementById('theme-font-terminal');
+    if (sbs && sbs.value) opts.fontSidebar = sbs.value;
+    if (cfs && cfs.value) opts.fontContent = cfs.value;
+    if (tfs && tfs.value) opts.fontTerminal = tfs.value;
+    const szs = document.getElementById('theme-font-size-sidebar');
+    const szc = document.getElementById('theme-font-size-content');
+    const szt = document.getElementById('theme-font-size-terminal');
+    if (szs && Number(szs.value) > 0) opts.fontSizeSidebar = Number(szs.value);
+    if (szc && Number(szc.value) > 0) opts.fontSizeContent = Number(szc.value);
+    if (szt && Number(szt.value) > 0) opts.fontSizeTerminal = Number(szt.value);
+    const bgc = document.getElementById('theme-bg-custom-select');
+    if (bgc && bgc.value) opts.bgCustom = bgc.value;
     return opts;
   }
   function _saveFull(name, colors) { save(name, colors, _getOpts()); }
@@ -701,12 +771,21 @@ export function initThemeUI() {
         const fr = (ct && ct.frosted !== undefined)
           ? !!ct.frosted
           : (THEME_DEFAULT_FROSTED[name] === true);
+        const sf = (ct && ct.fontSidebar) || '';
+        const cf = (ct && ct.fontContent) || '';
+        const tf = (ct && ct.fontTerminal) || '';
+        const ssz = (ct && ct.fontSizeSidebar) || 0;
+        const csz = (ct && ct.fontSizeContent) || 0;
+        const tsz = (ct && ct.fontSizeTerminal) || 0;
+        const bgc = (ct && ct.bgCustom) || '';
         applyFontDensity(f, d);
         applyBgEffectColor(ec);
         applyBgEffectIntensity(ei);
         applyBgEffectSize(sz);
         applyFrostedGlass(fr);
-        applyBgPattern(p);
+        applyBgPattern(p, bgc);
+        applyFontZones(sf, cf, tf);
+        applyFontSizes(ssz, csz, tsz);
         const fs = document.getElementById('theme-font-select');
         const ds = document.getElementById('theme-density-select');
         const ps = document.getElementById('theme-bg-pattern-select');
@@ -721,7 +800,21 @@ export function initThemeUI() {
         if (eis) eis.value = String(Math.round(ei * 100));
         if (szs) szs.value = String(Math.round(sz * 100));
         if (frs) frs.checked = fr;
-        save(name, colors, { font: f, density: d, bgPattern: p, bgEffectColor: ec, bgEffectIntensity: ei, bgEffectSize: sz, frosted: fr });
+        const sbs = document.getElementById('theme-font-sidebar');
+        const cfs = document.getElementById('theme-font-content');
+        const tfs = document.getElementById('theme-font-terminal');
+        if (sbs) sbs.value = sf;
+        if (cfs) cfs.value = cf;
+        if (tfs) tfs.value = tf;
+        const sszs = document.getElementById('theme-font-size-sidebar');
+        const szcs = document.getElementById('theme-font-size-content');
+        const sztf = document.getElementById('theme-font-size-terminal');
+        if (sszs) { sszs.value = String(ssz); _updateFontSizeLabel(sszs); }
+        if (szcs) { szcs.value = String(csz); _updateFontSizeLabel(szcs); }
+        if (sztf) { sztf.value = String(tsz); _updateFontSizeLabel(sztf); }
+        const bgs = document.getElementById('theme-bg-custom-select');
+        if (bgs) bgs.value = bgc;
+        _saveFull(name, colors);
       });
     });
     g.querySelectorAll('.theme-delete-btn').forEach(btn => {
@@ -1086,12 +1179,21 @@ export function initThemeUI() {
   const _initFrosted = (saved && saved.frosted !== undefined)
     ? !!saved.frosted
     : (saved && THEME_DEFAULT_FROSTED[saved.name] === true);
+  const _initFontSidebar = (saved && saved.fontSidebar) || '';
+  const _initFontContent = (saved && saved.fontContent) || '';
+  const _initFontTerminal = (saved && saved.fontTerminal) || '';
+  const _initFontSizeSidebar = (saved && saved.fontSizeSidebar) || 0;
+  const _initFontSizeContent = (saved && saved.fontSizeContent) || 0;
+  const _initFontSizeTerminal = (saved && saved.fontSizeTerminal) || 0;
+  const _initBgCustom = (saved && saved.bgCustom) || '';
   applyFontDensity(_initFont, _initDensity);
   applyBgEffectColor(_initEffectColor);
   applyBgEffectIntensity(_initEffectIntensity);
   applyBgEffectSize(_initEffectSize);
   applyFrostedGlass(_initFrosted);
-  applyBgPattern(_initPattern);
+  applyBgPattern(_initPattern, _initBgCustom);
+  applyFontZones(_initFontSidebar, _initFontContent, _initFontTerminal);
+  applyFontSizes(_initFontSizeSidebar, _initFontSizeContent, _initFontSizeTerminal);
 
   const fontSelect = document.getElementById('theme-font-select');
   const densitySelect = document.getElementById('theme-density-select');
@@ -1118,6 +1220,20 @@ export function initThemeUI() {
           opt.dataset.customFont = '1';
           nf.appendChild(opt);
         }
+        // Also populate zone font selects with custom fonts
+        ['theme-font-sidebar', 'theme-font-content', 'theme-font-terminal'].forEach(id => {
+          const zs = document.getElementById(id);
+          if (zs) {
+            zs.querySelectorAll('option[data-custom-font]').forEach(o => o.remove());
+            for (const fam of families) {
+              const opt = document.createElement('option');
+              opt.value = fam;
+              opt.textContent = fam;
+              opt.dataset.customFont = '1';
+              zs.appendChild(opt);
+            }
+          }
+        });
         // Restore saved value after options are populated
         nf.value = _initFont;
       })
@@ -1135,7 +1251,9 @@ export function initThemeUI() {
     const np = patternSelect.cloneNode(true); patternSelect.parentNode.replaceChild(np, patternSelect);
     np.value = _initPattern;
     np.addEventListener('change', () => {
-      applyBgPattern(np.value);
+      const bgs = document.getElementById('theme-bg-custom-select');
+      const bgName = np.value === 'custom' ? (bgs ? bgs.value : '') : '';
+      applyBgPattern(np.value, bgName);
       const s = getSaved(); if (s) _saveFull(s.name, s.colors);
     });
   }
@@ -1175,6 +1293,128 @@ export function initThemeUI() {
       const s = getSaved(); if (s) _saveFull(s.name, s.colors);
     });
   }
+
+  // ── Zone font selects (sidebar / content / terminal) ──
+  function _wireFontZoneSelect(id, applyFn, initVal) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const n = el.cloneNode(true); el.parentNode.replaceChild(n, el);
+    n.value = initVal;
+    n.addEventListener('change', () => {
+      const sb = document.getElementById('theme-font-sidebar');
+      const ct = document.getElementById('theme-font-content');
+      const tm = document.getElementById('theme-font-terminal');
+      applyFontZones(sb ? sb.value : '', ct ? ct.value : '', tm ? tm.value : '');
+      const s = getSaved(); if (s) _saveFull(s.name, s.colors);
+    });
+  }
+  _wireFontZoneSelect('theme-font-sidebar', applyFontZones, _initFontSidebar);
+  _wireFontZoneSelect('theme-font-content', applyFontZones, _initFontContent);
+  _wireFontZoneSelect('theme-font-terminal', applyFontZones, _initFontTerminal);
+
+  // ── Zone font size sliders ──
+  function _updateFontSizeLabel(slider) {
+    const out = slider && document.querySelector('output[for="' + slider.id + '"]');
+    if (out) {
+      const v = parseInt(slider.value, 10);
+      out.textContent = v > 0 ? v + 'px' : 'Auto';
+    }
+  }
+  function _wireFontSizeSlider(id, initVal, cssProp) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const n = el.cloneNode(true); el.parentNode.replaceChild(n, el);
+    n.value = String(initVal);
+    _updateFontSizeLabel(n);
+    n.addEventListener('input', () => {
+      _updateFontSizeLabel(n);
+      const sb = document.getElementById('theme-font-size-sidebar');
+      const ct = document.getElementById('theme-font-size-content');
+      const tm = document.getElementById('theme-font-size-terminal');
+      applyFontSizes(sb ? sb.value : 0, ct ? ct.value : 0, tm ? tm.value : 0);
+      const s = getSaved(); if (s) _saveFull(s.name, s.colors);
+    });
+  }
+  _wireFontSizeSlider('theme-font-size-sidebar', _initFontSizeSidebar);
+  _wireFontSizeSlider('theme-font-size-content', _initFontSizeContent);
+  _wireFontSizeSlider('theme-font-size-terminal', _initFontSizeTerminal);
+
+  // ── Custom background upload / select ──
+  (function _wireBgCustom() {
+    const sel = document.getElementById('theme-bg-custom-select');
+    const uploadBtn = document.getElementById('theme-bg-custom-upload-btn');
+    const clearBtn = document.getElementById('theme-bg-custom-clear-btn');
+    const fileInput = document.getElementById('theme-bg-custom-file-input');
+
+    // Load list of uploaded backgrounds
+    fetch('/api/backgrounds/list', { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(data => {
+        if (!sel) return;
+        const currentVal = sel.value || _initBgCustom;
+        sel.querySelectorAll('option:not([value=""])').forEach(o => o.remove());
+        if (data.backgrounds) {
+          for (const bg of data.backgrounds) {
+            const opt = document.createElement('option');
+            opt.value = bg.name;
+            opt.textContent = bg.name;
+            sel.appendChild(opt);
+          }
+        }
+        sel.value = currentVal;
+      })
+      .catch(e => console.warn('Background list fetch failed:', e));
+
+    if (sel) {
+      const ns = sel.cloneNode(true); sel.parentNode.replaceChild(ns, sel);
+      ns.value = _initBgCustom;
+      ns.addEventListener('change', () => {
+        const ps = document.getElementById('theme-bg-pattern-select');
+        if (ps && ns.value) { ps.value = 'custom'; applyBgPattern('custom', ns.value); }
+        else if (ps) { applyBgPattern(ps.value, ns.value || ''); }
+        const s = getSaved(); if (s) _saveFull(s.name, s.colors);
+      });
+    }
+
+    if (uploadBtn && fileInput) {
+      uploadBtn.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', async () => {
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+        const fd = new FormData();
+        fd.append('file', file);
+        try {
+          const res = await fetch('/api/backgrounds/upload', { method: 'POST', credentials: 'same-origin', body: fd });
+          const result = await res.json();
+          if (res.ok && result.name) {
+            // Add option and select it
+            const sel2 = document.getElementById('theme-bg-custom-select');
+            if (sel2) {
+              const opt = document.createElement('option');
+              opt.value = result.name;
+              opt.textContent = result.name;
+              sel2.appendChild(opt);
+              sel2.value = result.name;
+              const ps = document.getElementById('theme-bg-pattern-select');
+              if (ps) { ps.value = 'custom'; applyBgPattern('custom', result.name); }
+              const s = getSaved(); if (s) _saveFull(s.name, s.colors);
+            }
+          }
+        } catch (e) { console.warn('Background upload failed:', e); }
+        fileInput.value = '';
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        const sel2 = document.getElementById('theme-bg-custom-select');
+        const ps = document.getElementById('theme-bg-pattern-select');
+        if (sel2) sel2.value = '';
+        if (ps && ps.value === 'custom') { ps.value = 'none'; applyBgPattern('none'); }
+        const s = getSaved(); if (s) _saveFull(s.name, s.colors);
+      });
+    }
+  })();
 
   // --- Color Harmony Generator (inside Advanced section) ---
   const harmonyGenBtnEl = document.getElementById('harmony-generate-btn');
