@@ -750,6 +750,7 @@ export function initThemeUI() {
   if (!grid) return;
 
   const saved = getSaved();
+  if (!saved) { save(DEFAULT_THEME, THEMES[DEFAULT_THEME], {}); }
   const activeName = saved ? saved.name : DEFAULT_THEME;
   const customThemes = _loadCustomThemes();
 
