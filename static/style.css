@@ -218,7 +218,7 @@ body.text-emojis .terminal-output {
 .cp-popover, .overflow-menu, .search-popup,
 .doc-pane, .research-pane, .calendar-pane, .cookbook-pane,
 .notes-pane, .email-reader {
-  font-family: var(--font-family, 'Fira Code', monospace);
+  font-family: var(--font-family, 'Fira Code', monospace) !important;
 }
 .chat-messages, .chat-input-wrap, .chat-top-bar, #chat-container {
   font-family: var(--font-content, var(--font-family, 'Fira Code', monospace));
@@ -240,7 +240,7 @@ pre, code, .markdown-code, .message-content pre, .message-content code {
 .cp-popover, .overflow-menu, .search-popup,
 .doc-pane, .research-pane, .calendar-pane, .cookbook-pane,
 .notes-pane, .email-reader {
-  font-size: inherit;
+  font-size: inherit !important;
 }
 .chat-messages, .chat-input-wrap, .chat-top-bar, #chat-container {
   font-size: var(--font-size-content, inherit);
