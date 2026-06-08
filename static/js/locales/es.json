@@ -215,7 +215,7 @@
   "login.hide_password": "Ocultar contraseña",
   "memory.filter_all_skills": "Todos los skills",
   "common.error": "Error",
-  "settings.ai_defaults": "Valores predeterminados de IA",
+  "settings.ai_defaults": "Valores de IA",
   "chat.stop": "Detener",
   "shell.enter_session_name": "Introduce el nombre de la sesión",
   "settings.agent_tools": "Tools del agent",
