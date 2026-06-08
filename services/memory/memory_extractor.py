@@ -237,6 +237,14 @@ def _is_text_duplicate(new_text: str, existing: list, threshold: float = 0.6) ->
 
 
 def _parse_extraction_json(raw: str) -> list:
+    """Parse the extraction LLM's reply into a list of facts, tolerating
+    reasoning-model noise.
+
+    The model emits <think>…</think> (and sometimes a prose preamble or a
+    ```json fence) AROUND the JSON array; without stripping it, json.loads
+    bombs and the run silently yields "0 candidates". Pure str -> list (no
+    LLM/network); returns [] on any parse failure instead of raising.
+    """
     text = (raw or "").strip()
     try:
         from src.misc.text_helpers import strip_think as _strip_think
@@ -245,6 +253,10 @@ def _parse_extraction_json(raw: str) -> list:
         pass
     if text.startswith("```"):
         text = text.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+    # JSON may still be embedded in surrounding commentary (leading prose or
+    # trailing remarks like "[...] Done!") — slice from the first '[' to the
+    # last ']' whenever both exist. Slice unconditionally: a reply that starts
+    # with '[' can still carry trailing commentary that breaks json.loads.
     _start = text.find("[")
     _end = text.rfind("]")
     if 0 <= _start < _end:
@@ -308,6 +320,17 @@ async def extract_and_store(
 
         fallback_facts = _fallback_memory_candidates(stripped_recent)
 
+        # Flatten the window into a SINGLE user message instead of appending the
+        # raw alternating role messages. Passed as raw chat messages, the model
+        # treats the window as a conversation to CONTINUE rather than a transcript
+        # to ANALYZE, so it reliably extracts nothing — typically returning `[]`
+        # (and, depending on the input, sometimes an empty or <think>-only
+        # completion when the window ends on an assistant turn). This was the real
+        # cause of auto-memory logging "0 candidates" on every run. Reframing it as
+        # one "analyze this transcript, return the JSON array" user message makes
+        # the model actually extract. Controlled repro on this model: 0/6 trials
+        # with the old structure vs 6/6 with this one. The skill extractor flattens
+        # for the same reason.
         def _flatten_msg(m):
             c = m.get("content", "")
             if isinstance(c, list):
@@ -333,10 +356,19 @@ async def extract_and_store(
                 model,
                 extraction_messages,
                 temperature=0.1,
+                # A reasoning model spends most of its budget on <think> tokens
+                # BEFORE emitting the JSON, so the old 500 truncated the response
+                # before any JSON appeared → every run logged "0 candidates". The
+                # audit path hit the same wall and raised to 16384; extraction's
+                # output (a short facts list) is small, so an ample ceiling is
+                # enough once thinking has room.
                 max_tokens=4096,
                 headers=headers,
             )
 
+            # Parse JSON, tolerating reasoning-model noise (<think> blocks, a
+            # ```json fence, and leading/trailing commentary). See
+            # _parse_extraction_json — returns [] rather than raising.
             facts = _parse_extraction_json(raw)
         except Exception as e:
             logger.warning(f"LLM memory extraction failed; using fallback candidates if available: {e}")
