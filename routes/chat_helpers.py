@@ -111,8 +111,13 @@ def _enforce_chat_privileges(request, sess) -> None:
         return
 
     privs = auth_manager.get_privileges(user) or {}
+
+    # Explicit "block everything" sentinel takes precedence over the
+    # allowlist — it's the only way to distinguish "user clicked [None]"
+    # (block all) from "user clicked [All]" (no restriction), since both
+    # otherwise produce an empty `allowed_models` list.
     if privs.get("block_all_models"):
-        raise HTTPException(status_code=403, detail="Model access blocked by administrator")
+        raise HTTPException(403, f"Your account is not allowed to use model '{sess.model}'.")
     allowed_raw = privs.get("allowed_models")
     allowed = allowed_raw if isinstance(allowed_raw, list) else []
     restricted = bool(privs.get("allowed_models_restricted")) or bool(allowed)
