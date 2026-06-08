@@ -13,7 +13,7 @@ import json
 import httpx
 import pytest
 
-from src import llm_core
+import src.llm_core as llm_core
 
 
 # ---------------------------------------------------------------------------
@@ -108,7 +108,7 @@ for _mod in [
     if _mod not in sys.modules:
         sys.modules[_mod] = MagicMock()
 
-from src.agent_loop import _empty_response_fallback  # noqa: E402
+from src.chat.agent_loop import _empty_response_fallback  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

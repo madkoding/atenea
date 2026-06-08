@@ -2,8 +2,8 @@
 import os
 from fastapi import APIRouter, Request, HTTPException, Query
 
-from src.auth_helpers import get_current_user
-from src.tool_security import owner_is_admin_or_single_user
+from src.auth.helpers import get_current_user
+from src.tools.security import owner_is_admin_or_single_user
 
 
 def setup_workspace_routes():

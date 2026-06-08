@@ -1,4 +1,4 @@
-from src.rag_manager import RAGManager
+from src.vector.rag_manager import RAGManager
 
 
 class _FakeVectorRAG:

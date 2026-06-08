@@ -10,7 +10,7 @@ def _import_consolidate_action():
         sys.modules.pop("src.builtin_actions", None)
         if "src" in sys.modules and hasattr(sys.modules["src"], "builtin_actions"):
             delattr(sys.modules["src"], "builtin_actions")
-    from src.builtin_actions import action_consolidate_memory
+    from src.actions.builtin import action_consolidate_memory
 
     return action_consolidate_memory
 
@@ -29,8 +29,8 @@ def _read_memories(data_dir):
 @pytest.mark.asyncio
 async def test_consolidate_memory_empty_owner_treats_each_owner_separately(monkeypatch, tmp_path):
     from src import constants
-    from src import endpoint_resolver
-    from src import llm_core
+    import src.runtime.endpoint_resolver as endpoint_resolver
+    from src.llm_core import llm_core
     action_consolidate_memory = _import_consolidate_action()
 
     long_alice_text = "Alice private project context. " + ("A" * 2200)
@@ -87,7 +87,7 @@ async def test_consolidate_memory_empty_owner_treats_each_owner_separately(monke
 @pytest.mark.asyncio
 async def test_consolidate_memory_specific_owner_does_not_absorb_ownerless_rows(monkeypatch, tmp_path):
     from src import constants
-    from src import endpoint_resolver
+    import src.runtime.endpoint_resolver as endpoint_resolver
     action_consolidate_memory = _import_consolidate_action()
 
     data_dir = _write_memories(

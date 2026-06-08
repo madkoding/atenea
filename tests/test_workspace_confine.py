@@ -5,7 +5,7 @@ import tempfile
 
 import pytest
 
-from src.tool_execution import _resolve_tool_path_in_workspace, _direct_fallback
+from src.tools.execution import _resolve_tool_path_in_workspace, _direct_fallback
 
 
 def test_workspace_resolver_confines():
@@ -92,7 +92,7 @@ async def test_subprocess_runs_with_workspace_cwd():
 @pytest.mark.asyncio
 async def test_edit_file_confined_in_workspace():
     import json
-    from src.tool_execution import _do_edit_file
+    from src.tools.execution import _do_edit_file
     ws = tempfile.mkdtemp()
     open(os.path.join(ws, "f.txt"), "w").write("foo bar")
     # Edit inside the workspace succeeds.

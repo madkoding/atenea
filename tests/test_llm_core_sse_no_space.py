@@ -9,7 +9,7 @@ stream — content and usage — was silently dropped.
 import asyncio
 import json
 
-from src import llm_core
+import src.llm_core as llm_core
 
 
 class _FakeResp:

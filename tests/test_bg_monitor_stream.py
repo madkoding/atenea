@@ -3,7 +3,7 @@ import sys
 import types
 from types import SimpleNamespace
 
-from src import bg_monitor
+import src.scheduling.bg_monitor as bg_monitor
 
 
 def test_drain_agent_ignores_non_string_deltas(monkeypatch):

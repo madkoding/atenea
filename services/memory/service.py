@@ -7,7 +7,7 @@ import os
 
 from .memory import MemoryManager
 from .memory_vector import MemoryVectorStore
-from src.memory_provider import MemoryRecord, NativeMemoryProvider
+from src.memory.provider import MemoryRecord, NativeMemoryProvider
 
 
 @dataclass

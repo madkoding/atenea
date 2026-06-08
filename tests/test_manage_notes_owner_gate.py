@@ -5,7 +5,7 @@ import types
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from src import tool_implementations
+import src.tools.implementations as tool_implementations
 
 
 class _Query:

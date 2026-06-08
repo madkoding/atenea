@@ -23,7 +23,7 @@ with patch.dict(os.environ, {"DATABASE_URL": "sqlite:///:memory:"}), \
     _core_database = sys.modules.get("core.database")
     if _core_database is not None and not getattr(_core_database, "__file__", None):
         del sys.modules["core.database"]
-    from src.webhook_manager import sanitize_error
+    from src.clients.webhook_manager import sanitize_error
 
 
 def test_ipv6_addresses_are_redacted():

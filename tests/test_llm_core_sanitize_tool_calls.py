@@ -28,7 +28,7 @@ for mod in [
     if mod not in sys.modules:
         sys.modules[mod] = MagicMock()
 
-from src.agent_loop import _append_tool_results
+from src.chat.agent_loop import _append_tool_results
 from src.llm_core import _sanitize_llm_messages
 
 

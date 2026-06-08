@@ -4,7 +4,7 @@ Replaces an earlier source-text version of this test (which only asserted on
 string positions inside routes/chat_routes.py and never exercised actual
 streaming behavior) with tests that drive the real mechanisms involved:
 
-  * src.agent_runs — the detached-run manager that normal chat/agent streams
+  * src.agent.runs — the detached-run manager that normal chat/agent streams
     are wrapped in. A subscriber (the SSE client) disconnecting must NOT stop
     the run; only an explicit stop()/cancel does, and the wrapped generator's
     own CancelledError handler must fire exactly once (no duplicate partial
@@ -27,7 +27,7 @@ import asyncio
 
 import pytest
 
-from src import agent_runs
+import src.agent.runs as agent_runs
 
 
 # --------------------------------------------------------------------------- #

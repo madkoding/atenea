@@ -11,7 +11,7 @@ import logging
 
 from core.database import Comparison, SessionLocal
 from core.session_manager import SessionManager
-from src.auth_helpers import get_current_user
+from src.auth.helpers import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ def _owned_endpoint_by_url(db, base_url, owner):
     legacy mode).
     """
     from core.database import ModelEndpoint
-    from src.auth_helpers import owner_filter
+    from src.auth.helpers import owner_filter
     q = db.query(ModelEndpoint).filter(ModelEndpoint.base_url == base_url)
     return owner_filter(q, ModelEndpoint, owner).first()
 
@@ -101,7 +101,7 @@ def setup_compare_routes(session_manager: SessionManager):
             # Copy API key from endpoint config
             db = SessionLocal()
             try:
-                from src.endpoint_resolver import build_headers, normalize_base
+                from src.runtime.endpoint_resolver import build_headers, normalize_base
                 # Find matching endpoint by URL, scoped to the caller so a
                 # comparison can't borrow another user's private endpoint key.
                 base = normalize_base(endpoint)

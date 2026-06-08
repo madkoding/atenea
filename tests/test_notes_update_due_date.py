@@ -15,7 +15,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src import tool_implementations
+import src.tools.implementations as tool_implementations
 
 
 def _install_fakes(monkeypatch, note, parse=None):

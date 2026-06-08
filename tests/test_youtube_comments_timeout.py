@@ -8,7 +8,7 @@ to communicate(), and the child killed when it overruns.
 """
 import asyncio
 
-from src import youtube_handler
+import src.youtube.handler as youtube_handler
 
 
 def test_comment_fetch_honours_timeout(monkeypatch):

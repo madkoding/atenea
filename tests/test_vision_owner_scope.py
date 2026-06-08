@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from src import ai_interaction
-from src import document_processor as dp
+import src.agent.ai_interaction as ai_interaction
+import src.documents.processor as dp
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -63,7 +63,7 @@ def test_vision_analysis_uses_owner_scoped_primary_and_fallback(monkeypatch, tmp
     monkeypatch.setattr(dp, "_resolve_vl_model", fake_resolve_vl_model)
     monkeypatch.setattr(dp, "llm_call", fake_llm_call)
 
-    from src import endpoint_resolver
+    import src.runtime.endpoint_resolver as endpoint_resolver
 
     monkeypatch.setattr(endpoint_resolver, "resolve_vision_fallback_candidates", fake_fallbacks)
 

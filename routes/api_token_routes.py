@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Request, Form
 
 from core.database import get_db_session, ApiToken
 from core.middleware import require_admin
-from src.auth_helpers import get_current_user
+from src.auth.helpers import get_current_user
 
 MAX_NAME_LEN = 100
 DEFAULT_SCOPES = "chat"

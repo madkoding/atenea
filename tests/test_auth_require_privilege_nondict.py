@@ -2,8 +2,8 @@ import types
 
 import pytest
 
-from src import auth_helpers
-from src.auth_helpers import require_privilege
+import src.auth.helpers as auth_helpers
+from src.auth.helpers import require_privilege
 
 
 class _Mgr:

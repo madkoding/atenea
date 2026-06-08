@@ -69,13 +69,13 @@ class EncryptedText(TypeDecorator):
     def process_bind_param(self, value, dialect):
         if value is None:
             return None
-        from src.secret_storage import encrypt
+        from src.security.secret_storage import encrypt
         return encrypt(value)
 
     def process_result_value(self, value, dialect):
         if value is None:
             return None
-        from src.secret_storage import decrypt
+        from src.security.secret_storage import decrypt
         return decrypt(value)
 
 
@@ -1757,7 +1757,7 @@ def _migrate_encrypt_endpoint_keys():
     """Encrypt any plaintext provider API keys in model_endpoints. Idempotent;
     raw SQL so the EncryptedText decorator isn't applied twice."""
     try:
-        from src.secret_storage import encrypt, is_encrypted
+        from src.security.secret_storage import encrypt, is_encrypted
     except Exception as e:
         logger.warning(f"secret_storage import failed; skipping endpoint-key migration: {e}")
         return
@@ -1782,7 +1782,7 @@ def _migrate_encrypt_signatures():
     Idempotent — rows already prefixed with `enc:` are skipped. Uses raw SQL
     so the EncryptedText type decorator isn't applied twice."""
     try:
-        from src.secret_storage import encrypt, is_encrypted
+        from src.security.secret_storage import encrypt, is_encrypted
     except Exception as e:
         logger.warning(f"secret_storage import failed; skipping signature migration: {e}")
         return
@@ -1814,7 +1814,7 @@ def _migrate_encrypt_email_passwords():
     table. Idempotent — rows already prefixed with `enc:` are skipped.
     Safe to run on every startup."""
     try:
-        from src.secret_storage import encrypt, is_encrypted
+        from src.security.secret_storage import encrypt, is_encrypted
     except Exception as e:
         logger.warning(f"secret_storage import failed; skipping password migration: {e}")
         return

@@ -14,7 +14,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request, Depends
 
-from src.auth_helpers import require_user
+from src.auth.helpers import require_user
 from pydantic import BaseModel
 
 from core.middleware import require_admin
@@ -73,11 +73,11 @@ def setup_cookbook_routes() -> APIRouter:
     def _decrypt_secret(value: str | None) -> str:
         if not value:
             return ""
-        from src.secret_storage import decrypt
+        from src.security.secret_storage import decrypt
         return decrypt(value)
 
     def _encrypt_secret(value: str) -> str:
-        from src.secret_storage import encrypt
+        from src.security.secret_storage import encrypt
         return encrypt(value)
 
     def _strip_task_secrets(state):
@@ -532,8 +532,8 @@ def setup_cookbook_routes() -> APIRouter:
 
         # Log to assistant
         try:
-            from src.assistant_log import log_to_assistant
-            from src.auth_helpers import get_current_user
+            from src.agent.assistant_log import log_to_assistant
+            from src.auth.helpers import get_current_user
             owner = get_current_user(request)
             log_to_assistant(
                 owner,
@@ -1260,8 +1260,8 @@ def setup_cookbook_routes() -> APIRouter:
 
         # Log to assistant
         try:
-            from src.assistant_log import log_to_assistant
-            from src.auth_helpers import get_current_user
+            from src.agent.assistant_log import log_to_assistant
+            from src.auth.helpers import get_current_user
             owner = get_current_user(request)
             short = req.repo_id.split("/")[-1] if "/" in req.repo_id else req.repo_id
             log_to_assistant(

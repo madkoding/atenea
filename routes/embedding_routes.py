@@ -268,7 +268,7 @@ def setup_embedding_routes():
         # request. Local-first means loopback/LAN endpoints are allowed by
         # default; non-HTTP(S) schemes and the cloud metadata range are always
         # rejected. Set EMBEDDING_BLOCK_PRIVATE_IPS=true for full lockdown.
-        from src.url_safety import check_outbound_url
+        from src.security.url_safety import check_outbound_url
         ok, reason = check_outbound_url(
             url,
             block_private=os.getenv("EMBEDDING_BLOCK_PRIVATE_IPS", "false").lower() == "true",
@@ -294,7 +294,7 @@ def setup_embedding_routes():
         if model:
             data["model"] = model
         if api_key:
-            from src.secret_storage import encrypt
+            from src.security.secret_storage import encrypt
             data["api_key"] = encrypt(api_key)
 
         _save_custom_endpoint(data)
@@ -312,24 +312,24 @@ def setup_embedding_routes():
         # Clear the HTTP-embedding "down" latch so the new endpoint is re-probed
         # instead of staying on the FastEmbed fallback for the process lifetime.
         try:
-            from src.embeddings import reset_http_embed_state
+            from src.vector.embeddings import reset_http_embed_state
             reset_http_embed_state()
         except Exception:
             pass
         try:
-            from src.embedding_lanes import reset_embedding_lane_state
+            from src.vector.embedding_lanes import reset_embedding_lane_state
             reset_embedding_lane_state()
         except Exception:
             pass
         try:
-            from src.tool_index import reset_tool_index
+            from src.tools.index import reset_tool_index
             reset_tool_index()
         except Exception:
             pass
 
         # Reset ChromaDB client (collections will be recreated with new embeddings)
         try:
-            from src.chroma_client import reset_client
+            from src.vector.chroma_client import reset_client
             reset_client()
         except Exception:
             pass
@@ -353,24 +353,24 @@ def setup_embedding_routes():
         _rs.rag_instance = None
         _rs._last_attempt = 0
         try:
-            from src.embeddings import reset_http_embed_state
+            from src.vector.embeddings import reset_http_embed_state
             reset_http_embed_state()
         except Exception:
             pass
         try:
-            from src.embedding_lanes import reset_embedding_lane_state
+            from src.vector.embedding_lanes import reset_embedding_lane_state
             reset_embedding_lane_state()
         except Exception:
             pass
         try:
-            from src.tool_index import reset_tool_index
+            from src.tools.index import reset_tool_index
             reset_tool_index()
         except Exception:
             pass
 
         # Reset ChromaDB client
         try:
-            from src.chroma_client import reset_client
+            from src.vector.chroma_client import reset_client
             reset_client()
         except Exception:
             pass

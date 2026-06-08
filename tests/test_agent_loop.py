@@ -1,5 +1,11 @@
-"""Tests for agent_loop.py — _detect_admin_intent, _compute_final_metrics,
-and _append_tool_results. Uses mock imports to avoid loading the full app stack."""
+"""Tests for src.chat.agent_loop — _detect_admin_intent, _compute_final_metrics,
+and _append_tool_results. Uses mock imports to avoid loading the full app stack.
+
+NOTE: this file used to import ``src.agent_loop``; after the ``src/`` package
+reorg (see FORK-NOTES / ROADMAP) the module lives at ``src.chat.agent_loop``.
+The import-leak guards below also moved to the new name to keep the test
+useful after the rename.
+"""
 
 import sys
 from unittest.mock import MagicMock
@@ -8,11 +14,11 @@ _MOCKED_IMPORTS = [
     'sqlalchemy', 'sqlalchemy.orm', 'sqlalchemy.ext', 'sqlalchemy.ext.declarative',
     'sqlalchemy.ext.hybrid', 'sqlalchemy.sql', 'sqlalchemy.sql.expression',
     'src.database',
-    'src.agent_tools',
+    'src.agent.tools_facade',
     'core.models', 'core.database',
 ]
 _INJECTED_IMPORT_STUBS = {}
-_PREEXISTING_AGENT_LOOP = sys.modules.get("src.agent_loop")
+_PREEXISTING_AGENT_LOOP = sys.modules.get("src.chat.agent_loop")
 
 
 def _drop_module_if_same(name, expected):
@@ -34,16 +40,16 @@ for mod in _MOCKED_IMPORTS:
 
 _IMPORTED_AGENT_LOOP = None
 try:
-    from src.agent_loop import (
+    from src.chat.agent_loop import (
         _detect_admin_intent,
         _compute_final_metrics,
         _append_tool_results,
         _MCP_KEYWORDS,
     )
-    _IMPORTED_AGENT_LOOP = sys.modules.get("src.agent_loop")
+    _IMPORTED_AGENT_LOOP = sys.modules.get("src.chat.agent_loop")
 finally:
     if _PREEXISTING_AGENT_LOOP is None and _IMPORTED_AGENT_LOOP is not None:
-        _drop_module_if_same("src.agent_loop", _IMPORTED_AGENT_LOOP)
+        _drop_module_if_same("src.chat.agent_loop", _IMPORTED_AGENT_LOOP)
     for _mod, _stub in _INJECTED_IMPORT_STUBS.items():
         _drop_module_if_same(_mod, _stub)
 
@@ -55,7 +61,7 @@ def test_import_stubs_do_not_leak_into_later_tests():
     ]
     assert leaked == []
     if _PREEXISTING_AGENT_LOOP is None:
-        assert sys.modules.get("src.agent_loop") is not _IMPORTED_AGENT_LOOP
+        assert sys.modules.get("src.chat.agent_loop") is not _IMPORTED_AGENT_LOOP
 
 
 def test_mcp_keyword_gate_matches_literal_mcp_requests():

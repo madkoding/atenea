@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from src import caldav_sync
+import src.calendar_app.sync as caldav_sync
 
 
 def test_validate_caldav_url_normalizes_safe_url(monkeypatch):

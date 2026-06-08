@@ -6,7 +6,7 @@ injection re-surfaced the closed doc in later, unrelated chats. The document
 routes now call clear_active_document() on detach/delete; this pins that helper.
 """
 
-from src.tool_implementations import (
+from src.tools.implementations import (
     set_active_document,
     get_active_document,
     clear_active_document,

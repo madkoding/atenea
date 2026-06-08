@@ -1,4 +1,4 @@
-from src.action_intents import classify_tool_intent, message_needs_tools
+from src.actions.intents import classify_tool_intent, message_needs_tools
 
 
 def test_calendar_entry_request_promotes_to_agent():

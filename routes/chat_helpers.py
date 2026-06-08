@@ -14,10 +14,10 @@ from core.models import ChatMessage
 from core.database import SessionLocal
 from core.database import Session as DBSession, ModelEndpoint
 from src.llm_core import normalize_model_id
-from src.endpoint_resolver import normalize_base
-from src.context_compactor import maybe_compact, trim_for_context
-from src.auth_helpers import get_current_user
-from src.prompt_security import untrusted_context_message
+from src.runtime.endpoint_resolver import normalize_base
+from src.chat.context_compactor import maybe_compact, trim_for_context
+from src.auth.helpers import get_current_user
+from src.security.prompt_security import untrusted_context_message
 from routes.prefs_routes import _load_for_user as load_prefs_for_user
 
 from fastapi import HTTPException
@@ -155,7 +155,7 @@ async def auto_name_session(session_manager, sess):
     """Generate a short title for a session from its first user message."""
     try:
         from src.llm_core import llm_call_async
-        from src.task_endpoint import resolve_task_endpoint
+        from src.scheduling.task_endpoint import resolve_task_endpoint
 
         # Find first user message
         first_msg = ""
@@ -202,7 +202,7 @@ async def auto_name_session(session_manager, sess):
         title = title.strip().strip('"\'').strip()
         # Strip <think>/<thinking> blocks (closed, dangling, or stray tags)
         # via the central helper.
-        from src.text_helpers import strip_think
+        from src.misc.text_helpers import strip_think
         title = strip_think(title, prose=False, prompt_echo=False)
         if title and len(title) < 80:
             session_manager.update_session_name(sess.id, title)
@@ -219,7 +219,7 @@ async def try_fallback_endpoint(sess, session_id: str) -> dict | None:
     Returns {"model": ..., "endpoint_url": ..., "endpoint_name": ...} or None.
     """
     import httpx as _httpx
-    from src.endpoint_resolver import build_chat_url, build_headers, build_models_url, normalize_base
+    from src.runtime.endpoint_resolver import build_chat_url, build_headers, build_models_url, normalize_base
 
     current_url = sess.endpoint_url or ""
     endpoints_data = get_enabled_endpoints_cached(ttl=60.0)
@@ -330,7 +330,7 @@ def fire_message_event(request, webhook_manager, session_id: str, sess, message:
         asyncio.create_task(webhook_manager.fire("chat.message", {
             "session_id": session_id, "model": sess.model, "message": message[:2000],
         }))
-    from src.event_bus import fire_event
+    from src.scheduling.event_bus import fire_event
     user = get_current_user(request)
     fire_event("message_sent", user)
 
@@ -339,7 +339,7 @@ def _session_url_matches_endpoint(session_url: str, endpoint_base: str) -> bool:
     if not session_url or not endpoint_base:
         return False
     try:
-        from src.endpoint_resolver import build_chat_url, normalize_base
+        from src.runtime.endpoint_resolver import build_chat_url, normalize_base
 
         sess_url = session_url.rstrip("/")
         base = normalize_base(endpoint_base).rstrip("/")
@@ -361,7 +361,7 @@ def resolve_session_auth(sess, session_id: str, owner: Optional[str] = None):
         return
 
     try:
-        from src.endpoint_resolver import build_headers, normalize_base
+        from src.runtime.endpoint_resolver import build_headers, normalize_base
         db = SessionLocal()
         try:
             target_url = getattr(sess, "endpoint_url", "") or ""
@@ -372,7 +372,7 @@ def resolve_session_auth(sess, session_id: str, owner: Optional[str] = None):
                 # Missing headers usually means "recover from the saved endpoint".
                 # Scope that lookup to the session owner, otherwise two users
                 # with similar endpoint URLs can borrow each other's API key.
-                from src.auth_helpers import owner_filter
+                from src.auth.helpers import owner_filter
                 q = owner_filter(q, ModelEndpoint, owner)
             for ep in q.all():
                 if not _session_url_matches_endpoint(target_url, ep.base_url or ""):
@@ -618,7 +618,7 @@ def _normalize_thinking(text: str) -> str:
     import re
     if not text:
         return text
-    from src.text_helpers import normalize_thinking_markup
+    from src.misc.text_helpers import normalize_thinking_markup
     text = normalize_thinking_markup(text)
     reasoning_prefix_re = re.compile(
         r'^\s*(?:thinking(?:\s+process)?\s*:|the user |i need |i should |i will |they are |the question |i can )',
@@ -730,7 +730,7 @@ def _extract_thinking_meta(text: str) -> dict | None:
     import re
     if not text:
         return None
-    from src.text_helpers import normalize_thinking_markup
+    from src.misc.text_helpers import normalize_thinking_markup
     original_text = text
     text = normalize_thinking_markup(text)
     normalized_changed = text != original_text
@@ -890,7 +890,7 @@ def run_post_response_tasks(
     _should_extract = (_msg_count >= 4) and (_msg_count % 4 == 0)
     if allow_background_extraction and not incognito and not compare_mode and _should_extract and uprefs.get("auto_memory", True):
         from services.memory.memory_extractor import extract_and_store
-        from src.task_endpoint import resolve_task_endpoint
+        from src.scheduling.task_endpoint import resolve_task_endpoint
         t_url, t_model, t_headers = resolve_task_endpoint(
             sess.endpoint_url, sess.model, sess.headers, owner=owner,
         )
@@ -928,7 +928,7 @@ def run_post_response_tasks(
             )
         else:
             from services.memory.skill_extractor import maybe_extract_skill
-            from src.task_endpoint import resolve_task_endpoint
+            from src.scheduling.task_endpoint import resolve_task_endpoint
             s_url, s_model, s_headers = resolve_task_endpoint(
                 sess.endpoint_url, sess.model, sess.headers, owner=owner,
             )

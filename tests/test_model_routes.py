@@ -30,7 +30,7 @@ if "core.database" not in sys.modules:
 
 import routes.model_routes as model_routes
 import src.database as src_database
-import src.endpoint_resolver as endpoint_resolver
+import src.runtime.endpoint_resolver as endpoint_resolver
 import src.llm_core as llm_core
 from routes.model_routes import (
     _match_provider_curated,
@@ -833,7 +833,7 @@ def _create_form_kwargs(**overrides):
 
 
 def _patch_create_deps(monkeypatch, db):
-    import src.auth_helpers as auth_helpers
+    import src.auth.helpers as auth_helpers
     monkeypatch.setattr(model_routes, "SessionLocal", lambda: db)
     monkeypatch.setattr(model_routes, "require_admin", lambda request: None)
     monkeypatch.setattr(model_routes, "ModelEndpoint", _RecordingEndpoint)
@@ -1281,7 +1281,7 @@ def test_explicit_proxy_add_fetches_and_caches_models_with_long_timeout(monkeypa
     monkeypatch.setattr(model_routes, "require_admin", lambda request: None)
     monkeypatch.setattr(model_routes, "_load_settings", lambda: {})
     monkeypatch.setattr(model_routes, "_save_settings", lambda settings: None)
-    monkeypatch.setattr("src.auth_helpers.get_current_user", lambda request: None)
+    monkeypatch.setattr("src.auth.helpers.get_current_user", lambda request: None)
     monkeypatch.setattr(model_routes, "_ping_endpoint", lambda *a, **k: (_ for _ in ()).throw(AssertionError("ping should not run when model listing succeeds")))
 
     calls = []

@@ -10,11 +10,9 @@ were switched to `strip_pdf_content_marker` (str.removeprefix); this one wasn't.
 import os
 import tempfile
 
-import src.document_processor as dp
-import src.pdf_forms as pdf_forms
-import src.pdf_form_doc as pdf_form_doc
-
-
+import src.documents.processor as dp
+import src.documents.pdf_forms as pdf_forms
+import src.documents.pdf_form_doc as pdf_form_doc
 class _FakeUploadHandler:
     def is_image_file(self, name, mime):
         return False

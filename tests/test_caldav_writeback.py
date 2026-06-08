@@ -10,7 +10,7 @@ import sys
 import types
 from datetime import datetime
 
-from src.caldav_writeback import (
+from src.calendar_app.writeback import (
     build_event_ical,
     find_remote_calendar,
     push_event,
@@ -129,8 +129,8 @@ def test_push_missing_uid_reports_input_error_before_remote_lookup():
 
 
 def test_writeback_validates_saved_url_before_remote_call(monkeypatch):
-    import src.caldav_sync as sync
-    import src.caldav_writeback as wb
+    import src.calendar_app.sync as sync
+    import src.calendar_app.writeback as wb
 
     prefs_mod = types.ModuleType("routes.prefs_routes")
     prefs_mod._load_for_user = lambda owner: {
@@ -187,8 +187,8 @@ def test_writeback_validates_saved_url_before_remote_call(monkeypatch):
 
 
 def test_writeback_rejects_unsafe_saved_url_before_remote_call(monkeypatch):
-    import src.caldav_sync as sync
-    import src.caldav_writeback as wb
+    import src.calendar_app.sync as sync
+    import src.calendar_app.writeback as wb
 
     prefs_mod = types.ModuleType("routes.prefs_routes")
     prefs_mod._load_for_user = lambda owner: {

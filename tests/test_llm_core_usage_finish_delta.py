@@ -9,7 +9,7 @@ stream_llm only captured usage when the delta was exactly None / {} /
 import asyncio
 import json
 
-from src import llm_core
+import src.llm_core as llm_core
 
 
 class _FakeResp:

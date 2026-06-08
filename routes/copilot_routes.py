@@ -31,8 +31,8 @@ from fastapi import APIRouter, Request, Form, HTTPException
 
 from core.database import SessionLocal, ModelEndpoint
 from core.middleware import require_admin
-from src.auth_helpers import get_current_user
-from src import copilot
+from src.auth.helpers import get_current_user
+from src.clients import copilot
 
 logger = logging.getLogger(__name__)
 

@@ -399,7 +399,7 @@ async def extract_and_store(
         if added > 0:
             memory_manager.save(existing)
             try:
-                from src.event_bus import fire_event
+                from src.scheduling.event_bus import fire_event
                 for _ in range(added):
                     fire_event("memory_added", _owner)
             except Exception:

@@ -1,4 +1,4 @@
-from src import model_discovery
+import src.runtime.model_discovery as model_discovery
 
 
 def test_parse_tailscale_status_rejects_wrong_shapes():

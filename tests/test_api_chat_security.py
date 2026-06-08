@@ -22,7 +22,7 @@ import pytest
     "file:///etc/passwd",
 ])
 def test_public_url_validator_blocks_internal_targets(url):
-    from src.url_security import is_public_http_url
+    from src.security.url_security import is_public_http_url
 
     assert is_public_http_url(url) is False
 

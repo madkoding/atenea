@@ -3,10 +3,10 @@ import json
 import sys
 from types import SimpleNamespace
 
-import src.agent_loop as al
-from src.agent_tools import ToolBlock
-from src.tool_execution import execute_tool_block
-from src.tool_policy import build_effective_tool_policy, detect_guide_only_turn
+import src.chat.agent_loop as al
+from src.agent.tools_facade import ToolBlock
+from src.tools.execution import execute_tool_block
+from src.tools.policy import build_effective_tool_policy, detect_guide_only_turn
 
 
 def _collect(gen):

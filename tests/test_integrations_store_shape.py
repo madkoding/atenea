@@ -1,6 +1,6 @@
 import json
 
-from src import integrations
+import src.integrations.registry as integrations
 
 
 def test_load_integrations_skips_non_object_rows(tmp_path, monkeypatch):

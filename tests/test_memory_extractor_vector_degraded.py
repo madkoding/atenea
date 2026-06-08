@@ -18,8 +18,8 @@ import asyncio
 import tempfile
 
 import src.llm_core
-import src.event_bus
-from src.memory import MemoryManager
+import src.scheduling.event_bus as event_bus
+from src.memory.store import MemoryManager
 from services.memory.memory_extractor import extract_and_store
 
 

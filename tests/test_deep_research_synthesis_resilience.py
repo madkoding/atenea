@@ -20,7 +20,7 @@ tests/test_deep_research_date_context.py).
 """
 import asyncio
 
-from src.deep_research import DeepResearcher
+from src.research.deep import DeepResearcher
 
 
 def _researcher():

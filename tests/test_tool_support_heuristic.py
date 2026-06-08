@@ -7,7 +7,7 @@ Verifies two critical cases:
      allow-list (_API_HOSTS), so cloud deepseek users keep working.
 """
 import pytest
-from src.agent_loop import _API_HOSTS, _endpoint_lookup_keys, _is_ollama_openai_compat_url
+from src.chat.agent_loop import _API_HOSTS, _endpoint_lookup_keys, _is_ollama_openai_compat_url
 from src.llm_core import _is_ollama_native_url
 
 

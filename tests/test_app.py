@@ -57,7 +57,7 @@ class TestImports:
 
     def test_app_helpers_importable(self):
         """Test that app_helpers module is importable"""
-        from src.app_helpers import abs_join
+        from src.runtime.app_helpers import abs_join
         assert callable(abs_join)
 
     def test_exceptions_importable(self):

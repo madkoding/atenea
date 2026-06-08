@@ -25,7 +25,7 @@ from sqlalchemy.pool import NullPool
 
 import core.database as cdb
 from core.database import CalendarCal, CalendarEvent
-from src import caldav_sync
+import src.calendar_app.sync as caldav_sync
 
 _TMPDB = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
 _ENGINE = create_engine(

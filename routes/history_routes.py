@@ -9,7 +9,7 @@ from fastapi import APIRouter, Request, HTTPException
 
 from core.models import ChatMessage
 from core.database import SessionLocal, ChatMessage as DbChatMessage, Session as DbSession
-from src.topic_analyzer import analyze_topics
+from src.research.topic_analyzer import analyze_topics
 from routes.session_routes import (
     _message_role,
     _message_text,
@@ -492,7 +492,7 @@ def setup_history_routes(session_manager) -> APIRouter:
             for msg in msgs_to_copy:
                 new_session.add_message(ChatMessage(msg.role, msg.content, msg.metadata))
             try:
-                from src.event_bus import fire_event
+                from src.scheduling.event_bus import fire_event
                 fire_event("session_created", getattr(source, 'owner', None))
             except Exception:
                 logger.debug("session_created event dispatch failed", exc_info=True)
@@ -511,7 +511,7 @@ def setup_history_routes(session_manager) -> APIRouter:
 
     @router.get("/api/conversations/topics")
     async def get_conversation_topics(request: Request) -> Dict[str, Any]:
-        from src.auth_helpers import require_user
+        from src.auth.helpers import require_user
         user = require_user(request)
         try:
             return analyze_topics(session_manager, owner=user or None)
@@ -522,7 +522,7 @@ def setup_history_routes(session_manager) -> APIRouter:
     async def compact_session(request: Request, session_id: str):
         """Manually trigger context compaction for a session."""
         _verify_session_owner(request, session_id)
-        from src.auth_helpers import effective_user
+        from src.auth.helpers import effective_user
         owner = effective_user(request)
         try:
             session = session_manager.get_session(session_id)
@@ -531,9 +531,9 @@ def setup_history_routes(session_manager) -> APIRouter:
         _reject_compact_during_active_run(session_id)
 
         try:
-            from src.model_context import estimate_tokens, get_context_length
+            from src.chat.model_context import estimate_tokens, get_context_length
             from src.llm_core import llm_call_async
-            from src.endpoint_resolver import resolve_endpoint
+            from src.runtime.endpoint_resolver import resolve_endpoint
 
             if len(session.history) < 6:
                 return {"status": "ok", "message": "Not enough messages to compact"}
@@ -562,7 +562,7 @@ def setup_history_routes(session_manager) -> APIRouter:
             compact_model = util_model or session.model
             compact_headers = util_headers if util_url else session.headers
 
-            from src.context_compactor import SELF_SUMMARY_SYSTEM_PROMPT
+            from src.chat.context_compactor import SELF_SUMMARY_SYSTEM_PROMPT
             compaction_count = sum(1 for m in session.history if isinstance(m, ChatMessage) and "[Conversation summary" in (m.content or ""))
             sys_prompt = SELF_SUMMARY_SYSTEM_PROMPT.replace("{count}", str(len(older))).replace("{n}", str(compaction_count + 1))
             summary = await llm_call_async(

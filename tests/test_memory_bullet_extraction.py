@@ -16,7 +16,7 @@ exercises both copies so the two cannot drift back apart.
 """
 import pytest
 
-from src.memory import MemoryManager as SrcMemoryManager
+from src.memory.store import MemoryManager as SrcMemoryManager
 from services.memory.memory import MemoryManager as ServiceMemoryManager
 
 

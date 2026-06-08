@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from core.database import Document, DocumentVersion
 from core.database import Session as DbSession
-from src.upload_handler import UploadHandler
+from src.uploads.handler import UploadHandler
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +171,7 @@ def _locate_upload(
 ):
     """Find an upload by its filename ID via UploadHandler.resolve_upload."""
     if upload_handler is None:
-        from src.upload_handler import UploadHandler
+        from src.uploads.handler import UploadHandler
 
         base_dir = os.path.dirname(os.path.abspath(upload_dir))
         upload_handler = UploadHandler(base_dir, upload_dir)
@@ -187,7 +187,7 @@ def _assert_pdf_marker_upload_owned(
     """Reject document content whose pdf_source marker points at another user's upload."""
     if upload_handler is None:
         return
-    from src.pdf_form_doc import find_source_upload_id
+    from src.documents.pdf_form_doc import find_source_upload_id
 
     upload_id = find_source_upload_id(content or "")
     if not upload_id:

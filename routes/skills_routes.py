@@ -17,7 +17,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from services.memory.skills import SkillsManager
-from src.auth_helpers import get_current_user
+from src.auth.helpers import get_current_user
 from core.middleware import require_admin
 
 logger = logging.getLogger(__name__)
@@ -405,7 +405,7 @@ async def _run_skill_test_job(key, name, md, task, url, model, headers, owner, s
     """Background coroutine: run the skill in an agent loop, capture a condensed
     log + transcript, then have the judge grade it. Writes into _skill_test_jobs."""
     import json as _json
-    from src.agent_loop import stream_agent_loop
+    from src.chat.agent_loop import stream_agent_loop
 
     job = _skill_test_jobs.get(key)
     if job is None:
@@ -682,7 +682,7 @@ def _apply_skill_md(skills_manager, name: str, md: str, owner) -> bool:
 async def _run_skill_test_once(md: str, task: str, url, model, headers, owner) -> tuple:
     """Run the skill once in the agent loop; return (transcript, verdict)."""
     import json as _json
-    from src.agent_loop import stream_agent_loop
+    from src.chat.agent_loop import stream_agent_loop
     transcript = []
     messages = [
         {"role": "system", "content":
@@ -999,7 +999,7 @@ def _resolve_audit_models(owner=None):
     by the manual /audit-all route and scheduled/event audits. Raises
     ValueError if no worker model.
     """
-    from src.endpoint_resolver import resolve_endpoint
+    from src.runtime.endpoint_resolver import resolve_endpoint
     url, model, headers = resolve_endpoint("utility", owner=owner)
     if not url or not model:
         raise ValueError("No model configured — set a Default or Utility model in Settings.")
@@ -1019,7 +1019,7 @@ def _resolve_audit_models(owner=None):
         if get_setting("teacher_enabled", False):
             spec = (get_setting("teacher_model", "") or "").strip()
             if spec:
-                from src.ai_interaction import _resolve_model
+                from src.agent.ai_interaction import _resolve_model
                 t_url, t_model, t_headers = _resolve_model(spec)
                 if t_url and t_model:
                     teacher = (t_url, t_model, t_headers)
@@ -1089,7 +1089,7 @@ def setup_skills_routes(skills_manager: SkillsManager) -> APIRouter:
 
     def _fire_skill_added(user: Optional[str]):
         try:
-            from src.event_bus import fire_event
+            from src.scheduling.event_bus import fire_event
             fire_event("skill_added", user)
         except Exception:
             logger.debug("skill_added event dispatch failed", exc_info=True)
@@ -1126,7 +1126,7 @@ def setup_skills_routes(skills_manager: SkillsManager) -> APIRouter:
             return s[:240]
 
         try:
-            from src.agent_loop import TOOL_SECTIONS, get_builtin_overrides
+            from src.chat.agent_loop import TOOL_SECTIONS, get_builtin_overrides
         except Exception as e:
             return {"builtin": [], "count": 0, "error": str(e)}
 
@@ -1151,7 +1151,7 @@ def setup_skills_routes(skills_manager: SkillsManager) -> APIRouter:
         """Full text of a built-in tool's instruction block — the override
         if one is set, plus the shipped default (for the revert button)."""
         try:
-            from src.agent_loop import TOOL_SECTIONS, get_builtin_overrides
+            from src.chat.agent_loop import TOOL_SECTIONS, get_builtin_overrides
         except Exception as e:
             raise HTTPException(500, str(e))
         default = None
@@ -1176,7 +1176,7 @@ def setup_skills_routes(skills_manager: SkillsManager) -> APIRouter:
         WARNING surfaced in the UI — this changes how the assistant is
         told to use a native tool."""
         require_admin(request)
-        from src.agent_loop import TOOL_SECTIONS
+        from src.chat.agent_loop import TOOL_SECTIONS
         valid = set()
         for key in TOOL_SECTIONS:
             valid.update(key if isinstance(key, tuple) else (key,))
@@ -1306,7 +1306,7 @@ def setup_skills_routes(skills_manager: SkillsManager) -> APIRouter:
         it untouched). It never changes the skill's published/draft STATUS."""
         import time as _time
         import asyncio as _asyncio
-        from src.endpoint_resolver import resolve_endpoint
+        from src.runtime.endpoint_resolver import resolve_endpoint
 
         user = _owner(request)
         body = await request.json()

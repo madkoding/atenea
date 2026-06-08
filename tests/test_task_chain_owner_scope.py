@@ -117,7 +117,7 @@ async def test_update_task_allows_same_owner_chain_target():
 
 def test_scheduler_cycle_guard_treats_cross_owner_chain_as_unsafe():
     _seed_task("bob-target-cycle", "bob")
-    from src.task_scheduler import TaskScheduler
+    from src.scheduling.task_scheduler import TaskScheduler
 
     scheduler = TaskScheduler.__new__(TaskScheduler)
     db = _TS()

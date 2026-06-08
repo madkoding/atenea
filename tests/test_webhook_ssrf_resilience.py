@@ -38,7 +38,7 @@ with patch.dict(os.environ, {"DATABASE_URL": "sqlite:///:memory:"}), \
         )
     ):
         del sys.modules["core.database"]
-    from src.webhook_manager import validate_webhook_url
+    from src.clients.webhook_manager import validate_webhook_url
 
 
 def test_webhook_url_ssrf_mitigation():

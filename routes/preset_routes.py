@@ -7,7 +7,7 @@ from typing import Dict, Any, List
 from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel, Field
 
-from src.request_models import PresetUpdateRequest
+from src.runtime.request_models import PresetUpdateRequest
 from core.middleware import require_admin
 
 logger = logging.getLogger(__name__)
@@ -71,7 +71,7 @@ def setup_preset_routes(preset_manager) -> APIRouter:
     @router.post("/api/presets/expand")
     async def expand_character_prompt(request: Request) -> Dict[str, Any]:
         """Use AI to expand a rough character description into a full system prompt."""
-        from src.ai_interaction import _resolve_model
+        from src.agent.ai_interaction import _resolve_model
         from src.llm_core import llm_call_async
 
         data = await request.json()

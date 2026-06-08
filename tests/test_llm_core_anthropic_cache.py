@@ -1,5 +1,5 @@
 """Regression tests for Anthropic prompt-cache breakpoints in _build_anthropic_payload (#791)."""
-from src import llm_core
+import src.llm_core as llm_core
 
 
 def _payload(system="sys", user="hi", tools=None):

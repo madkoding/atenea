@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, UploadFile, File, 
 from sqlalchemy import case, func, or_
 from core.database import SessionLocal, Document, DocumentVersion
 from core.database import Session as DbSession
-from src.auth_helpers import get_current_user
+from src.auth.helpers import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ def _library_language_for_document(doc: Document) -> str:
     extracted text, form fields, and annotations. The library should still
     identify them as PDFs instead of exposing that internal wrapper format.
     """
-    from src.pdf_form_doc import find_source_upload_id
+    from src.documents.pdf_form_doc import find_source_upload_id
 
     if find_source_upload_id(doc.current_content or ""):
         return "pdf"
@@ -72,7 +72,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
         return _resolve_user_upload_path(upload_handler, upload_id, user, auth_manager)
 
     def _load_pdf_viewer_fitz():
-        from src.pdf_runtime import load_pymupdf_for_pdf_viewer
+        from src.documents.pdf_runtime import load_pymupdf_for_pdf_viewer
 
         try:
             return load_pymupdf_for_pdf_viewer()
@@ -82,7 +82,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
     # ---- POST /api/document ----
     @router.post("/api/document")
     async def create_document(request: Request, req: DocumentCreate) -> Dict[str, Any]:
-        from src.auth_helpers import require_privilege
+        from src.auth.helpers import require_privilege
         user = require_privilege(request, "can_use_documents")
         db = SessionLocal()
         try:
@@ -107,10 +107,10 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             # to markdown for prose.
             language = req.language
             if not language:
-                from src.tool_implementations import _looks_like_email_document, _sniff_doc_language
+                from src.tools.implementations import _looks_like_email_document, _sniff_doc_language
                 language = _sniff_doc_language(req.content)
             else:
-                from src.tool_implementations import _looks_like_email_document
+                from src.tools.implementations import _looks_like_email_document
             if _looks_like_email_document(req.content, req.title):
                 language = "email"
 
@@ -142,7 +142,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             db.commit()
             db.refresh(doc)
             try:
-                from src.event_bus import fire_event
+                from src.scheduling.event_bus import fire_event
                 fire_event("document_created", doc.owner)
             except Exception:
                 logger.debug("document_created event dispatch failed", exc_info=True)
@@ -170,16 +170,16 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
         with a `pdf_source` marker so the viewer renders the pages without
         overlays.
         """
-        from src.pdf_forms import has_form_fields, extract_fields
-        from src.pdf_form_doc import (
+        from src.documents.pdf_forms import has_form_fields, extract_fields
+        from src.documents.pdf_form_doc import (
             save_field_sidecar,
             create_form_markdown_document,
             create_plain_pdf_document,
         )
-        from src.document_processor import _process_pdf, strip_pdf_content_marker
+        from src.documents.processor import _process_pdf, strip_pdf_content_marker
         import os
 
-        from src.auth_helpers import require_privilege
+        from src.auth.helpers import require_privilege
         user = require_privilege(request, "can_use_documents")
 
         # session_id is optional — a library import isn't tied to a chat. When
@@ -444,8 +444,8 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
         text extraction was wired, plus for scanned/image-only PDFs where the
         VL model picks up text the basic pypdf path missed."""
         import re
-        from src.document_processor import _process_pdf, strip_pdf_content_marker
-        from src.pdf_form_doc import find_source_upload_id
+        from src.documents.processor import _process_pdf, strip_pdf_content_marker
+        from src.documents.pdf_form_doc import find_source_upload_id
 
         user = get_current_user(request)
         db = SessionLocal()
@@ -642,7 +642,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
                     # in-memory active-doc pointer so the last-resort injection
                     # path doesn't re-surface this doc in a later chat (#1160).
                     try:
-                        from src.tool_implementations import clear_active_document
+                        from src.tools.implementations import clear_active_document
                         clear_active_document(doc_id)
                     except Exception:
                         pass
@@ -671,7 +671,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             # Closed/deleted — drop the in-memory active-doc pointer so it isn't
             # re-injected into a later, unrelated chat (#1160).
             try:
-                from src.tool_implementations import clear_active_document
+                from src.tools.implementations import clear_active_document
                 clear_active_document(doc_id)
             except Exception:
                 pass
@@ -793,7 +793,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             # Same junk-detection logic as the scheduled tidy_documents
             # action (src/document_actions.py). Keep these two in sync.
             import re as _re
-            from src.document_actions import _JUNK_TITLES
+            from src.actions.document import _JUNK_TITLES
 
             to_delete = []
             for doc in docs:
@@ -880,8 +880,8 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
     async def ai_tidy_documents(request: Request) -> Dict[str, Any]:
         """Use AI to judge if documents are junk/test/accidental, then delete them.
         Caches verdicts so previously-reviewed docs are skipped."""
-        from src.task_endpoint import resolve_task_endpoint
-        from src.endpoint_resolver import resolve_endpoint
+        from src.scheduling.task_endpoint import resolve_task_endpoint
+        from src.runtime.endpoint_resolver import resolve_endpoint
         from src.llm_core import llm_call_async
 
         user = get_current_user(request)
@@ -980,7 +980,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
         Frontend shows this in a confirmation modal so the user can spot/fix
         any wrong values before triggering the actual download.
         """
-        from src.pdf_form_doc import find_source_upload_id, parse_markdown_to_values, load_field_sidecar
+        from src.documents.pdf_form_doc import find_source_upload_id, parse_markdown_to_values, load_field_sidecar
 
         user = get_current_user(request)
         db = SessionLocal()
@@ -1044,7 +1044,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
         on that page with their rects translated to image-pixel coordinates.
         Frontend overlays HTML form controls at those positions.
         """
-        from src.pdf_form_doc import find_source_upload_id, parse_markdown_to_values, load_field_sidecar
+        from src.documents.pdf_form_doc import find_source_upload_id, parse_markdown_to_values, load_field_sidecar
 
         user = get_current_user(request)
         db = SessionLocal()
@@ -1111,7 +1111,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
         """Render one page of the source PDF as a PNG (no values stamped — the
         frontend overlays HTML form inputs on top)."""
         from fastapi.responses import Response
-        from src.pdf_form_doc import find_source_upload_id
+        from src.documents.pdf_form_doc import find_source_upload_id
 
         user = get_current_user(request)
         db = SessionLocal()
@@ -1159,8 +1159,8 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
         import base64
         import json
         import fitz
-        from src.pdf_form_doc import find_source_upload_id
-        from src.document_processor import _resolve_vl_model, _load_vl_settings
+        from src.documents.pdf_form_doc import find_source_upload_id
+        from src.documents.processor import _resolve_vl_model, _load_vl_settings
         from src.llm_core import llm_call_async
 
         body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else {}
@@ -1300,8 +1300,8 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
         import tempfile
         from fastapi.responses import FileResponse
         from starlette.background import BackgroundTask
-        from src.pdf_form_doc import find_source_upload_id, parse_markdown_to_values, parse_markdown_annotations
-        from src.pdf_forms import fill_fields, stamp_annotations
+        from src.documents.pdf_form_doc import find_source_upload_id, parse_markdown_to_values, parse_markdown_annotations
+        from src.documents.pdf_forms import fill_fields, stamp_annotations
         from core.database import Signature
 
         # Track temp files for this request so they get unlinked AFTER
@@ -1394,8 +1394,8 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
         import tempfile
         from fastapi.responses import FileResponse
         from starlette.background import BackgroundTask
-        from src.pdf_form_doc import find_source_upload_id, parse_markdown_to_values, load_field_sidecar, parse_markdown_annotations
-        from src.pdf_forms import fill_fields, stamp_signatures, stamp_annotations
+        from src.documents.pdf_form_doc import find_source_upload_id, parse_markdown_to_values, load_field_sidecar, parse_markdown_annotations
+        from src.documents.pdf_forms import fill_fields, stamp_signatures, stamp_annotations
         from core.database import Signature
 
         _to_unlink: list[str] = []
@@ -1532,11 +1532,11 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
         import shutil
         import uuid as _uuid
         import email as _email_mod
-        from src.pdf_form_doc import (
+        from src.documents.pdf_form_doc import (
             find_source_upload_id, parse_markdown_to_values,
             load_field_sidecar, parse_markdown_annotations,
         )
-        from src.pdf_forms import fill_fields, stamp_signatures, stamp_annotations
+        from src.documents.pdf_forms import fill_fields, stamp_signatures, stamp_annotations
         from core.database import Signature
         # COMPOSE_UPLOADS_DIR lives in email_routes — re-derive here so we
         # don't import from a routes file (cycle-prone). Same env override

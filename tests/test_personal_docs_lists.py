@@ -1,4 +1,4 @@
-from src import personal_docs
+import src.personal.docs as personal_docs
 
 
 def test_string_list_filters_non_strings():

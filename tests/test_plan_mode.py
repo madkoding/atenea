@@ -13,7 +13,7 @@ contract:
 Pure-function tests — no FastAPI app boot, no DB.
 """
 
-from src.tool_security import (
+from src.tools.security import (
     PLAN_MODE_READONLY_TOOLS,
     _PLAN_MODE_KNOWN_MUTATORS,
     plan_mode_disabled_tools,
@@ -59,7 +59,7 @@ def test_disabled_never_intersects_allowlist():
 
 
 def test_mcp_readonly_classification():
-    from src.mcp_manager import mcp_tool_is_readonly as ro
+    from src.clients.mcp_manager import mcp_tool_is_readonly as ro
     # Server-provided hints win over the name heuristic.
     assert ro({"name": "zap", "annotations": {"readOnlyHint": True}}) is True
     assert ro({"name": "list_things", "annotations": {"readOnlyHint": False}}) is False
@@ -74,7 +74,7 @@ def test_mcp_readonly_classification():
 def test_fail_closed_fallback_blocks_mutations(monkeypatch):
     # If the schema list can't load, we must still block (fail closed), not
     # return an empty set that would silently allow every mutating tool.
-    import src.tool_security as ts
+    import src.tools.security as ts
 
     def _boom():
         raise ImportError("simulated circular import failure")
@@ -93,7 +93,7 @@ def test_fail_closed_fallback_blocks_mutations(monkeypatch):
 def test_active_plan_note_pins_checklist():
     """The approved-plan note re-grounds execution so a long plan survives
     history truncation (the agent can always re-read it)."""
-    from src.agent_loop import build_active_plan_note
+    from src.chat.agent_loop import build_active_plan_note
     plan = "- [ ] step one\n- [ ] step two"
     note = build_active_plan_note(plan)
     assert "ACTIVE PLAN" in note

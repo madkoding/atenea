@@ -18,15 +18,15 @@ from fastapi.responses import StreamingResponse
 from core.database import SessionLocal, ModelEndpoint, Session as DbSession
 from core.middleware import require_admin
 from src.llm_core import _detect_provider, _host_match, ANTHROPIC_MODELS
-from src.tls_overrides import llm_verify
+from src.security.tls_overrides import llm_verify
 from src.settings import load_settings as _load_settings, save_settings as _save_settings
-from src.endpoint_resolver import (
+from src.runtime.endpoint_resolver import (
     normalize_base as _normalize_base,
     build_chat_url,
     build_models_url,
     build_headers,
 )
-from src.auth_helpers import _auth_disabled, owner_filter
+from src.auth.helpers import _auth_disabled, owner_filter
 
 logger = logging.getLogger(__name__)
 
@@ -619,7 +619,7 @@ def _effective_endpoint_kind(ep: Any, base_url: str) -> str:
 def _probe_endpoint(base_url: str, api_key: str = None, timeout: int = 5) -> List[str]:
     """Probe a base URL's /models endpoint and return list of model IDs.
     For Anthropic, queries their /v1/models API, falling back to hardcoded list."""
-    from src.endpoint_resolver import resolve_url
+    from src.runtime.endpoint_resolver import resolve_url
     base = resolve_url(_normalize_base(base_url))
     if _detect_provider(base) == "anthropic":
         # Try Anthropic's /v1/models endpoint first
@@ -702,7 +702,7 @@ def _probe_endpoint(base_url: str, api_key: str = None, timeout: int = 5) -> Lis
 
 def _ping_endpoint(base_url: str, api_key: str = None, timeout: float = 1.5) -> Dict[str, Any]:
     """Reachability probe that does not require installed/listed models."""
-    from src.endpoint_resolver import resolve_url
+    from src.runtime.endpoint_resolver import resolve_url
     base = resolve_url(_normalize_base(base_url))
     headers = build_headers(api_key, base)
 
@@ -1139,7 +1139,7 @@ def setup_model_routes(model_discovery):
         # Require auth; "" is the unconfigured single-user mode, treated as
         # "see everything" by _fetch_models.
         try:
-            from src.auth_helpers import get_current_user as _gcu
+            from src.auth.helpers import get_current_user as _gcu
             owner = _gcu(request) or ""
         except Exception:
             owner = ""
@@ -1490,7 +1490,7 @@ def setup_model_routes(model_discovery):
         if not base_url:
             raise HTTPException(400, "Base URL is required")
         # Resolve hostname via Tailscale if DNS fails
-        from src.endpoint_resolver import resolve_url
+        from src.runtime.endpoint_resolver import resolve_url
         base_url = resolve_url(base_url)
         # In Docker, manually added loopback URLs usually point at a host-local
         # server. Cookbook local serves are launched inside Odysseus itself, so
@@ -1516,7 +1516,7 @@ def setup_model_routes(model_discovery):
         # owned by them), return it instead of creating a duplicate row. Keep
         # same-url/different-key rows distinct so users can group the same
         # provider URL under multiple credentials.
-        from src.auth_helpers import get_current_user as _gcu_dedup
+        from src.auth.helpers import get_current_user as _gcu_dedup
         _caller = _gcu_dedup(request) or None
         _incoming_api_key = api_key.strip()
         _db_dedup = SessionLocal()
@@ -1621,7 +1621,7 @@ def setup_model_routes(model_discovery):
             # who added it. Pass `shared=true` to mark it null-owner (visible
             # to all users), preserving the pre-fix "everyone sees everything"
             # behaviour for endpoints the admin explicitly intends to share.
-            from src.auth_helpers import get_current_user as _gcu
+            from src.auth.helpers import get_current_user as _gcu
             _shared_flag = (shared or "").strip().lower() in ("true", "1", "yes")
             _owner_val = None if _shared_flag else (_gcu(request) or None)
             ep = ModelEndpoint(
@@ -1648,7 +1648,7 @@ def setup_model_routes(model_discovery):
             # to list first.
             settings = _load_settings()
             if not settings.get("default_endpoint_id"):
-                from src.endpoint_resolver import _first_chat_model
+                from src.runtime.endpoint_resolver import _first_chat_model
                 settings["default_endpoint_id"] = ep.id
                 settings["default_model"] = _first_chat_model(model_ids) or ""
                 _save_settings(settings)
@@ -1685,7 +1685,7 @@ def setup_model_routes(model_discovery):
         base_url = _normalize_base(base_url)
         if not base_url:
             raise HTTPException(400, "Base URL is required")
-        from src.endpoint_resolver import resolve_url
+        from src.runtime.endpoint_resolver import resolve_url
         base_url = resolve_url(base_url)
         base_url = _rewrite_loopback_for_docker(base_url)
         requested_kind = _normalize_endpoint_kind(endpoint_kind)
@@ -1850,7 +1850,7 @@ def setup_model_routes(model_discovery):
         # no per-user default yet, we resolve via the owner-scoped endpoint
         # lookup below (last-resort: first enabled endpoint THIS user owns).
         # Unauthenticated single-user mode keeps the old behavior.
-        from src.auth_helpers import get_current_user as _gcu
+        from src.auth.helpers import get_current_user as _gcu
         try:
             _user = _gcu(request) or ""
         except Exception:
@@ -2081,7 +2081,7 @@ def setup_model_routes(model_discovery):
 
     def _clear_loaded_sessions_for_endpoint(base_url: str) -> int:
         try:
-            from src.ai_interaction import get_session_manager
+            from src.agent.ai_interaction import get_session_manager
             manager = get_session_manager()
         except Exception:
             manager = None
@@ -2135,7 +2135,7 @@ def setup_model_routes(model_discovery):
     @router.get("/tools")
     def list_tools():
         """List all available tools with their enabled/disabled status."""
-        from src.agent_tools import TOOL_TAGS
+        from src.agent.tools_facade import TOOL_TAGS
         settings = _load_settings()
         disabled = set(settings.get("disabled_tools", []))
         tools = []

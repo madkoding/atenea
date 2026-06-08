@@ -13,17 +13,17 @@ from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
 
 from core.models import ChatMessage
-from src.request_models import ChatRequest
+from src.runtime.request_models import ChatRequest
 from src.llm_core import llm_call_async, stream_llm, stream_llm_with_fallback
-from src.agent_loop import stream_agent_loop
-from src import agent_runs
-from src.model_context import estimate_tokens
-from src.chat_helpers import coerce_message_and_session
-from src.endpoint_resolver import normalize_base as _normalize_base, build_chat_url
-from src.session_search import search_session_messages
-from src.prompt_security import untrusted_context_message
+from src.chat.agent_loop import stream_agent_loop
+from src.agent.runs import is_active, start, stop, subscribe
+from src.chat.model_context import estimate_tokens
+from src.chat.helpers import coerce_message_and_session
+from src.runtime.endpoint_resolver import normalize_base as _normalize_base, build_chat_url
+from src.misc.session_search import search_session_messages
+from src.security.prompt_security import untrusted_context_message
 from core.exceptions import SessionNotFoundError
-from src.auth_helpers import get_current_user
+from src.auth.helpers import get_current_user
 from routes.session_routes import _verify_session_owner
 from routes.document_helpers import _owner_session_filter
 from core.database import SessionLocal, get_session_mode, set_session_mode
@@ -39,8 +39,8 @@ from routes.chat_helpers import (
     clean_thinking_for_save,
     _enforce_chat_privileges,
 )
-from src.action_intents import classify_tool_intent as _classify_tool_intent
-from src.tool_policy import build_effective_tool_policy
+from src.actions.intents import classify_tool_intent as _classify_tool_intent
+from src.tools.policy import build_effective_tool_policy
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +83,7 @@ def _clear_orphaned_session_endpoint(sess, owner: str | None = None) -> bool:
     try:
         q = db.query(ModelEndpoint).filter(ModelEndpoint.is_enabled == True)
         if owner:
-            from src.auth_helpers import owner_filter
+            from src.auth.helpers import owner_filter
             q = owner_filter(q, ModelEndpoint, owner)
         endpoints = q.all()
         for ep in endpoints:
@@ -146,7 +146,7 @@ def _is_image_generation_session(sess, owner: str | None = None) -> bool:
     try:
         q = db.query(ModelEndpoint).filter(ModelEndpoint.is_enabled == True)
         if owner:
-            from src.auth_helpers import owner_filter
+            from src.auth.helpers import owner_filter
             q = owner_filter(q, ModelEndpoint, owner)
         endpoints = q.all()
         for endpoint in endpoints:
@@ -185,7 +185,7 @@ def _recover_empty_session_model(sess, session_id: str, owner: str | None = None
         if getattr(sess, "endpoint_url", ""):
             q = db.query(ModelEndpoint).filter(ModelEndpoint.is_enabled == True)
             if owner:
-                from src.auth_helpers import owner_filter
+                from src.auth.helpers import owner_filter
                 q = owner_filter(q, ModelEndpoint, owner)
             endpoints = q.all()
             for cand in endpoints:
@@ -241,7 +241,7 @@ def _set_user_time_from_request(request: Request) -> None:
     try:
         tz_offset = request.headers.get("x-tz-offset")
         tz_name = request.headers.get("x-tz-name")
-        from src.user_time import clear_user_time_context, set_user_tz_name, set_user_tz_offset
+        from src.misc.user_time import clear_user_time_context, set_user_tz_name, set_user_tz_offset
 
         clear_user_time_context()
         if tz_offset is not None:
@@ -594,7 +594,7 @@ def setup_chat_routes(
             # leak a doc that belongs to a DIFFERENT session.
             if not active_doc:
                 try:
-                    from src.tool_implementations import get_active_document
+                    from src.tools.implementations import get_active_document
                     _mem_id = get_active_document()
                     if _mem_id:
                         _mem_q = _doc_db.query(DBDocument).filter(DBDocument.id == _mem_id)
@@ -689,7 +689,7 @@ def setup_chat_routes(
         # every tool not on the read-only allowlist. (stream_agent_loop enforces
         # this again + drops MCP, so this is belt-and-suspenders.)
         if plan_mode:
-            from src.tool_security import plan_mode_disabled_tools
+            from src.tools.security import plan_mode_disabled_tools
             disabled_tools.update(plan_mode_disabled_tools())
 
         tool_policy = build_effective_tool_policy(
@@ -876,7 +876,7 @@ def setup_chat_routes(
             # order if the session's primary model fails before producing
             # output. Resolved once per request.
             try:
-                from src.endpoint_resolver import resolve_chat_fallback_candidates
+                from src.runtime.endpoint_resolver import resolve_chat_fallback_candidates
                 _fallback_candidates = resolve_chat_fallback_candidates(owner=_user)
             except Exception:
                 _fallback_candidates = []
@@ -903,7 +903,7 @@ def setup_chat_routes(
                     yield "data: [DONE]\n\n"
                     _active_streams.pop(session, None)
                     return
-                from src.ai_interaction import do_generate_image
+                from src.agent.ai_interaction import do_generate_image
                 _user_msg = message or ""
                 yield f'data: {json.dumps({"type": "tool_start", "tool": "generate_image", "command": _user_msg[:100]})}\n\n'
                 yield ": heartbeat\n\n"
@@ -1068,7 +1068,7 @@ def setup_chat_routes(
                 _actual_model = None
                 try:
                     from src.settings import get_setting
-                    from src.agent_tools import MAX_AGENT_ROUNDS as _DEFAULT_ROUNDS
+                    from src.agent.tools_facade import MAX_AGENT_ROUNDS as _DEFAULT_ROUNDS
                     _tool_budget = int(get_setting("agent_max_tool_calls", 0))
                     # Per-message round cap from settings; clamp defensively in
                     # case settings.json was hand-edited to a bad value.
@@ -1394,7 +1394,7 @@ def setup_chat_routes(
                         # Update the last assistant message in session history.
                         # Strip reasoning-model <think> blocks so the persisted
                         # rewrite is just the rewritten text, not its scratchpad.
-                        from src.research_utils import strip_thinking
+                        from src.research.utils import strip_thinking
                         full_response = strip_thinking(full_response).strip() or full_response
                         if full_response:
                             for msg in reversed(sess.history):

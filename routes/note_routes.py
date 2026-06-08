@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from core.database import SessionLocal, Note
-from src.auth_helpers import get_current_user
+from src.auth.helpers import get_current_user
 from sqlalchemy.orm.attributes import flag_modified
 
 logger = logging.getLogger(__name__)
@@ -205,7 +205,7 @@ async def dispatch_reminder(
     _SYNTH_FAILED_TAG = "[utility model unavailable — no summary generated]"
     if llm_on:
         try:
-            from src.endpoint_resolver import resolve_endpoint
+            from src.runtime.endpoint_resolver import resolve_endpoint
             from src.llm_core import llm_call_async
             url, model, headers = resolve_endpoint("utility", owner=owner or None)
             if not url:
@@ -219,7 +219,7 @@ async def dispatch_reminder(
                     ],
                     temperature=0.7, max_tokens=200, headers=headers, timeout=30,
                 )
-                from src.text_helpers import strip_think as _strip_think
+                from src.misc.text_helpers import strip_think as _strip_think
                 # prose=True strips untagged "The user wants me to…" chain-of-thought.
                 # prompt_echo=True strips Qwen-style "Thinking Process:" / leaked
                 # prompt prefixes. Both are safe here because this is a
@@ -394,7 +394,7 @@ async def dispatch_reminder(
         try:
             import httpx
             import json as _wjson
-            from src.integrations import load_integrations
+            from src.integrations.registry import load_integrations
             # Built-in payload defaults for known presets so users don't have
             # to configure a template just to use a standard service.
             _PRESET_TEMPLATE_DEFAULTS = {
@@ -443,7 +443,7 @@ async def dispatch_reminder(
                         # REMINDER_WEBHOOK_BLOCK_PRIVATE_IPS=true to also block
                         # RFC-1918 ranges for locked-down deployments.
                         import os as _os
-                        from src.url_safety import check_outbound_url as _chk
+                        from src.security.url_safety import check_outbound_url as _chk
                         _block = _os.getenv("REMINDER_WEBHOOK_BLOCK_PRIVATE_IPS", "false").lower() == "true"
                         _ok, _reason = _chk(url, block_private=_block)
                         if not _ok:
@@ -462,7 +462,7 @@ async def dispatch_reminder(
     ntfy_error = ""
     if channel == "ntfy":
         try:
-            from src.integrations import load_integrations
+            from src.integrations.registry import load_integrations
             import httpx
             intg = next(
                 (i for i in load_integrations()
@@ -801,7 +801,7 @@ def setup_note_routes(task_scheduler=None):
         Returns {synthesis, email_sent}.
         """
         # Gate against anonymous callers — LLM synthesis can burn tokens.
-        from src.auth_helpers import require_user as _ru
+        from src.auth.helpers import require_user as _ru
         user = _ru(request)
         body = await request.json()
         note_id = str(body.get("note_id") or "").strip()

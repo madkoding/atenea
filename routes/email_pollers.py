@@ -176,7 +176,7 @@ async def _auto_summarize_pass_single(days_back: int = 1, account_id: str | None
     import asyncio
     import sqlite3 as _sql3
     import requests as _req
-    from src.endpoint_resolver import resolve_endpoint
+    from src.runtime.endpoint_resolver import resolve_endpoint
     from src.llm_core import _uses_max_completion_tokens, _restricts_temperature
 
     settings = _load_settings()
@@ -568,7 +568,7 @@ async def _auto_summarize_pass_single(days_back: int = 1, account_id: str | None
                                 ops = json.loads(jm.group())
                                 logger.info(f"[cal-extract] parsed {len(ops)} op(s)")
                                 if isinstance(ops, list) and ops:
-                                    from src.tool_implementations import do_manage_calendar
+                                    from src.tools.implementations import do_manage_calendar
                                     for op in ops[:3]:
                                         action = (op.get("action") or "").lower()
                                         if action == "noop":

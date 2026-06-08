@@ -4,7 +4,7 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File
 import logging
 
-from src.upload_limits import read_upload_limited
+from src.uploads.limits import read_upload_limited
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,7 @@ import pytest
 
 os.environ.setdefault("DATABASE_URL", "sqlite:////tmp/test_code_nav.db")
 
-from src.tool_execution import _direct_fallback
+from src.tools.execution import _direct_fallback
 
 
 def _run(tool, content):

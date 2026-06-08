@@ -8,7 +8,7 @@ boundary.
 """
 import os
 
-from src import personal_docs
+import src.personal.docs as personal_docs
 
 
 def _make_manager(tmp_path):

@@ -8,7 +8,7 @@ works while a different model silently answers).
 import json
 import asyncio
 
-from src import llm_core
+import src.llm_core as llm_core
 
 
 def _run_fallback(monkeypatch, per_model):

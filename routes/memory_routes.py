@@ -23,13 +23,13 @@ def _strip_list_prefix(text: str) -> str:
 
 from services.memory import MemoryManager
 from core.session_manager import SessionManager
-from src.request_models import MemoryAddRequest
+from src.runtime.request_models import MemoryAddRequest
 from core.database import SessionLocal
 from src.llm_core import llm_call_async
 from services.memory.memory_extractor import audit_memories
-from src.auth_helpers import get_current_user, require_user
-from src.endpoint_resolver import resolve_endpoint
-from src.upload_limits import read_upload_limited
+from src.auth.helpers import get_current_user, require_user
+from src.runtime.endpoint_resolver import resolve_endpoint
+from src.uploads.limits import read_upload_limited
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ def setup_memory_routes(memory_manager: MemoryManager, session_manager: SessionM
         memory_data: Optional[MemoryAddRequest] = None
     ):
         """Add a new memory entry with optional category, source, and session reference."""
-        from src.auth_helpers import require_privilege
+        from src.auth.helpers import require_privilege
         require_privilege(request, "can_manage_memory")
         if memory_data is None:
             form = await request.form()
@@ -116,7 +116,7 @@ def setup_memory_routes(memory_manager: MemoryManager, session_manager: SessionM
         if memory_vector and memory_vector.healthy:
             memory_vector.add(new_entry["id"], text)
         try:
-            from src.event_bus import fire_event
+            from src.scheduling.event_bus import fire_event
             fire_event("memory_added", user)
         except Exception:
             logger.debug("memory_added event dispatch failed", exc_info=True)
@@ -334,7 +334,7 @@ def setup_memory_routes(memory_manager: MemoryManager, session_manager: SessionM
         file: UploadFile = File(...)
     ):
         """Extract memory suggestions from an uploaded file (PDF, TXT, MD, etc.)."""
-        from src.auth_helpers import require_privilege
+        from src.auth.helpers import require_privilege
         require_privilege(request, "can_manage_memory")
 
         endpoint_url = None
@@ -366,7 +366,7 @@ def setup_memory_routes(memory_manager: MemoryManager, session_manager: SessionM
 
         # Extract text based on file type
         if ext == ".pdf":
-            from src.document_processor import _process_pdf
+            from src.documents.processor import _process_pdf
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
                 tmp.write(content)
                 tmp_path = tmp.name

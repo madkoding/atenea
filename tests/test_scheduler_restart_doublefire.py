@@ -64,7 +64,7 @@ def _setup_isolated_db():
 
 
 def test_scheduler_utcnow_preserves_naive_utc_contract():
-    from src.task_scheduler import _utcnow
+    from src.scheduling.task_scheduler import _utcnow
 
     now = _utcnow()
 
@@ -77,7 +77,7 @@ def _drive_scheduler(monkeypatch, pre_start_setup=None):
     _stub_heavy()
     cd, ScheduledTask, TaskRun = _setup_isolated_db()
 
-    from src.task_scheduler import TaskScheduler
+    from src.scheduling.task_scheduler import TaskScheduler
     sch = TaskScheduler.__new__(TaskScheduler)
     sch._executing = set()
     sch._executing_lock = asyncio.Lock()
@@ -103,7 +103,7 @@ def _drive_scheduler(monkeypatch, pre_start_setup=None):
         class _T:
             def cancel(self): pass
         return _T()
-    monkeypatch.setattr("src.task_scheduler.asyncio.create_task", _fake_create_task)
+    monkeypatch.setattr("src.scheduling.task_scheduler.asyncio.create_task", _fake_create_task)
 
     async def _drive():
         await sch.start()

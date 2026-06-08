@@ -3,9 +3,9 @@ import io
 import pytest
 from fastapi import HTTPException, UploadFile
 
-from src.chat_helpers import validate_file_upload
-from src.upload_handler import UploadHandler
-from src.upload_limits import (
+from src.chat.helpers import validate_file_upload
+from src.uploads.handler import UploadHandler
+from src.uploads.limits import (
     DEFAULT_CHAT_UPLOAD_MAX_BYTES,
     get_chat_upload_max_bytes,
     read_byte_limit_env,

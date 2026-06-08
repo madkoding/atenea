@@ -12,8 +12,8 @@ from fastapi import APIRouter, HTTPException, Query, Request
 
 from core.database import SessionLocal, GalleryImage, GalleryAlbum, ModelEndpoint
 from core.database import Session as DbSession
-from src.auth_helpers import get_current_user, require_privilege
-from src.upload_limits import read_upload_limited
+from src.auth.helpers import get_current_user, require_privilege
+from src.uploads.limits import read_upload_limited
 
 from routes.gallery_helpers import (
     GalleryPatch, _extract_exif, _image_to_dict, _owner_filter, _human_size,
@@ -62,7 +62,7 @@ def _normalize_image_endpoint_base(url: str) -> str:
 
 
 def _visible_image_endpoint_query(db, owner: str | None):
-    from src.auth_helpers import owner_filter
+    from src.auth.helpers import owner_filter
     q = db.query(ModelEndpoint).filter(
         ModelEndpoint.model_type == "image",
         ModelEndpoint.is_enabled == True,  # noqa: E712
@@ -1007,7 +1007,7 @@ def setup_gallery_routes() -> APIRouter:
         # SSRF hardening: validate a client-supplied endpoint before any
         # outbound request (mirrors routes/embedding_routes.py).
         if base:
-            from src.url_safety import check_outbound_url
+            from src.security.url_safety import check_outbound_url
             ok, reason = check_outbound_url(
                 base,
                 block_private=os.getenv("IMAGE_BLOCK_PRIVATE_IPS", "false").lower() == "true",
@@ -1207,7 +1207,7 @@ def setup_gallery_routes() -> APIRouter:
         # Local-first means loopback/LAN is allowed by default; the cloud
         # metadata range and non-HTTP(S) schemes are always rejected.
         if endpoint:
-            from src.url_safety import check_outbound_url
+            from src.security.url_safety import check_outbound_url
             ok, reason = check_outbound_url(
                 endpoint,
                 block_private=os.getenv("IMAGE_BLOCK_PRIVATE_IPS", "false").lower() == "true",
@@ -1791,7 +1791,7 @@ def setup_gallery_routes() -> APIRouter:
                     "webp": "image/webp", "gif": "image/gif"}.get(ext, "image/jpeg")
 
             # Resolve vision model via admin Vision setting (same resolver used for docs)
-            from src.document_processor import _load_vl_settings, _resolve_vl_model
+            from src.documents.processor import _load_vl_settings, _resolve_vl_model
             vl_settings = _load_vl_settings()
             if not vl_settings.get("vision_enabled", True):
                 return {"error": "Vision is disabled — enable it in Settings → Vision"}

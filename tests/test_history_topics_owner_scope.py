@@ -79,7 +79,7 @@ def test_analyze_topics_with_owner_none_does_not_leak_across_owners():
     for sessions whose owners are "alice", "bob", and "carol" while
     `owner=None`, the filter is not strict, and the route bug is real.
     """
-    from src.topic_analyzer import analyze_topics
+    from src.research.topic_analyzer import analyze_topics
 
     sessions = {
         "s-alice-1": _make_session(
@@ -121,7 +121,7 @@ def test_analyze_topics_with_owner_none_no_owner_attribute_session_also_safe():
     no-owner scan. This test pins that the leak is observable on the
     data path that the route will hit.
     """
-    from src.topic_analyzer import analyze_topics
+    from src.research.topic_analyzer import analyze_topics
 
     # Legacy-shape session: no `owner` key, ownerless topic-rich history.
     legacy = _make_session(
@@ -252,8 +252,8 @@ def test_route_data_flow_on_paper():
     strict bool check), this test will start failing in a way that
     makes the regression visible.
     """
-    from src.auth_helpers import get_current_user
-    from src.topic_analyzer import analyze_topics
+    from src.auth.helpers import get_current_user
+    from src.research.topic_analyzer import analyze_topics
 
     # (a) get_current_user with no state returns None.
     req = SimpleNamespace(state=SimpleNamespace())

@@ -15,10 +15,10 @@ for mod in [
         sys.modules[mod] = MagicMock()
 
 import pytest
-import src.agent_tools
-from src.tool_parsing import parse_tool_blocks
-from src.tool_schemas import function_call_to_tool_block
-from src.tool_execution import execute_tool_block
+import src.agent.tools_facade as agent_tools
+from src.tools.parsing import parse_tool_blocks
+from src.tools.schemas import function_call_to_tool_block
+from src.tools.execution import execute_tool_block
 from types import SimpleNamespace
 
 

@@ -32,8 +32,8 @@ from fastapi import Query, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional, List
 
-from src.auth_helpers import _auth_disabled, get_current_user
-from src.secret_storage import decrypt as _decrypt
+from src.auth.helpers import _auth_disabled, get_current_user
+from src.security.secret_storage import decrypt as _decrypt
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ def _strip_think(text: str) -> str:
     """
     if not text:
         return ""
-    from src.text_helpers import strip_think as _central, _THINK_CLOSED_RE, _THINK_OPEN_RE, _THINK_TAG_RE
+    from src.misc.text_helpers import strip_think as _central, _THINK_CLOSED_RE, _THINK_OPEN_RE, _THINK_TAG_RE
     had_think = bool(_THINK_CLOSED_RE.search(text) or _THINK_OPEN_RE.search(text) or _THINK_TAG_RE.search(text))
     return _central(text, prose=had_think, prompt_echo=True)
 
@@ -979,7 +979,7 @@ def _extract_attachment_text(msg, max_chars: int = 6000) -> str:
                 try:
                     tmp.write(payload)
                     tmp.close()
-                    from src.personal_docs import extract_pdf_text
+                    from src.personal.docs import extract_pdf_text
                     text = extract_pdf_text(tmp.name) or ""
                 finally:
                     try:
@@ -1265,7 +1265,7 @@ def _pre_retrieve_context(
         # single-user owner. Non-admin owners still get their own (owner-scoped)
         # IMAP history below, just not the shared contacts.
         try:
-            from src.tool_security import owner_is_admin_or_single_user
+            from src.tools.security import owner_is_admin_or_single_user
             contacts_allowed = owner_is_admin_or_single_user(owner or None)
         except Exception:
             contacts_allowed = not bool(owner)

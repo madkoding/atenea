@@ -5,14 +5,14 @@ import tempfile
 
 import pytest
 
-from src import tool_security
-from src.tool_security import (
+import src.tools.security as tool_security
+from src.tools.security import (
     NON_ADMIN_BLOCKED_TOOLS,
     is_public_blocked_tool,
     blocked_tools_for_owner,
 )
-from src.tool_execution import _do_edit_file
-from src.agent_tools import ToolBlock
+from src.tools.execution import _do_edit_file
+from src.agent.tools_facade import ToolBlock
 
 
 # ── Permission policy ─────────────────────────────────────────────────────

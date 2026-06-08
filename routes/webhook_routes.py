@@ -10,9 +10,9 @@ from fastapi import APIRouter, HTTPException, Request, Form
 from pydantic import BaseModel, Field
 
 from core.database import SessionLocal, Webhook, ModelEndpoint
-from src.auth_helpers import owner_filter
-from src.url_security import validate_public_http_url
-from src.webhook_manager import WebhookManager, validate_webhook_url, validate_events
+from src.auth.helpers import owner_filter
+from src.security.url_security import validate_public_http_url
+from src.clients.webhook_manager import WebhookManager, validate_webhook_url, validate_events
 
 logger = logging.getLogger(__name__)
 
@@ -242,7 +242,7 @@ def setup_webhook_routes(
 
         from core.models import ChatMessage
         from src.llm_core import llm_call_async
-        from src.endpoint_resolver import build_chat_url, build_headers, build_models_url, normalize_base
+        from src.runtime.endpoint_resolver import build_chat_url, build_headers, build_models_url, normalize_base
 
         message = body.message.strip()
         if not message:
@@ -262,7 +262,7 @@ def setup_webhook_routes(
             # ID. The token's user is on request.state.user (set by API-token
             # middleware); fall back to require_user if not present.
             try:
-                from src.auth_helpers import get_current_user as _gcu
+                from src.auth.helpers import get_current_user as _gcu
                 _tok_user = token_owner or getattr(request.state, "user", None) or _gcu(request)
             except Exception:
                 _tok_user = None

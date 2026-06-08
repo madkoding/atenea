@@ -10,7 +10,7 @@ import sys
 from unittest.mock import MagicMock
 
 # Clean up any mocks from previous tests to ensure we load real modules.
-for mod in ['src.agent_tools', 'src.tool_parsing', 'src.tool_schemas', 'src.tool_execution']:
+for mod in ['src.agent.tools_facade', 'src.tools.parsing', 'src.tools.schemas', 'src.tools.execution']:
     sys.modules.pop(mod, None)
 
 # Mock heavy database/model dependencies before importing (avoids the
@@ -25,8 +25,8 @@ for mod in [
 
 import json  # noqa: E402
 
-import src.agent_tools  # noqa: E402, F401
-from src.tool_schemas import function_call_to_tool_block  # noqa: E402
+import src.agent.tools_facade as agent_tools  # noqa: E402, F401
+from src.tools.schemas import function_call_to_tool_block  # noqa: E402
 
 
 def test_time_filter_is_preserved_as_json():

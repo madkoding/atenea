@@ -34,7 +34,7 @@ def main():
     
     # Import RAGManager
     try:
-        from src.rag_manager import RAGManager
+        from src.vector.rag_manager import RAGManager
         logger.info("Successfully imported RAGManager")
     except ImportError as e:
         logger.error(f"Failed to import RAGManager: {e}")

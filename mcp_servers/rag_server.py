@@ -30,14 +30,14 @@ def _ensure_init():
     _initialized = True
 
     try:
-        from src.rag_singleton import get_rag_manager
+        from src.vector.rag_singleton import get_rag_manager
         _rag_manager = get_rag_manager()
     except Exception:
         pass
 
     try:
         from src.constants import PERSONAL_DIR
-        from src.personal_docs import PersonalDocsManager
+        from src.personal.docs import PersonalDocsManager
         _personal_docs_manager = PersonalDocsManager(PERSONAL_DIR, _rag_manager)
     except Exception:
         pass

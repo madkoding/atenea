@@ -10,7 +10,7 @@ LLM or DB.
 import asyncio
 from datetime import datetime
 
-from src.deep_research import (
+from src.research.deep import (
     DeepResearcher,
     current_date_context,
     RESEARCH_PLAN_PROMPT,

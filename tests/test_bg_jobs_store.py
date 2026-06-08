@@ -1,6 +1,6 @@
 import json
 
-from src import bg_jobs
+import src.scheduling.bg_jobs as bg_jobs
 
 
 def test_load_ignores_non_object_store(tmp_path, monkeypatch):

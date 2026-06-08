@@ -1,6 +1,6 @@
 import json
 
-from src.personal_docs import PersonalDocsManager
+from src.personal.docs import PersonalDocsManager
 
 
 def test_manager_ignores_invalid_persisted_state_shapes(tmp_path):

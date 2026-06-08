@@ -5,8 +5,8 @@ import types
 
 import pytest
 
-import src.model_context as model_context
-from src.model_context import _is_local_endpoint, estimate_tokens, _lookup_known
+import src.chat.model_context as model_context
+from src.chat.model_context import _is_local_endpoint, estimate_tokens, _lookup_known
 
 
 class _Column:

@@ -8,8 +8,8 @@ import logging
 import os
 
 from core.auth import AuthManager
-from src.rate_limiter import RateLimiter
-from src.settings_scrub import scrub_settings
+from src.misc.rate_limiter import RateLimiter
+from src.security.settings_scrub import scrub_settings
 from src.settings import (
     load_settings as _load_settings,
     save_settings as _save_settings,
@@ -17,7 +17,7 @@ from src.settings import (
     save_features as _save_features,
     DEFAULT_SETTINGS,
 )
-from src.integrations import (
+from src.integrations.registry import (
     load_integrations,
     add_integration,
     update_integration,

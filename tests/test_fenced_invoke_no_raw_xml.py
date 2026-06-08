@@ -6,7 +6,7 @@ to the code executor as if it were python/bash.
 import sys
 from unittest.mock import MagicMock
 
-for mod in ['src.agent_tools', 'src.tool_parsing', 'src.tool_schemas', 'src.tool_execution']:
+for mod in ['src.agent.tools_facade', 'src.tools.parsing', 'src.tools.schemas', 'src.tools.execution']:
     sys.modules.pop(mod, None)
 for mod in [
     'sqlalchemy', 'sqlalchemy.orm', 'sqlalchemy.ext', 'sqlalchemy.ext.declarative',
@@ -16,8 +16,8 @@ for mod in [
     if mod not in sys.modules:
         sys.modules[mod] = MagicMock()
 
-import src.agent_tools  # noqa: E402, F401
-from src.tool_parsing import parse_tool_blocks  # noqa: E402
+import src.agent.tools_facade as agent_tools  # noqa: E402, F401
+from src.tools.parsing import parse_tool_blocks  # noqa: E402
 
 
 def test_unconvertible_invoke_in_fence_is_not_executed_as_code():

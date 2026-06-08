@@ -61,8 +61,8 @@ def _rag_docstore(data):
 
 def migrate_memories():
     """Migrate memory vectors from FAISS to ChromaDB."""
-    from src.chroma_client import get_chroma_client
-    from src.embeddings import get_embedding_client
+    from src.vector.chroma_client import get_chroma_client
+    from src.vector.embeddings import get_embedding_client
     from src.constants import DATA_DIR
 
     ids_path = os.path.join(DATA_DIR, "memory_vectors", "ids.json")
@@ -123,8 +123,8 @@ def migrate_memories():
 
 def migrate_rag():
     """Migrate RAG documents from FAISS DocStore to ChromaDB."""
-    from src.chroma_client import get_chroma_client
-    from src.embeddings import get_embedding_client
+    from src.vector.chroma_client import get_chroma_client
+    from src.vector.embeddings import get_embedding_client
 
     docs_path = os.path.join("data", "rag", "docs.json")
     if not os.path.exists(docs_path):

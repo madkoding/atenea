@@ -15,8 +15,8 @@ from typing import Any
 from fastapi import APIRouter, BackgroundTasks, Body, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
-from src.auth_helpers import require_authenticated_request, require_user
-from src.tool_implementations import do_manage_notes
+from src.auth.helpers import require_authenticated_request, require_user
+from src.tools.implementations import do_manage_notes
 from core.constants import DATA_DIR
 
 
@@ -286,7 +286,7 @@ def setup_codex_routes(
         owner = _scope_owner(request, MEMORY_WRITE_SCOPES)
         if memory_add_endpoint is None:
             raise HTTPException(503, "Memory integration is not available")
-        from src.request_models import MemoryAddRequest
+        from src.runtime.request_models import MemoryAddRequest
 
         try:
             memory_data = MemoryAddRequest(

@@ -21,7 +21,7 @@ from fastapi import APIRouter, Query, Depends, Response, HTTPException
 from typing import List, Dict, Optional
 
 from core.middleware import require_admin
-from src.url_safety import check_outbound_url
+from src.security.url_safety import check_outbound_url
 
 logger = logging.getLogger(__name__)
 

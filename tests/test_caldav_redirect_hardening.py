@@ -14,7 +14,8 @@ import threading
 
 import pytest
 
-from src import caldav_sync, caldav_writeback
+import src.calendar_app.sync as caldav_sync
+import src.calendar_app.writeback as caldav_writeback
 
 
 def test_build_dav_client_disables_redirects():

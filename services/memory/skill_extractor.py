@@ -204,7 +204,7 @@ async def maybe_extract_skill(
         # preambles. Without it, json.loads bombed on character 0 every
         # time and the silent-bail looked like "extractor doesn't work".
         try:
-            from src.text_helpers import strip_think as _strip_think
+            from src.misc.text_helpers import strip_think as _strip_think
             response = _strip_think(response, prose=True, prompt_echo=True)
         except Exception:
             pass
@@ -255,7 +255,7 @@ async def maybe_extract_skill(
             owner=owner,
         )
         try:
-            from src.event_bus import fire_event
+            from src.scheduling.event_bus import fire_event
             fire_event("skill_added", owner)
         except Exception:
             logger.debug("skill_added event dispatch failed", exc_info=True)

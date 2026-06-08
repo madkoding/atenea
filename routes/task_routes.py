@@ -12,8 +12,8 @@ from pydantic import BaseModel
 
 from core.database import SessionLocal, ScheduledTask, TaskRun
 from core.constants import internal_api_base
-from src.auth_helpers import get_current_user
-from src.task_scheduler import compute_next_run, HOUSEKEEPING_DEFAULTS
+from src.auth.helpers import get_current_user
+from src.scheduling.task_scheduler import compute_next_run, HOUSEKEEPING_DEFAULTS
 from routes.prefs_routes import _load_for_user, _save_for_user
 
 logger = logging.getLogger(__name__)
@@ -482,7 +482,7 @@ def setup_task_routes(task_scheduler) -> APIRouter:
         name = req.name
         if not name:
             if req.task_type == "action":
-                from src.builtin_actions import BUILTIN_ACTION_INFO
+                from src.actions.builtin import BUILTIN_ACTION_INFO
                 name = BUILTIN_ACTION_INFO.get(req.action, req.action or "Action Task")
             elif req.prompt:
                 name = await _generate_task_name(req.prompt, owner=user)
@@ -973,7 +973,7 @@ def setup_task_routes(task_scheduler) -> APIRouter:
             "tag", "label", "move", "archive", "delete", "mark", "schedule",
         )
         try:
-            from src.agent_tools import get_mcp_manager
+            from src.agent.tools_facade import get_mcp_manager
             mcp = get_mcp_manager()
             if mcp:
                 for tool in mcp.get_all_tools():
@@ -995,7 +995,7 @@ def setup_task_routes(task_scheduler) -> APIRouter:
     async def list_actions(request: Request):
         """List available built-in actions."""
         user = _owner(request)
-        from src.builtin_actions import BUILTIN_ACTION_INFO
+        from src.actions.builtin import BUILTIN_ACTION_INFO
         return {"actions": [
             {"name": name, "description": desc}
             for name, desc in BUILTIN_ACTION_INFO.items()
@@ -1058,9 +1058,9 @@ def setup_task_routes(task_scheduler) -> APIRouter:
         AI news and summarize it") into a structured task draft the frontend
         can pre-fill the form with. Returns a draft only — the user reviews and
         saves it, so a misread schedule never goes live unreviewed."""
-        from src.endpoint_resolver import resolve_endpoint
+        from src.runtime.endpoint_resolver import resolve_endpoint
         from src.llm_core import llm_call_async
-        from src.text_helpers import strip_think as _strip_think
+        from src.misc.text_helpers import strip_think as _strip_think
         import json as _json, re as _re
         from datetime import datetime as _dt
 

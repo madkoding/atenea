@@ -63,8 +63,8 @@ from core.exceptions import (
 
 import bcrypt as _bcrypt
 
-from src.app_helpers import abs_join
-from src.generated_images import GENERATED_IMAGE_HEADERS, resolve_generated_image_path
+from src.runtime.app_helpers import abs_join
+from src.misc.generated_images import GENERATED_IMAGE_HEADERS, resolve_generated_image_path
 from starlette.responses import RedirectResponse
 
 # ========= LOGGING =========
@@ -402,7 +402,7 @@ async def serve_generated_image(filename: str, request: Request):
     # 12-hex content hash could pull another user's image bytes. Require
     # auth and verify ownership via the gallery row (when one exists).
     try:
-        from src.auth_helpers import get_current_user
+        from src.auth.helpers import get_current_user
         from core.database import SessionLocal as _SL, GalleryImage as _GI
         _user = get_current_user(request)
         if _user:
@@ -450,7 +450,7 @@ init_youtube()
 # 2.12 were mutually incompatible at the time. With the current pins
 # (chromadb 1.5.x + pydantic 2.13.x) the init works and Personal Docs
 # (POST /api/personal/add_directory etc.) is functional again.
-from src.rag_singleton import get_rag_manager
+from src.vector.rag_singleton import get_rag_manager
 rag_manager = get_rag_manager()
 rag_available = rag_manager is not None
 if rag_available:
@@ -462,15 +462,15 @@ else:
     )
 
 # ========= IMPORT CONFIG =========
-from src.config import config
+from src.runtime.config import config
 
 # ========= COMPONENT INITIALIZATION =========
-from src.app_initializer import initialize_managers
+from src.runtime.app_initializer import initialize_managers
 
 components = initialize_managers(BASE_DIR, rag_manager)
 
 session_manager   = components["session_manager"]
-from src.assistant_log import set_session_manager as _set_asst_sm
+from src.agent.assistant_log import set_session_manager as _set_asst_sm
 _set_asst_sm(session_manager)
 memory_manager    = components["memory_manager"]
 memory_vector     = components.get("memory_vector")
@@ -508,7 +508,7 @@ async def web_search_error_handler(request: Request, exc: WebSearchError):
     return JSONResponse(status_code=502, content={"error": "WEB_SEARCH_ERROR", "message": str(exc)})
 
 # ========= WEBHOOK MANAGER =========
-from src.webhook_manager import WebhookManager
+from src.clients.webhook_manager import WebhookManager
 
 webhook_manager = WebhookManager(api_key_manager=api_key_manager)
 
@@ -627,9 +627,9 @@ from routes.editor_draft_routes import setup_editor_draft_routes
 app.include_router(setup_editor_draft_routes())
 
 # Scheduled tasks + event bus
-from src.task_scheduler import TaskScheduler
+from src.scheduling.task_scheduler import TaskScheduler
 task_scheduler = TaskScheduler(session_manager)
-from src.event_bus import set_task_scheduler
+from src.scheduling.event_bus import set_task_scheduler
 set_task_scheduler(task_scheduler)
 from routes.task_routes import setup_task_routes
 app.include_router(setup_task_routes(task_scheduler))
@@ -671,8 +671,8 @@ app.include_router(setup_font_routes())
 
 
 # MCP (Model Context Protocol)
-from src.mcp_manager import McpManager
-from src.agent_tools import set_mcp_manager
+from src.clients.mcp_manager import McpManager
+from src.agent.tools_facade import set_mcp_manager
 from routes.mcp_routes import setup_mcp_routes
 
 mcp_manager = McpManager()
@@ -681,7 +681,7 @@ app.include_router(setup_mcp_routes(mcp_manager))
 logger.info("MCP routes initialized")
 
 # AI Interaction tools (debates, pipelines, self-managing AI, UI control)
-from src.ai_interaction import set_session_manager as set_ai_session_manager, set_memory_manager as set_ai_memory_manager, set_rag_manager as set_ai_rag_manager
+from src.agent.ai_interaction import set_session_manager as set_ai_session_manager, set_memory_manager as set_ai_memory_manager, set_rag_manager as set_ai_rag_manager
 set_ai_session_manager(session_manager)
 set_ai_memory_manager(memory_manager, memory_vector)
 set_ai_rag_manager(rag_manager, personal_docs_mgr)
@@ -813,7 +813,7 @@ async def readiness_check() -> JSONResponse:
     Unlike /api/health (liveness), this returns 503 unless every critical
     subsystem is whole, so an orchestrator can gate traffic on real readiness.
     """
-    from src.readiness import check_readiness
+    from src.misc.readiness import check_readiness
     result = check_readiness()
     return JSONResponse(status_code=200 if result.get("ready") else 503, content=result)
 
@@ -881,7 +881,7 @@ async def _startup_event():
     # Always-on monitor that auto-continues the agent when a background bash
     # job (#!bg) finishes — re-invokes the turn with the job output.
     try:
-        from src.bg_monitor import start_bg_monitor
+        from src.scheduling.bg_monitor import start_bg_monitor
         _startup_tasks.append(start_bg_monitor())
     except Exception as _e:
         logger.warning("Failed to start background-job monitor: %s", _e)
@@ -889,7 +889,7 @@ async def _startup_event():
     # the web server is accepting traffic instead of delaying the whole UI.
     async def _startup_mcp_connections():
         try:
-            from src.builtin_mcp import register_builtin_servers
+            from src.clients.builtin_mcp import register_builtin_servers
             await register_builtin_servers(mcp_manager)
         except BaseException as e:
             logger.warning(f"Built-in MCP registration failed (non-critical): {type(e).__name__}: {e}")
@@ -909,7 +909,7 @@ async def _startup_event():
     # first turn as fast as subsequent ones (warm embed ≈ a few ms).
     async def _warmup_tool_index():
         try:
-            from src.tool_index import get_tool_index
+            from src.tools.index import get_tool_index
             idx = await asyncio.to_thread(get_tool_index)
             if idx:
                 await asyncio.to_thread(idx.get_tools_for_query, "warmup", 8)
@@ -966,7 +966,7 @@ async def _startup_event():
         # otherwise their old scheduled rows can keep firing forever.
         try:
             from core.database import SessionLocal, ScheduledTask
-            from src.task_scheduler import HOUSEKEEPING_DEFAULTS
+            from src.scheduling.task_scheduler import HOUSEKEEPING_DEFAULTS
             builtin_names = []
             for defs in HOUSEKEEPING_DEFAULTS.values():
                 builtin_names.append(defs["name"])
@@ -1080,7 +1080,7 @@ async def _startup_event():
     # something with end_after_min set. Removing this line + the
     # cookbook_serve entry in BUILTIN_ACTIONS + src/cookbook_serve_lifecycle.py
     # removes the feature.
-    from src.cookbook_serve_lifecycle import cookbook_serve_lifecycle_loop
+    from src.scheduling.cookbook_serve_lifecycle import cookbook_serve_lifecycle_loop
     _startup_tasks.append(asyncio.create_task(cookbook_serve_lifecycle_loop()))
 
     logger.info("Application startup complete")

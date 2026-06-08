@@ -12,8 +12,8 @@ from sqlalchemy import or_, and_
 from dateutil.rrule import rrulestr
 
 from core.database import SessionLocal, CalendarCal, CalendarEvent
-from src.auth_helpers import require_user
-from src.upload_limits import read_upload_limited
+from src.auth.helpers import require_user
+from src.uploads.limits import read_upload_limited
 
 logger = logging.getLogger(__name__)
 
@@ -175,7 +175,7 @@ def _ensure_default_calendar(db, owner: str = None) -> CalendarCal:
 # headers so natural-language times the LLM emits ("today at 9pm") are parsed
 # in the user's timezone, not the server's clock. None = unknown, fall back to
 # legacy server-local behavior.
-from src.user_time import (
+from src.misc.user_time import (
     get_user_tz_name,
     get_user_tz_offset,
     now_user_local,
@@ -593,7 +593,7 @@ def setup_calendar_routes() -> APIRouter:
     # ── CalDAV multi-account helpers ─────────────────────────────────────────
 
     def _get_caldav_accounts(owner: str) -> list:
-        from src.caldav_sync import _load_caldav_accounts
+        from src.calendar_app.sync import _load_caldav_accounts
         return _load_caldav_accounts(owner)
 
     def _save_caldav_accounts(owner: str, accounts: list) -> None:
@@ -617,7 +617,7 @@ def setup_calendar_routes() -> APIRouter:
         has_pw = False
         if pw:
             try:
-                from src.secret_storage import decrypt
+                from src.security.secret_storage import decrypt
                 has_pw = bool(decrypt(pw))
             except Exception:
                 has_pw = bool(pw)
@@ -641,7 +641,7 @@ def setup_calendar_routes() -> APIRouter:
         if not (body.get("url") or "").strip():
             _save_caldav_accounts(owner, [])
             return {"ok": True, "cleared": True}
-        from src.caldav_sync import validate_caldav_url
+        from src.calendar_app.sync import validate_caldav_url
         try:
             validated_url = validate_caldav_url(body.get("url", ""))
         except ValueError as e:
@@ -654,7 +654,7 @@ def setup_calendar_routes() -> APIRouter:
         acc["url"] = validated_url
         acc["username"] = (body.get("username") or "").strip()
         if body.get("password"):
-            from src.secret_storage import encrypt
+            from src.security.secret_storage import encrypt
             acc["password"] = encrypt(body["password"])
         new_accounts = [acc] + (accounts[1:] if len(accounts) > 1 else [])
         _save_caldav_accounts(owner, new_accounts)
@@ -673,7 +673,7 @@ def setup_calendar_routes() -> APIRouter:
             has_pw = False
             if pw:
                 try:
-                    from src.secret_storage import decrypt
+                    from src.security.secret_storage import decrypt
                     has_pw = bool(decrypt(pw))
                 except Exception:
                     has_pw = bool(pw)
@@ -695,14 +695,14 @@ def setup_calendar_routes() -> APIRouter:
             body = await request.json()
         except Exception:
             body = {}
-        from src.caldav_sync import validate_caldav_url
+        from src.calendar_app.sync import validate_caldav_url
         try:
             url = validate_caldav_url(body.get("url", ""))
         except ValueError as e:
             raise HTTPException(400, str(e))
         if not body.get("password"):
             raise HTTPException(400, "Password is required")
-        from src.secret_storage import encrypt
+        from src.security.secret_storage import encrypt
         new_acc = {
             "id": str(_uuid.uuid4()),
             "label": (body.get("label") or "").strip() or "CalDAV",
@@ -729,7 +729,7 @@ def setup_calendar_routes() -> APIRouter:
             raise HTTPException(404, "Account not found")
         acc = dict(accounts[idx])
         if body.get("url"):
-            from src.caldav_sync import validate_caldav_url
+            from src.calendar_app.sync import validate_caldav_url
             try:
                 acc["url"] = validate_caldav_url(body["url"])
             except ValueError as e:
@@ -739,7 +739,7 @@ def setup_calendar_routes() -> APIRouter:
         if body.get("username") is not None:
             acc["username"] = (body.get("username") or "").strip()
         if body.get("password"):
-            from src.secret_storage import encrypt
+            from src.security.secret_storage import encrypt
             acc["password"] = encrypt(body["password"])
         accounts[idx] = acc
         _save_caldav_accounts(owner, accounts)
@@ -785,13 +785,13 @@ def setup_calendar_routes() -> APIRouter:
                     pw = acc.get("password") or ""
                     if pw:
                         try:
-                            from src.secret_storage import decrypt
+                            from src.security.secret_storage import decrypt
                             pw = decrypt(pw)
                         except Exception:
                             pass
         if not (url and user and pw):
             return {"ok": False, "error": "Missing URL, username, or password"}
-        from src.caldav_sync import validate_caldav_url
+        from src.calendar_app.sync import validate_caldav_url
         try:
             url = validate_caldav_url(url)
         except ValueError as e:
@@ -848,7 +848,7 @@ def setup_calendar_routes() -> APIRouter:
         Returns counts + any per-calendar errors. Called by the frontend
         on calendar open and by the periodic scheduler loop."""
         owner = _require_user(request)
-        from src.caldav_sync import sync_caldav
+        from src.calendar_app.sync import sync_caldav
         return await sync_caldav(owner)
 
     @router.delete("/calendars/{cal_id}")
@@ -1009,7 +1009,7 @@ def setup_calendar_routes() -> APIRouter:
             if cal.source == "caldav":
                 # Push the new event to the remote so it appears on the user's
                 # other devices — the sync is otherwise pull-only (#800).
-                from src.caldav_writeback import writeback_event
+                from src.calendar_app.writeback import writeback_event
                 await writeback_event(owner, cal.source, cal.id, {
                     "uid": uid, "summary": data.summary, "description": data.description,
                     "location": data.location, "dtstart": dtstart, "dtend": dtend,
@@ -1064,7 +1064,7 @@ def setup_calendar_routes() -> APIRouter:
             db.commit()
             cal = db.query(CalendarCal).filter(CalendarCal.id == ev.calendar_id).first()
             if cal and cal.source == "caldav":
-                from src.caldav_writeback import writeback_event
+                from src.calendar_app.writeback import writeback_event
                 await writeback_event(owner, cal.source, cal.id, {
                     "uid": ev.uid, "summary": ev.summary, "description": ev.description,
                     "location": ev.location, "dtstart": ev.dtstart, "dtend": ev.dtend,
@@ -1097,7 +1097,7 @@ def setup_calendar_routes() -> APIRouter:
             db.delete(ev)
             db.commit()
             if _is_caldav:
-                from src.caldav_writeback import writeback_event
+                from src.calendar_app.writeback import writeback_event
                 await writeback_event(owner, "caldav", _cal_id, {"uid": _ev_uid}, delete=True)
             return {"ok": True}
         except HTTPException:
@@ -1380,9 +1380,9 @@ def setup_calendar_routes() -> APIRouter:
         Uses the "utility" endpoint (small / fast model) to keep latency low.
         """
         owner = _require_user(request)
-        from src.endpoint_resolver import resolve_endpoint
+        from src.runtime.endpoint_resolver import resolve_endpoint
         from src.llm_core import llm_call_async
-        from src.text_helpers import strip_think
+        from src.misc.text_helpers import strip_think
         import json as _json
         import re as _re
 
@@ -1390,7 +1390,7 @@ def setup_calendar_routes() -> APIRouter:
         text = (body.get("text") or "").strip()
         if not text:
             raise HTTPException(400, "text is required")
-        from src.user_time import (
+        from src.misc.user_time import (
             clear_user_time_context,
             current_datetime_prompt,
             now_user_local,

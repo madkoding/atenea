@@ -8,7 +8,7 @@ meaningful answer ("UK", "C++", "Rust") is a real topic and must be preserved.
 import pytest
 
 from core.models import ChatMessage, Session
-from src.research_handler import ResearchHandler
+from src.research.handler import ResearchHandler
 
 
 def _session(history):

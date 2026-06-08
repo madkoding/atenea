@@ -17,8 +17,8 @@ for mod in [
     if mod not in sys.modules:
         sys.modules[mod] = MagicMock()
 
-import src.context_compactor as cc
-from src.context_compactor import (
+import src.chat.context_compactor as cc
+from src.chat.context_compactor import (
     COMPACT_THRESHOLD,
     SELF_SUMMARY_SYSTEM_PROMPT,
     SUMMARY_MAX_TOKENS,

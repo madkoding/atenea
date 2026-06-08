@@ -2,7 +2,7 @@
 import types
 import pytest
 
-from src import copilot
+import src.clients.copilot as copilot
 
 
 # ── Provider detection ─────────────────────────────────────────────────────
@@ -60,7 +60,7 @@ def test_copilot_headers_no_token():
 
 
 def test_build_headers_dispatches_to_copilot():
-    from src.endpoint_resolver import build_headers
+    from src.runtime.endpoint_resolver import build_headers
     h = build_headers("TOK", "https://api.githubcopilot.com")
     assert h["Authorization"] == "Bearer TOK"
     assert h["X-GitHub-Api-Version"] == copilot.COPILOT_API_VERSION
@@ -166,5 +166,5 @@ def test_poll_access_token(monkeypatch):
 
 
 def test_agent_loop_host_allowlisted():
-    from src.agent_loop import _API_HOSTS
+    from src.chat.agent_loop import _API_HOSTS
     assert "api.githubcopilot.com" in _API_HOSTS

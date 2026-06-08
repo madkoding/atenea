@@ -64,7 +64,7 @@ with preserve_import_state(*_MANAGED):
     import routes.session_routes as SR  # noqa: E402
 
 from fastapi import HTTPException  # noqa: E402
-from src.auth_helpers import effective_user  # noqa: E402
+from src.auth.helpers import effective_user  # noqa: E402
 
 
 def _req(**state):

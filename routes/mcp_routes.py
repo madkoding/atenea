@@ -14,7 +14,7 @@ import httpx
 from core.database import McpServer, SessionLocal
 from core.middleware import require_admin
 from src.constants import DATA_DIR
-from src.mcp_manager import McpManager
+from src.clients.mcp_manager import McpManager
 
 logger = logging.getLogger(__name__)
 
@@ -478,7 +478,7 @@ def setup_mcp_routes(mcp_manager: McpManager):
         """Handle OAuth callback. Generic MCP OAuth flows resolve via the
         pending-state registry; Google flows fall through to the legacy path."""
         require_admin(request)
-        from src.mcp_oauth import resolve_pending
+        from src.clients.mcp_oauth import resolve_pending
         if resolve_pending(state, code):
             return HTMLResponse(_oauth_result_page(
                 "Authorization Successful",
@@ -504,7 +504,7 @@ def setup_mcp_routes(mcp_manager: McpManager):
         # Generic MCP OAuth: if the pasted URL carries a state we are waiting on,
         # resolve it directly (the background connect finishes the handshake).
         state = params.get("state", [None])[0]
-        from src.mcp_oauth import resolve_pending
+        from src.clients.mcp_oauth import resolve_pending
         if state and resolve_pending(state, code):
             return HTMLResponse(_oauth_result_page(
                 "Authorization Successful",

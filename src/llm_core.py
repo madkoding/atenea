@@ -9,7 +9,7 @@ import threading
 import re
 from fastapi import HTTPException
 from typing import Optional, Dict, List, Tuple
-from src.model_context import get_context_length, DEFAULT_CONTEXT
+from src.chat.model_context import get_context_length, DEFAULT_CONTEXT
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
@@ -230,7 +230,7 @@ def _get_http_client() -> httpx.AsyncClient:
     """Return process-wide AsyncClient. Per-request timeout is passed at call time."""
     global _http_client
     if _http_client is None or _http_client.is_closed:
-        from src.tls_overrides import llm_verify
+        from src.security.tls_overrides import llm_verify
         _http_client = httpx.AsyncClient(
             limits=_http_limits, http2=False, verify=llm_verify(),
         )
@@ -426,7 +426,7 @@ def _detect_provider(url: str) -> str:
         return "openrouter"
     if _host_match(url, "groq.com"):
         return "groq"
-    from src.copilot import is_copilot_base
+    from src.clients.copilot import is_copilot_base
     if is_copilot_base(url):
         return "copilot"
     return "openai"
@@ -444,7 +444,7 @@ def _provider_headers(provider: str, headers: Optional[Dict] = None) -> Dict[str
         # didn't pass pre-built headers (e.g. model listing). build_headers()
         # already injects these for the live chat path; setdefault keeps any
         # request-specific values (x-initiator/vision) the caller set.
-        from src.copilot import copilot_headers
+        from src.clients.copilot import copilot_headers
         for k, v in copilot_headers(None).items():
             h.setdefault(k, v)
     return h
@@ -462,7 +462,7 @@ def _provider_label(url: str) -> str:
     if _host_match(url, "opencode.ai/zen/go"): return "OpenCode Go"
     if _host_match(url, "opencode.ai/zen"): return "OpenCode Zen"
     if _host_match(url, "groq.com"): return "Groq"
-    from src.copilot import is_copilot_base
+    from src.clients.copilot import is_copilot_base
     if is_copilot_base(url): return "GitHub Copilot"
     if _host_match(url, "mistral.ai"): return "Mistral"
     if _host_match(url, "deepseek.com"): return "DeepSeek"
@@ -1036,7 +1036,7 @@ def llm_call(url: str, model: str, messages: List[Dict], temperature: float = LL
     else:
         target_url = url
         if provider == "copilot":
-            from src.copilot import apply_request_headers
+            from src.clients.copilot import apply_request_headers
             apply_request_headers(h, messages_copy)
         payload = {
             "model": model,
@@ -1186,7 +1186,7 @@ async def llm_call_async(
         target_url = url
         h = _provider_headers(provider, headers)
         if provider == "copilot":
-            from src.copilot import apply_request_headers
+            from src.clients.copilot import apply_request_headers
             apply_request_headers(h, messages_copy)
         payload = {
             "model": model,
@@ -1313,7 +1313,7 @@ async def stream_llm(url: str, model: str, messages: List[Dict], temperature: fl
             payload["tools"] = tools
         h = _provider_headers(provider, headers)
         if provider == "copilot":
-            from src.copilot import apply_request_headers
+            from src.clients.copilot import apply_request_headers
             apply_request_headers(h, messages_copy)
 
     # Short connect timeout: a reachable peer answers SYN in <100ms even on

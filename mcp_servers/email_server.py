@@ -187,7 +187,7 @@ def _load_config(account: str | None = None) -> dict:
         # (same path email_helpers.py:369 uses). Falling back to the raw
         # ciphertext is what produced AUTHENTICATIONFAILED previously.
         try:
-            from src.secret_storage import decrypt as _decrypt
+            from src.security.secret_storage import decrypt as _decrypt
         except Exception:
             _decrypt = lambda v: v  # noqa: E731
         cfg["imap_password"] = _decrypt(row["imap_password"]) if row["imap_password"] else cfg["imap_password"]

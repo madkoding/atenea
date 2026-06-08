@@ -5,7 +5,7 @@ covers the older `reasoning_content` field name for backward compatibility.
 import asyncio
 import json
 
-from src import llm_core
+import src.llm_core as llm_core
 
 
 class _FakeResp:

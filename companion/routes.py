@@ -22,7 +22,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
 from core.middleware import require_admin
-from src.auth_helpers import get_current_user
+from src.auth.helpers import get_current_user
 
 from companion import pairing as _pairing
 
@@ -106,7 +106,7 @@ def setup_companion_routes() -> APIRouter:
         import json as _json
 
         from core.database import SessionLocal, ModelEndpoint
-        from src.endpoint_resolver import build_chat_url
+        from src.runtime.endpoint_resolver import build_chat_url
 
         owner = token_owner(request)
         out = []

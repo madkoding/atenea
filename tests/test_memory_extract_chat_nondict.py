@@ -1,4 +1,4 @@
-from src.memory import MemoryManager
+from src.memory.store import MemoryManager
 
 
 def test_extract_memory_from_chat_skips_non_dict_messages(tmp_path):

@@ -42,7 +42,7 @@ if "core.database" not in sys.modules:
     sys.modules["core.database"] = _core_db
 
 import routes.model_routes as model_routes
-import src.endpoint_resolver as endpoint_resolver
+import src.runtime.endpoint_resolver as endpoint_resolver
 from routes.model_routes import (
     _probe_endpoint,
     _ping_endpoint,

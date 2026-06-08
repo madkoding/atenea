@@ -12,8 +12,8 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, Field
-from src.endpoint_resolver import resolve_endpoint
-from src.auth_helpers import _auth_disabled, get_current_user
+from src.runtime.endpoint_resolver import resolve_endpoint
+from src.auth.helpers import _auth_disabled, get_current_user
 
 _SESSION_ID_RE = re.compile(r"^[a-zA-Z0-9-]{1,128}$")
 
@@ -67,7 +67,7 @@ def _owned_enabled_endpoint(db, owner, endpoint_id=None):
     legacy mode).
     """
     from src.database import ModelEndpoint
-    from src.auth_helpers import owner_filter
+    from src.auth.helpers import owner_filter
     q = db.query(ModelEndpoint).filter(ModelEndpoint.is_enabled == True)  # noqa: E712
     if endpoint_id:
         q = q.filter(ModelEndpoint.id == endpoint_id)
@@ -350,7 +350,7 @@ def setup_research_routes(research_handler, session_manager=None) -> APIRouter:
     @router.post("/api/research/start")
     async def research_start(body: ResearchStartRequest, request: Request):
         """Launch a research job from the dedicated panel."""
-        from src.auth_helpers import require_privilege
+        from src.auth.helpers import require_privilege
         user = require_privilege(request, "can_use_research")
         if user == "internal-tool":
             tool_owner = (request.headers.get("X-Odysseus-Owner") or "").strip()
@@ -370,7 +370,7 @@ def setup_research_routes(research_handler, session_manager=None) -> APIRouter:
 
         if body.endpoint_id:
             from src.database import SessionLocal
-            from src.endpoint_resolver import normalize_base, build_chat_url, build_headers
+            from src.runtime.endpoint_resolver import normalize_base, build_chat_url, build_headers
             db = SessionLocal()
             try:
                 # Owner-scoped: never resolve another user's private endpoint
@@ -407,7 +407,7 @@ def setup_research_routes(research_handler, session_manager=None) -> APIRouter:
                 ep_url, ep_model, ep_headers = resolve_endpoint("chat", owner=user)
             if not ep_url:
                 from src.database import SessionLocal
-                from src.endpoint_resolver import normalize_base, build_chat_url, build_headers
+                from src.runtime.endpoint_resolver import normalize_base, build_chat_url, build_headers
                 db = SessionLocal()
                 try:
                     # Owner-scoped first-enabled fallback: the caller's own rows
@@ -582,7 +582,7 @@ def setup_research_routes(research_handler, session_manager=None) -> APIRouter:
         if not ep_url or not ep_model:
             # Last resort: this user's enabled endpoint, plus legacy shared rows.
             from src.database import SessionLocal
-            from src.endpoint_resolver import normalize_base, build_chat_url, build_headers
+            from src.runtime.endpoint_resolver import normalize_base, build_chat_url, build_headers
             db = SessionLocal()
             try:
                 ep = _owned_enabled_endpoint(db, user)
@@ -625,7 +625,7 @@ def setup_research_routes(research_handler, session_manager=None) -> APIRouter:
             new_sess.headers = ep_headers
             session_manager.save_sessions()
         try:
-            from src.event_bus import fire_event
+            from src.scheduling.event_bus import fire_event
             fire_event("session_created", user)
         except Exception:
             logger.debug("session_created event dispatch failed", exc_info=True)

@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from core.database import Base
 from core.database import ChatMessage as DbChatMessage
 from core.database import Session as DbSession
-from src.session_search import SessionSearchResult, search_session_messages
+from src.misc.session_search import SessionSearchResult, search_session_messages
 
 
 def _db(with_fts=True):
@@ -271,7 +271,7 @@ def test_chat_messages_fts_migration_backfills_and_tracks_inserts(tmp_path, monk
 
 def test_search_chats_formats_shared_results(monkeypatch):
     from src import session_search
-    from src.tool_implementations import do_search_chats
+    from src.tools.implementations import do_search_chats
 
     def fake_search(query, limit=20, owner=None, include_archived=False, context_messages=1, db=None):
         return [

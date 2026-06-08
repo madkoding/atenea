@@ -1,12 +1,12 @@
 """Regression tests for the datetime.utcnow() removal in src/cleanup_service.py (#1116).
 
-Importing src.cleanup_service is cheap and dependency-free: its only module-level
+Importing src.misc.cleanup_service is cheap and dependency-free: its only module-level
 imports are logging/datetime/typing, and the `from src.database import ...` calls are
 lazy (inside the functions), so no DB/sqlalchemy stack is pulled in here.
 """
 from datetime import datetime, timedelta, timezone
 
-from src.cleanup_service import _utcnow
+from src.misc.cleanup_service import _utcnow
 
 
 def test_utcnow_returns_naive_utc():

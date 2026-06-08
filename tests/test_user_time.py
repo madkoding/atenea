@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
-from src.chat_processor import ChatProcessor
-from src.user_time import (
+from src.chat.processor import ChatProcessor
+from src.misc.user_time import (
     clear_user_time_context,
     current_datetime_prompt,
     get_user_tz_name,

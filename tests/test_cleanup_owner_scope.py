@@ -76,10 +76,10 @@ def cleanup_imports(monkeypatch):
     importing so that prior tests' monkeypatched state does not bleed in.
     monkeypatch restores sys.modules entries on teardown.
     """
-    monkeypatch.delitem(sys.modules, "src.cleanup_service", raising=False)
+    monkeypatch.delitem(sys.modules, "src.misc.cleanup_service", raising=False)
     monkeypatch.delitem(sys.modules, "routes.cleanup_routes", raising=False)
 
-    import src.cleanup_service as svc
+    import src.misc.cleanup_service as svc
     import routes.cleanup_routes as rts
     return svc._apply_owner_filter, rts.setup_cleanup_routes
 

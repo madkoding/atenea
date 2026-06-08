@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from src import research_handler
-from src.research_handler import ResearchHandler
+import src.research.handler as research_handler
+from src.research.handler import ResearchHandler
 
 
 def _handler():

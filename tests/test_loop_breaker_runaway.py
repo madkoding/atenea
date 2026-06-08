@@ -19,7 +19,7 @@ _MOCKED = [
 for _m in _MOCKED:
     sys.modules.setdefault(_m, MagicMock())
 
-from src.agent_loop import _detect_runaway_call
+from src.chat.agent_loop import _detect_runaway_call
 
 
 def _freq(sigs):

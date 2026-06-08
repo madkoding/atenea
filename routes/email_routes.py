@@ -34,7 +34,7 @@ from fastapi import APIRouter, Query, UploadFile, File, BackgroundTasks, HTTPExc
 from fastapi.responses import FileResponse
 
 from src.llm_core import llm_call_async
-from src.upload_limits import read_upload_limited
+from src.uploads.limits import read_upload_limited
 
 from routes.email_helpers import (
     _strip_think, _extract_reply, _apply_email_style_mechanics, require_owner, require_user, _assert_owns_account,
@@ -107,7 +107,7 @@ def _record_email_received_events(owner: str, account_id: str | None, folder: st
     if not owner or (folder or "INBOX").upper() != "INBOX" or not emails:
         return
     try:
-        from src.event_bus import fire_event
+        from src.scheduling.event_bus import fire_event
         account_key = (account_id or "default").strip() or "default"
         now = datetime.utcnow().isoformat() + "Z"
         keys = []
@@ -1257,7 +1257,7 @@ def setup_email_routes():
                     cached_boundaries = {"sig_start": _row3[0], "quote_start": _row3[1]}
                     if _row3[2]:
                         try:
-                            from src.email_thread_parser import THREAD_PARSER_VERSION
+                            from src.email.thread_parser import THREAD_PARSER_VERSION
                             _parsed = json.loads(_row3[2])
                             # Versioned envelope: {"v": N, "turns": [...]}.
                             # Anything else (bare list from older code, wrong
@@ -1281,7 +1281,7 @@ def setup_email_routes():
             # ones. The background task warms the cache for next reads.
             if cached_turns is None:
                 try:
-                    from src.email_thread_parser import parse_thread
+                    from src.email.thread_parser import parse_thread
                     cached_turns = parse_thread(body_html, body)
                 except Exception as _pe:
                     logger.debug(f"thread parse on read failed: {_pe}")
@@ -1501,7 +1501,7 @@ def setup_email_routes():
             # check (404), so the frontend's loadDocument() throws and nothing
             # opens (the "open in document didn't open" bug). Attach it to the
             # user's most-recent session so it's fetchable + ownable.
-            from src.auth_helpers import get_current_user as _gcu
+            from src.auth.helpers import get_current_user as _gcu
             _doc_user = _gcu(request)
             def _resolve_doc_session():
                 try:
@@ -1524,8 +1524,8 @@ def setup_email_routes():
             if ext == ".pdf":
                 import shutil as _shutil
                 from src.constants import UPLOAD_DIR
-                from src.pdf_forms import has_form_fields, extract_fields
-                from src.pdf_form_doc import (
+                from src.documents.pdf_forms import has_form_fields, extract_fields
+                from src.documents.pdf_form_doc import (
                     save_field_sidecar,
                     create_form_markdown_document,
                     create_plain_pdf_document,
@@ -2406,7 +2406,7 @@ def setup_email_routes():
             # Call LLM to analyze writing style. Prefer the utility model;
             # fall back to the default chat model when utility isn't set
             # (matches how the background email tasks behave).
-            from src.endpoint_resolver import resolve_endpoint
+            from src.runtime.endpoint_resolver import resolve_endpoint
 
             url, model, headers = resolve_endpoint("utility", owner=owner)
             if not url or not model:
@@ -2454,7 +2454,7 @@ def setup_email_routes():
     async def summarize_email(data: dict, owner: str = Depends(require_owner)):
         """Generate a quick AI summary of an email body."""
         try:
-            from src.endpoint_resolver import resolve_endpoint
+            from src.runtime.endpoint_resolver import resolve_endpoint
             from src.llm_core import _uses_max_completion_tokens, _restricts_temperature
             import requests as _req
 
@@ -2572,7 +2572,7 @@ def setup_email_routes():
     async def ai_reply(data: dict, owner: str = Depends(require_owner)):
         """Generate an AI-drafted reply to an email using the user's writing style."""
         try:
-            from src.endpoint_resolver import resolve_endpoint
+            from src.runtime.endpoint_resolver import resolve_endpoint
 
             to = data.get("to", "")
             subject = data.get("subject", "")
@@ -2737,7 +2737,7 @@ def setup_email_routes():
             # fallback chains. Dedupe by url+model so we don't retry
             # the same broken endpoint.
             from src.llm_core import llm_call_async_with_fallback
-            from src.endpoint_resolver import (
+            from src.runtime.endpoint_resolver import (
                 resolve_utility_fallback_candidates,
                 resolve_chat_fallback_candidates,
             )
@@ -2880,7 +2880,7 @@ def setup_email_routes():
                     setattr(row, col_name, val)
             # Passwords: only update when a non-empty value is given.
             # Stored encrypted; see src/secret_storage.py.
-            from src.secret_storage import encrypt as _enc
+            from src.security.secret_storage import encrypt as _enc
             if data.get("imap_password"):
                 row.imap_password = _enc(data["imap_password"])
             if data.get("smtp_password"):
@@ -2967,7 +2967,7 @@ def setup_email_routes():
     async def create_email_account(data: dict, owner: str = Depends(require_owner)):
         """Create a new email account."""
         from core.database import SessionLocal, EmailAccount
-        from src.secret_storage import encrypt as _enc
+        from src.security.secret_storage import encrypt as _enc
         import uuid as _uuid
         name = (data.get("name") or "").strip()
         if not name:
@@ -3037,7 +3037,7 @@ def setup_email_routes():
                     setattr(row, key, bool(data[key]))
             # Passwords — only overwrite when a non-empty value is
             # provided. Stored encrypted; see src/secret_storage.py.
-            from src.secret_storage import encrypt as _enc
+            from src.security.secret_storage import encrypt as _enc
             if data.get("imap_password"):
                 row.imap_password = _enc(data["imap_password"])
             if data.get("smtp_password"):
@@ -3102,7 +3102,7 @@ def setup_email_routes():
         if acc_id:
             _assert_owns_account(acc_id, owner)
             from core.database import SessionLocal, EmailAccount
-            from src.secret_storage import decrypt as _decrypt
+            from src.security.secret_storage import decrypt as _decrypt
             db = SessionLocal()
             try:
                 row = db.get(EmailAccount, acc_id)

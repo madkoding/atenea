@@ -16,8 +16,8 @@ These tests lock in two things:
 import json
 import asyncio
 
-from src import llm_core
-from src.agent_loop import _compute_final_metrics
+import src.llm_core as llm_core
+from src.chat.agent_loop import _compute_final_metrics
 
 
 # --- captured-stream harness (mirrors test_llm_core_streaming.py) -----------

@@ -15,8 +15,8 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from core.database import SessionLocal, CrewMember, ScheduledTask
-from src.auth_helpers import get_current_user
-from src.task_scheduler import compute_next_run
+from src.auth.helpers import get_current_user
+from src.scheduling.task_scheduler import compute_next_run
 
 
 class CheckInUpdate(BaseModel):
