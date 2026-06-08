@@ -18,7 +18,13 @@ class LLMConfig:
     """Configuration constants for LLM operations."""
     DEFAULT_TIMEOUT = 30
     DEFAULT_TEMPERATURE = 1.0
-    DEFAULT_MAX_TOKENS = 0
+    # 16000 matches the response budget the rest of the app assumes for
+    # long-form completions (research reports, deep_research syntheses,
+    # agent turns with full tool transcripts). Previously 0, which left
+    # ``num_predict`` unset and let Ollama fall back to its tiny default
+    # (usually 128), causing multi-thousand-token generations to be cut
+    # off mid-sentence.
+    DEFAULT_MAX_TOKENS = 16000
     MAX_RETRIES = 3
     RETRY_DELAY = 0.5
     STREAM_TIMEOUT = 300
@@ -359,11 +365,21 @@ def _build_ollama_payload(
     the value is trusted (not the ``DEFAULT_CONTEXT`` fallback), so we
     don't guess for unknown models but do tell Ollama the real window
     when we know it — even if it's smaller than 2048.
+
+    ``chat_template_kwargs={"enable_thinking": False}`` disables the
+    hidden "thinking" / chain-of-thought preamble that Qwen3, DeepSeek-R1,
+    and similar reasoning models emit before every reply. Without it,
+    those models burn most of the ``num_predict`` budget on invisible
+    reasoning and the user-visible ``content`` comes back empty or
+    truncated. The reasoning field is preserved on the response side
+    (via ``_parse_ollama_response``) so it can still be surfaced
+    elsewhere if a future caller wants it.
     """
     payload: Dict = {
         "model": model,
         "messages": _ollama_normalize_tool_messages(messages),
         "stream": stream,
+        "chat_template_kwargs": {"enable_thinking": False},
     }
     options: Dict = {}
     if temperature is not None:
