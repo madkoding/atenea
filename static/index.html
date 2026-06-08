@@ -586,13 +586,6 @@
               <span class="admin-slider"></span>
             </label>
           </div>
-          <div class="theme-fd-group" id="theme-frosted-chat-group">
-            <label class="theme-fd-label" for="theme-frosted-chat-toggle">Frosted Chat</label>
-            <label class="admin-switch" style="margin-top:4px;">
-              <input type="checkbox" id="theme-frosted-chat-toggle">
-              <span class="admin-slider"></span>
-            </label>
-          </div>
           <div class="theme-fd-group" style="flex:1;"></div>
         </div>
         <div class="theme-fd-row" id="theme-font-zones-row">
@@ -633,14 +626,20 @@
           </div>
         </div>
         <div class="theme-fd-row">
-          <div class="theme-fd-group">
-            <label class="theme-fd-label" for="theme-colorful-emoji-toggle">Colorful emoji</label>
+          <div class="theme-fd-group" id="theme-frosted-chat-group">
+            <label class="theme-fd-label" for="theme-frosted-chat-toggle">Frosted Chat</label>
             <label class="admin-switch" style="margin-top:4px;">
-              <input type="checkbox" id="theme-colorful-emoji-toggle">
+              <input type="checkbox" id="theme-frosted-chat-toggle">
               <span class="admin-slider"></span>
             </label>
           </div>
-          <div class="theme-fd-group" style="flex:1;"></div>
+          <div class="theme-fd-group">
+            <label class="theme-fd-label" for="theme-liquid-glass-toggle">Liquid Glass</label>
+            <label class="admin-switch" style="margin-top:4px;">
+              <input type="checkbox" id="theme-liquid-glass-toggle">
+              <span class="admin-slider"></span>
+            </label>
+          </div>
           <div class="theme-fd-group" style="flex:1;"></div>
         </div>
         <div class="theme-fd-row">
@@ -2427,5 +2426,15 @@
 <script type="module" src="/static/js/init.js"></script>
 <script type="module" src="/static/js/a11y.js"></script>
 <script nonce="{{CSP_NONCE}}">if('serviceWorker' in navigator){navigator.serviceWorker.register('/static/sw.js').catch(()=>{});}</script>
+<svg style="position:absolute;width:0;height:0;overflow:hidden;" aria-hidden="true">
+  <defs>
+    <filter id="liquid-glass" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1" result="blur"/>
+      <feComposite in="blur" in2="SourceGraphic" operator="in"/>
+    </filter>
+  </defs>
+</svg>
 </body>
 </html>
