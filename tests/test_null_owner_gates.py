@@ -34,7 +34,7 @@ def _null_owner_stubs(monkeypatch):
             "TaskRun", "ModelEndpoint", "Webhook",
         )),
         ("core.auth", ("AuthManager",)),
-        ("src.endpoint_resolver", ()),
+        ("src.runtime.endpoint_resolver", ()),
     ):
         if _stub not in sys.modules:
             m = types.ModuleType(_stub)
@@ -48,14 +48,14 @@ def _null_owner_stubs(monkeypatch):
                     setattr(m, _name, MagicMock())
         monkeypatch.setitem(sys.modules, _stub, m)
 
-    # src.webhook_manager is only dragged in by _import_webhook_helper().
-    if "src.webhook_manager" not in sys.modules:
-        wm = types.ModuleType("src.webhook_manager")
+    # src.clients.webhook_manager is only dragged in by _import_webhook_helper().
+    if "src.clients.webhook_manager" not in sys.modules:
+        wm = types.ModuleType("src.clients.webhook_manager")
         wm.WebhookManager = MagicMock()
         wm.validate_webhook_url = MagicMock()
         wm.validate_events = MagicMock()
-        sys.modules["src.webhook_manager"] = wm
-        monkeypatch.setitem(sys.modules, "src.webhook_manager", wm)
+        sys.modules["src.clients.webhook_manager"] = wm
+        monkeypatch.setitem(sys.modules, "src.clients.webhook_manager", wm)
 
 from fastapi import HTTPException
 
@@ -186,7 +186,7 @@ def test_gallery_owner_filter_passes_user():
 
 def _import_webhook_helper():
     """Import routes.webhook_routes. Stubs for core.database (ChatMessage,
-    Webhook) and src.webhook_manager are provided by the _null_owner_stubs
+    Webhook) and src.clients.webhook_manager are provided by the _null_owner_stubs
     autouse fixture."""
     return __import__(
         "routes.webhook_routes", fromlist=["_caller_owns_session"]

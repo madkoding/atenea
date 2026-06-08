@@ -103,7 +103,7 @@ def _compact_prompt_for(monkeypatch, history):
     monkeypatch.setattr(history_routes, "SessionLocal", lambda: _FakeDb())
 
     import src.agent.runs as agent_runs
-    import src.endpoint_resolver as endpoint_resolver
+    import src.runtime.endpoint_resolver as endpoint_resolver
     import src.llm_core as llm_core
     import src.chat.model_context as model_context
 
@@ -147,7 +147,7 @@ def _registered_compact_response(monkeypatch, history, active_run=False):
     monkeypatch.setattr(history_routes, "SessionLocal", lambda: _FakeDb())
 
     import src.agent.runs as agent_runs
-    import src.endpoint_resolver as endpoint_resolver
+    import src.runtime.endpoint_resolver as endpoint_resolver
     import src.llm_core as llm_core
 
     monkeypatch.setattr(agent_runs, "is_active", lambda session_id: active_run)

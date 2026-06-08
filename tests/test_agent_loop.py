@@ -1,7 +1,7 @@
 """Tests for src.chat.agent_loop — _detect_admin_intent, _compute_final_metrics,
 and _append_tool_results. Uses mock imports to avoid loading the full app stack.
 
-NOTE: this file used to import ``src.agent_loop``; after the ``src/`` package
+NOTE: this file used to import ``src.chat.agent_loop``; after the ``src/`` package
 reorg (see FORK-NOTES / ROADMAP) the module lives at ``src.chat.agent_loop``.
 The import-leak guards below also moved to the new name to keep the test
 useful after the rename.

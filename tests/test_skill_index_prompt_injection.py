@@ -31,7 +31,7 @@ for _mod in [
     "sqlalchemy", "sqlalchemy.orm", "sqlalchemy.ext", "sqlalchemy.ext.declarative",
     "sqlalchemy.ext.hybrid", "sqlalchemy.sql", "sqlalchemy.sql.expression",
     "src.database",
-    "src.agent_tools",
+    "src.agent.tools_facade",
     "core.models", "core.database",
 ]:
     if _mod not in sys.modules:

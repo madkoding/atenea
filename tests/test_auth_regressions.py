@@ -77,7 +77,7 @@ def _auth_regressions_stubs(monkeypatch):
         McpServer=MagicMock(),
     )
     auth = _ensure_stub("core.auth", AuthManager=MagicMock())
-    ep = _ensure_stub("src.endpoint_resolver",
+    ep = _ensure_stub("src.runtime.endpoint_resolver",
         resolve_endpoint=MagicMock(return_value=("", "", {})),
         normalize_base=MagicMock(),
         build_chat_url=MagicMock(),
@@ -86,7 +86,7 @@ def _auth_regressions_stubs(monkeypatch):
     )
     monkeypatch.setitem(sys.modules, "core.database", db)
     monkeypatch.setitem(sys.modules, "core.auth", auth)
-    monkeypatch.setitem(sys.modules, "src.endpoint_resolver", ep)
+    monkeypatch.setitem(sys.modules, "src.runtime.endpoint_resolver", ep)
 
 from fastapi import HTTPException
 
@@ -302,8 +302,8 @@ def test_pop_notifications_owner_filtered():
     import sys, types
     from unittest.mock import MagicMock as _MM
     # `task_scheduler` pulls in lots of helpers — stub the ones it uses.
-    for s in ["src.builtin_actions", "src.ai_interaction", "src.endpoint_resolver",
-              "src.agent_loop", "src.session_manager"]:
+    for s in ["src.actions.builtin", "src.agent.ai_interaction", "src.runtime.endpoint_resolver",
+              "src.chat.agent_loop", "src.session_manager"]:
         if s not in sys.modules:
             mod = types.ModuleType(s)
             sys.modules[s] = mod
@@ -359,7 +359,7 @@ def test_ship_paused_housekeeping_stays_paused_by_default():
     """Built-ins marked ship_paused are intentionally opt-in even after
     the user enables the rest of Tasks."""
     from routes import task_routes
-    from src import task_scheduler
+    import src.scheduling.task_scheduler as task_scheduler
 
     route_src = open(task_routes.__file__, encoding="utf-8").read()
     scheduler_src = open(task_scheduler.__file__, encoding="utf-8").read()

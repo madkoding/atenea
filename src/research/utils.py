@@ -12,7 +12,7 @@ used across deep_research.py, research_handler.py, and visual_report.py.
 def strip_thinking(text):
     """Strip thinking / reasoning patterns from LLM output.
 
-    Delegates to `src.text_helpers.strip_think` (single source of truth).
+    Delegates to `src.misc.text_helpers.strip_think` (single source of truth).
     Kept as an alias here so existing `from src.research.utils import strip_thinking`
     callers don't break. Preserves None passthrough — many callers pass an
     `Optional[str]` LLM result and expect None back when the call failed.

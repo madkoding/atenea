@@ -313,7 +313,7 @@ def test_normalize_thinking_handles_lowercase_thinking_process(monkeypatch):
         "routes.prefs_routes",
         "routes.research_routes",
         "src.llm_core",
-        "src.context_compactor",
+        "src.chat.context_compactor",
         "src.chat.model_context",
         "src.auth.helpers",
     ]:
@@ -346,7 +346,7 @@ async def test_build_chat_context_incognito_does_not_duplicate_current_user_mess
         "routes.prefs_routes",
         "routes.research_routes",
         "src.llm_core",
-        "src.context_compactor",
+        "src.chat.context_compactor",
         "src.chat.model_context",
         "src.auth.helpers",
     ]:
@@ -386,7 +386,7 @@ async def test_build_chat_context_incognito_does_not_duplicate_current_user_mess
     monkeypatch.setattr(chat_helpers, "add_user_message", fake_add_user_message)
     monkeypatch.setattr(chat_helpers, "load_prefs_for_user", lambda user: {})
     monkeypatch.setattr(chat_helpers, "get_current_user", lambda request: "tester")
-    monkeypatch.setattr(chat_helpers, "normalize_model_id", lambda endpoint_url, model: None)
+    monkeypatch.setattr(chat_helpers, "normalize_model_id", lambda endpoint_url, model, **kwargs: None)
     monkeypatch.setattr(chat_helpers, "maybe_compact", fake_maybe_compact)
     monkeypatch.setattr(chat_helpers, "trim_for_context", lambda messages, context_length: messages)
 
@@ -659,14 +659,14 @@ async def test_webhook_tool_reuses_private_url_validation():
     fake_src_db = types.ModuleType("src.database")
     fake_src_db.SessionLocal = fake_core_db.SessionLocal
     fake_src_db.Webhook = object
-    # Importing do_manage_webhooks below re-executes src.webhook_manager bound to
+    # Importing do_manage_webhooks below re-executes src.clients.webhook_manager bound to
     # the faked src.database, whose Webhook is plain `object`. Save BOTH the
-    # sys.modules entry AND the parent-package attribute (src.webhook_manager) so
+    # sys.modules entry AND the parent-package attribute (src.clients.webhook_manager) so
     # the real module can be restored afterwards. Without this the polluted
     # module leaks into the cache and breaks sibling tests that call
     # WebhookManager._deliver (which evaluates `Webhook.id == webhook_id`).
     _ABSENT = object()
-    _wm_saved_module = sys.modules.get("src.webhook_manager", _ABSENT)
+    _wm_saved_module = sys.modules.get("src.clients.webhook_manager", _ABSENT)
     _src_pkg = sys.modules.get("src")
     _wm_saved_attr = (
         getattr(_src_pkg, "webhook_manager", _ABSENT) if _src_pkg is not None else _ABSENT
@@ -674,7 +674,7 @@ async def test_webhook_tool_reuses_private_url_validation():
 
     # Drop both bindings so the import re-executes against the fake src.database,
     # still exercising the intended import path.
-    sys.modules.pop("src.webhook_manager", None)
+    sys.modules.pop("src.clients.webhook_manager", None)
     if _src_pkg is not None and hasattr(_src_pkg, "webhook_manager"):
         delattr(_src_pkg, "webhook_manager")
 
@@ -691,12 +691,12 @@ async def test_webhook_tool_reuses_private_url_validation():
         )
     finally:
         monkeypatch.undo()
-        # Restore src.webhook_manager to its exact pre-test state at BOTH the
+        # Restore src.clients.webhook_manager to its exact pre-test state at BOTH the
         # sys.modules and parent-package attribute level.
         if _wm_saved_module is _ABSENT:
-            sys.modules.pop("src.webhook_manager", None)
+            sys.modules.pop("src.clients.webhook_manager", None)
         else:
-            sys.modules["src.webhook_manager"] = _wm_saved_module
+            sys.modules["src.clients.webhook_manager"] = _wm_saved_module
         if _src_pkg is not None:
             if _wm_saved_attr is _ABSENT:
                 if hasattr(_src_pkg, "webhook_manager"):

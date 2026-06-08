@@ -1,6 +1,6 @@
 """Pin the security fixes from the 2026-05-19 session so they don't regress:
 
-- `src.secret_storage.encrypt/decrypt` round-trip, idempotent on already-
+- `src.security.secret_storage.encrypt/decrypt` round-trip, idempotent on already-
   encrypted input, transparent on legacy plaintext, fail-soft on bad key.
 - `routes.email_helpers._q` quotes IMAP mailbox names so a folder named
   `"INBOX" (BODY ...` (or one containing `\\`) can't terminate the IMAP
@@ -43,10 +43,10 @@ def test_untrusted_context_policy_marks_sources_as_data():
 # ── secret_storage ─────────────────────────────────────────────
 
 def _import_secret_storage(tmp_path, monkeypatch):
-    """Import src.secret_storage with the key file redirected to tmp."""
+    """Import src.security.secret_storage with the key file redirected to tmp."""
     # Make sure a previous test's cached module doesn't reuse its key.
-    sys.modules.pop("src.secret_storage", None)
-    from src import secret_storage  # noqa: WPS433
+    sys.modules.pop("src.security.secret_storage", None)
+    import src.security.secret_storage as secret_storage  # noqa: WPS433
     monkeypatch.setattr(secret_storage, "_KEY_PATH", tmp_path / ".app_key")
     monkeypatch.setattr(secret_storage, "_fernet", None)
     return secret_storage
@@ -139,9 +139,9 @@ def test_ollama_cookbook_runner_does_not_force_public_bind():
 
 
 def _import_integrations(tmp_path, monkeypatch):
-    """Import src.integrations with data + encryption key redirected to tmp."""
+    """Import src.integrations.registry with data + encryption key redirected to tmp."""
     _import_secret_storage(tmp_path, monkeypatch)
-    sys.modules.pop("src.integrations", None)
+    sys.modules.pop("src.integrations.registry", None)
     import src.integrations.registry as integrations  # noqa: WPS433
     monkeypatch.setattr(integrations, "DATA_FILE", str(tmp_path / "integrations.json"))
     return integrations
@@ -346,7 +346,7 @@ def test_build_user_content_skips_cross_owner_attachments(tmp_path):
 def test_chat_preprocess_does_not_surface_cross_owner_attachment(tmp_path, monkeypatch):
     import asyncio
     from types import SimpleNamespace
-    for mod_name in ("src.chat_handler", "routes.chat_helpers"):
+    for mod_name in ("src.chat.handler", "routes.chat_helpers"):
         sys.modules.pop(mod_name, None)
     _stub_core_database_for_route_imports(monkeypatch)
     from src.chat.handler import ChatHandler
@@ -355,7 +355,7 @@ def test_chat_preprocess_does_not_surface_cross_owner_attachment(tmp_path, monke
 
     upload_dir, _alice_id, bob_id = _make_upload_store(tmp_path)
     handler = UploadHandler(str(tmp_path), str(upload_dir))
-    monkeypatch.setattr("src.chat_handler.UPLOAD_DIR", str(upload_dir))
+    monkeypatch.setattr("src.chat.handler.UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(
         settings,
         "get_setting",
@@ -375,7 +375,7 @@ def test_chat_preprocess_does_not_surface_cross_owner_attachment(tmp_path, monke
 
     assert attachment_meta == []
     assert user_content == "hello"
-    for mod_name in ("src.chat_handler", "routes.chat_helpers"):
+    for mod_name in ("src.chat.handler", "routes.chat_helpers"):
         sys.modules.pop(mod_name, None)
 
 
@@ -946,7 +946,7 @@ def _import_mcp_routes():
 
 def test_mcp_oauth_paths_resolve_under_data_dir(tmp_path, monkeypatch):
     mcp_routes = _import_mcp_routes()
-    monkeypatch.setattr(mcp_routes, "DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setattr(mcp_routes, "MCP_OAUTH_DIR", str(tmp_path / "data" / "mcp_oauth"))
 
     resolved = Path(mcp_routes._resolve_mcp_oauth_path("gmail/credentials.json", "token_file"))
 
@@ -963,7 +963,7 @@ def test_mcp_oauth_paths_reject_escapes(tmp_path, monkeypatch, raw_path):
     from fastapi import HTTPException
 
     mcp_routes = _import_mcp_routes()
-    monkeypatch.setattr(mcp_routes, "DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setattr(mcp_routes, "MCP_OAUTH_DIR", str(tmp_path / "data" / "mcp_oauth"))
 
     with pytest.raises(HTTPException) as exc:
         mcp_routes._resolve_mcp_oauth_path(raw_path, "token_file")
@@ -974,7 +974,7 @@ def test_mcp_oauth_filename_join_cannot_escape_base(tmp_path, monkeypatch):
     from fastapi import HTTPException
 
     mcp_routes = _import_mcp_routes()
-    monkeypatch.setattr(mcp_routes, "DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setattr(mcp_routes, "MCP_OAUTH_DIR", str(tmp_path / "data" / "mcp_oauth"))
 
     safe_dir = mcp_routes._resolve_mcp_oauth_path("gmail", "dir")
     with pytest.raises(HTTPException):
@@ -983,7 +983,7 @@ def test_mcp_oauth_filename_join_cannot_escape_base(tmp_path, monkeypatch):
 
 def test_mcp_oauth_config_sanitizes_paths_and_env(tmp_path, monkeypatch):
     mcp_routes = _import_mcp_routes()
-    monkeypatch.setattr(mcp_routes, "DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setattr(mcp_routes, "MCP_OAUTH_DIR", str(tmp_path / "data" / "mcp_oauth"))
 
     cfg = mcp_routes._sanitize_mcp_oauth_config({
         "provider": "google",
@@ -1101,7 +1101,7 @@ def test_chat_active_document_lookup_is_owner_scoped():
 
 # ── research report HTML sanitization (visual report stored XSS) ──
 #
-# `src.visual_report._md_to_html` renders the deep-research report, whose
+# `src.misc.visual_report._md_to_html` renders the deep-research report, whose
 # markdown is built from LLM output over crawled web pages (untrusted content).
 # python-markdown passes raw HTML through verbatim, and report pages are served
 # under a relaxed `script-src 'unsafe-inline'` CSP, so any markup surviving into

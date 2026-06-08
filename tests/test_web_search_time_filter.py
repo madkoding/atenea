@@ -14,7 +14,7 @@ for mod in ['src.agent.tools_facade', 'src.tools.parsing', 'src.tools.schemas', 
     sys.modules.pop(mod, None)
 
 # Mock heavy database/model dependencies before importing (avoids the
-# src.tool_schemas <-> src.agent_tools circular import pulling in the DB layer).
+# src.tools.schemas <-> src.agent.tools_facade circular import pulling in the DB layer).
 for mod in [
     'sqlalchemy', 'sqlalchemy.orm', 'sqlalchemy.ext', 'sqlalchemy.ext.declarative',
     'sqlalchemy.ext.hybrid', 'sqlalchemy.sql', 'sqlalchemy.sql.expression',

@@ -42,7 +42,7 @@ def _upload_endpoints(upload_handler, monkeypatch):
 
 def _make_upload_store(tmp_path, monkeypatch):
     from src.uploads.handler import UploadHandler
-    from src import constants
+    import src.constants as constants
 
     upload_dir = tmp_path / "uploads"
     dated = upload_dir / "2026" / "06" / "02"

@@ -63,7 +63,7 @@ def test_webhook_url_ssrf_mitigation():
 
 @pytest.mark.asyncio
 async def test_webhook_delivery_uses_naive_utc_timestamps(monkeypatch):
-    import src.webhook_manager as wm
+    import src.clients.webhook_manager as wm
 
     class _Query:
         def __init__(self, updates):

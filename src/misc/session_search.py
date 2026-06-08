@@ -249,12 +249,12 @@ def _search_fts(
         FROM chat_messages_fts
         JOIN chat_messages m ON m.id = chat_messages_fts.message_id
         JOIN sessions s ON s.id = m.session_id
-        WHERE chat_messages_fts MATCH :fts_query
+        WHERE chat_messages_fts MATCH 
           {archived_clause}
           {owner_clause}
           AND m.role IN ('user', 'assistant')
         ORDER BY bm25(chat_messages_fts), m.timestamp DESC
-        LIMIT :limit
+        LIMIT 
         """
     )
 

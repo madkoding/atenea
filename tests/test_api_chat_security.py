@@ -28,7 +28,7 @@ def test_public_url_validator_blocks_internal_targets(url):
 
 
 def test_public_url_validator_allows_public_endpoint(monkeypatch):
-    from src import url_security
+    import src.security.url_security as url_security
 
     monkeypatch.setattr(
         url_security,
@@ -40,7 +40,7 @@ def test_public_url_validator_allows_public_endpoint(monkeypatch):
 
 
 def test_public_url_validator_blocks_dns_to_private(monkeypatch):
-    from src import url_security
+    import src.security.url_security as url_security
 
     monkeypatch.setattr(
         url_security,
@@ -63,7 +63,7 @@ def _load_webhook_routes_for_test(monkeypatch):
     core_db.ModelEndpoint = object
     core_middleware = types.ModuleType("core.middleware")
     core_middleware.require_admin = lambda request: None
-    webhook_manager = types.ModuleType("src.webhook_manager")
+    webhook_manager = types.ModuleType("src.clients.webhook_manager")
     webhook_manager.WebhookManager = object
     webhook_manager.validate_webhook_url = lambda url: url
     webhook_manager.validate_events = lambda events: events
@@ -71,7 +71,7 @@ def _load_webhook_routes_for_test(monkeypatch):
     monkeypatch.setitem(sys.modules, "core", core_pkg)
     monkeypatch.setitem(sys.modules, "core.database", core_db)
     monkeypatch.setitem(sys.modules, "core.middleware", core_middleware)
-    monkeypatch.setitem(sys.modules, "src.webhook_manager", webhook_manager)
+    monkeypatch.setitem(sys.modules, "src.clients.webhook_manager", webhook_manager)
 
     module_name = "routes.webhook_routes_under_test"
     spec = importlib.util.spec_from_file_location(
@@ -235,7 +235,7 @@ def _install_sync_chat_stubs(monkeypatch):
     async def _llm_call_async(endpoint_url, model, messages, headers=None, timeout=None):
         return "mocked response"
 
-    endpoint_resolver = types.ModuleType("src.endpoint_resolver")
+    endpoint_resolver = types.ModuleType("src.runtime.endpoint_resolver")
     endpoint_resolver.normalize_base = lambda url: (url or "").strip().rstrip("/")
     endpoint_resolver.build_chat_url = lambda base_url: f"{base_url}/chat/completions"
     endpoint_resolver.build_models_url = lambda base_url: f"{base_url}/models"
@@ -248,7 +248,7 @@ def _install_sync_chat_stubs(monkeypatch):
     monkeypatch.setitem(sys.modules, "python_multipart", python_multipart)
     monkeypatch.setitem(sys.modules, "core.models", core_models)
     monkeypatch.setitem(sys.modules, "src.llm_core", llm_core)
-    monkeypatch.setitem(sys.modules, "src.endpoint_resolver", endpoint_resolver)
+    monkeypatch.setitem(sys.modules, "src.runtime.endpoint_resolver", endpoint_resolver)
 
 
 def _sync_chat_endpoint(webhook_routes, session_manager):
@@ -298,7 +298,7 @@ async def test_api_chat_direct_base_url_allows_mocked_public_endpoint(monkeypatc
     webhook_routes = _load_webhook_routes_for_test(monkeypatch)
     _install_sync_chat_stubs(monkeypatch)
 
-    from src import url_security
+    import src.security.url_security as url_security
 
     monkeypatch.setattr(
         url_security,

@@ -24,7 +24,7 @@ def _load_extractor():
     # Load services/memory/memory_extractor.py directly by path so we don't
     # trigger services/__init__ (which imports the search stack and its heavy
     # optional deps). The module's only module-level imports are stdlib; its
-    # src.llm_core / src.event_bus imports are lazy and stubbed/guarded.
+    # src.llm_core / src.scheduling.event_bus imports are lazy and stubbed/guarded.
     path = ROOT / "services" / "memory" / "memory_extractor.py"
     spec = importlib.util.spec_from_file_location("memory_extractor_under_test", path)
     mod = importlib.util.module_from_spec(spec)

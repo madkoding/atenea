@@ -57,7 +57,7 @@ def test_chat_preface_includes_current_time_for_non_agent_chat():
 
 
 def test_agent_system_prompt_includes_shared_current_time(monkeypatch):
-    import src.agent_loop as agent_loop
+    import src.chat.agent_loop as agent_loop
 
     clear_user_time_context()
     set_user_tz_offset(600)

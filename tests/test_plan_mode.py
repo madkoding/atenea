@@ -81,7 +81,7 @@ def test_fail_closed_fallback_blocks_mutations(monkeypatch):
 
     # Force the dynamic path to fail by making the lazy import explode.
     monkeypatch.setitem(
-        __import__("sys").modules, "src.agent_tools", None
+        __import__("sys").modules, "src.agent.tools_facade", None
     )
     disabled = ts.plan_mode_disabled_tools()
     assert disabled, "plan mode must never fail open (empty disabled set)"

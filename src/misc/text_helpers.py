@@ -167,6 +167,6 @@ def strip_think(text: str, *, prose: bool = False, prompt_echo: bool = True) -> 
 
 
 # Back-compat alias for the deep-research code path. Keeps existing imports
-# from `src.research_utils` working while delegating to the central impl.
+# from `src.research.utils` working while delegating to the central impl.
 def strip_thinking(text: str) -> str:
     return strip_think(text or "", prose=False, prompt_echo=True)

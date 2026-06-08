@@ -21,7 +21,7 @@ _DB_NAMES = ("core", "core.database", "src", "src.database")
 # so the tests never leak into the real src/routes packages.
 _RESOLVER_NAMES = (
     "src",
-    "src.endpoint_resolver",
+    "src.runtime.endpoint_resolver",
     "routes",
     "routes.model_routes",
     "routes.chat_routes",
@@ -266,30 +266,30 @@ def test_clear_fake_database_noop_when_nothing_cached():
 def test_clear_fake_resolver_removes_stub_endpoint_resolver():
     with preserve_import_state(*_RESOLVER_NAMES):
         fake_src = types.ModuleType("src")
-        fake_resolver = types.ModuleType("src.endpoint_resolver")  # no __file__ => stub
-        fake_src.endpoint_resolver = fake_resolver
+        fake_resolver = types.ModuleType("src.runtime.endpoint_resolver")  # no __file__ => stub
+        fake_src.runtime.endpoint_resolver = fake_resolver
         sys.modules["src"] = fake_src
-        sys.modules["src.endpoint_resolver"] = fake_resolver
+        sys.modules["src.runtime.endpoint_resolver"] = fake_resolver
 
         clear_fake_endpoint_resolver_modules()
 
-        assert "src.endpoint_resolver" not in sys.modules
+        assert "src.runtime.endpoint_resolver" not in sys.modules
         assert not hasattr(fake_src, "endpoint_resolver")
 
 
 def test_clear_fake_resolver_preserves_real_endpoint_resolver():
     with preserve_import_state(*_RESOLVER_NAMES):
         fake_src = types.ModuleType("src")
-        real_resolver = types.ModuleType("src.endpoint_resolver")
+        real_resolver = types.ModuleType("src.runtime.endpoint_resolver")
         real_resolver.__file__ = "/somewhere/src/endpoint_resolver.py"  # looks on-disk
-        fake_src.endpoint_resolver = real_resolver
+        fake_src.runtime.endpoint_resolver = real_resolver
         sys.modules["src"] = fake_src
-        sys.modules["src.endpoint_resolver"] = real_resolver
+        sys.modules["src.runtime.endpoint_resolver"] = real_resolver
 
         clear_fake_endpoint_resolver_modules()
 
-        assert sys.modules["src.endpoint_resolver"] is real_resolver
-        assert fake_src.endpoint_resolver is real_resolver
+        assert sys.modules["src.runtime.endpoint_resolver"] is real_resolver
+        assert fake_src.runtime.endpoint_resolver is real_resolver
 
 
 def test_clear_fake_resolver_evicts_empty_file_resolver():
@@ -297,17 +297,17 @@ def test_clear_fake_resolver_evicts_empty_file_resolver():
     it (and its dependents) must be evicted, not preserved."""
     with preserve_import_state(*_RESOLVER_NAMES):
         fake_src = types.ModuleType("src")
-        empty_resolver = types.ModuleType("src.endpoint_resolver")
+        empty_resolver = types.ModuleType("src.runtime.endpoint_resolver")
         empty_resolver.__file__ = ""  # falsy => stub
-        fake_src.endpoint_resolver = empty_resolver
+        fake_src.runtime.endpoint_resolver = empty_resolver
         sys.modules["src"] = fake_src
-        sys.modules["src.endpoint_resolver"] = empty_resolver
+        sys.modules["src.runtime.endpoint_resolver"] = empty_resolver
         model_routes = types.ModuleType("routes.model_routes")
         sys.modules["routes.model_routes"] = model_routes
 
         clear_fake_endpoint_resolver_modules()
 
-        assert "src.endpoint_resolver" not in sys.modules
+        assert "src.runtime.endpoint_resolver" not in sys.modules
         assert not hasattr(fake_src, "endpoint_resolver")
         assert "routes.model_routes" not in sys.modules
 
@@ -317,10 +317,10 @@ def test_clear_fake_resolver_removes_model_routes_when_resolver_fake():
     the behavior delta over the old bare sys.modules.pop() guards."""
     with preserve_import_state(*_RESOLVER_NAMES):
         fake_src = types.ModuleType("src")
-        fake_resolver = types.ModuleType("src.endpoint_resolver")
-        fake_src.endpoint_resolver = fake_resolver
+        fake_resolver = types.ModuleType("src.runtime.endpoint_resolver")
+        fake_src.runtime.endpoint_resolver = fake_resolver
         sys.modules["src"] = fake_src
-        sys.modules["src.endpoint_resolver"] = fake_resolver
+        sys.modules["src.runtime.endpoint_resolver"] = fake_resolver
 
         fake_routes = types.ModuleType("routes")
         model_routes = types.ModuleType("routes.model_routes")
@@ -337,10 +337,10 @@ def test_clear_fake_resolver_removes_model_routes_when_resolver_fake():
 def test_clear_fake_resolver_removes_extra_modules_when_resolver_fake():
     with preserve_import_state(*_RESOLVER_NAMES):
         fake_src = types.ModuleType("src")
-        fake_resolver = types.ModuleType("src.endpoint_resolver")
-        fake_src.endpoint_resolver = fake_resolver
+        fake_resolver = types.ModuleType("src.runtime.endpoint_resolver")
+        fake_src.runtime.endpoint_resolver = fake_resolver
         sys.modules["src"] = fake_src
-        sys.modules["src.endpoint_resolver"] = fake_resolver
+        sys.modules["src.runtime.endpoint_resolver"] = fake_resolver
 
         fake_routes = types.ModuleType("routes")
         chat_routes = types.ModuleType("routes.chat_routes")
@@ -357,11 +357,11 @@ def test_clear_fake_resolver_removes_extra_modules_when_resolver_fake():
 def test_clear_fake_resolver_keeps_dependents_when_resolver_real():
     with preserve_import_state(*_RESOLVER_NAMES):
         fake_src = types.ModuleType("src")
-        real_resolver = types.ModuleType("src.endpoint_resolver")
+        real_resolver = types.ModuleType("src.runtime.endpoint_resolver")
         real_resolver.__file__ = "/somewhere/src/endpoint_resolver.py"
-        fake_src.endpoint_resolver = real_resolver
+        fake_src.runtime.endpoint_resolver = real_resolver
         sys.modules["src"] = fake_src
-        sys.modules["src.endpoint_resolver"] = real_resolver
+        sys.modules["src.runtime.endpoint_resolver"] = real_resolver
 
         model_routes = types.ModuleType("routes.model_routes")
         chat_routes = types.ModuleType("routes.chat_routes")
@@ -376,7 +376,7 @@ def test_clear_fake_resolver_keeps_dependents_when_resolver_real():
 
 def test_clear_fake_resolver_noop_when_nothing_cached():
     with preserve_import_state(*_RESOLVER_NAMES):
-        sys.modules.pop("src.endpoint_resolver", None)
+        sys.modules.pop("src.runtime.endpoint_resolver", None)
         fake_src = types.ModuleType("src")  # no endpoint_resolver attr
         sys.modules["src"] = fake_src
         model_routes = types.ModuleType("routes.model_routes")
@@ -384,27 +384,27 @@ def test_clear_fake_resolver_noop_when_nothing_cached():
 
         clear_fake_endpoint_resolver_modules()  # must not raise
 
-        assert "src.endpoint_resolver" not in sys.modules
+        assert "src.runtime.endpoint_resolver" not in sys.modules
         # dependents are left alone when the resolver was never cached
         assert sys.modules["routes.model_routes"] is model_routes
 
 
 def test_clear_fake_resolver_keeps_parent_attr_pointing_elsewhere():
-    """When the cached src.endpoint_resolver is a stub but the `endpoint_resolver`
+    """When the cached src.runtime.endpoint_resolver is a stub but the `endpoint_resolver`
     attr on the src package points at a *different* object, the attr is left
     intact — only the same fake object is unlinked."""
     with preserve_import_state(*_RESOLVER_NAMES):
         fake_src = types.ModuleType("src")
-        cached_fake = types.ModuleType("src.endpoint_resolver")  # the stub in sys.modules
-        other = types.ModuleType("src.endpoint_resolver")  # parent attr points here
-        fake_src.endpoint_resolver = other
+        cached_fake = types.ModuleType("src.runtime.endpoint_resolver")  # the stub in sys.modules
+        other = types.ModuleType("src.runtime.endpoint_resolver")  # parent attr points here
+        fake_src.runtime.endpoint_resolver = other
         sys.modules["src"] = fake_src
-        sys.modules["src.endpoint_resolver"] = cached_fake
+        sys.modules["src.runtime.endpoint_resolver"] = cached_fake
 
         clear_fake_endpoint_resolver_modules()
 
-        assert "src.endpoint_resolver" not in sys.modules
-        assert fake_src.endpoint_resolver is other
+        assert "src.runtime.endpoint_resolver" not in sys.modules
+        assert fake_src.runtime.endpoint_resolver is other
 
 
 def test_clear_fake_resolver_uses_parent_attr_when_not_in_sys_modules():
@@ -412,10 +412,10 @@ def test_clear_fake_resolver_uses_parent_attr_when_not_in_sys_modules():
     (not in sys.modules) is still detected, unlinked, and triggers dependent
     eviction."""
     with preserve_import_state(*_RESOLVER_NAMES):
-        sys.modules.pop("src.endpoint_resolver", None)
+        sys.modules.pop("src.runtime.endpoint_resolver", None)
         fake_src = types.ModuleType("src")
-        fake_resolver = types.ModuleType("src.endpoint_resolver")
-        fake_src.endpoint_resolver = fake_resolver
+        fake_resolver = types.ModuleType("src.runtime.endpoint_resolver")
+        fake_src.runtime.endpoint_resolver = fake_resolver
         sys.modules["src"] = fake_src
         model_routes = types.ModuleType("routes.model_routes")
         sys.modules["routes.model_routes"] = model_routes

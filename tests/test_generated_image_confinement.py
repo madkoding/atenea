@@ -6,7 +6,7 @@ from fastapi import HTTPException
 
 
 def _generated_images_module():
-    from src import generated_images
+    import src.misc.generated_images as generated_images
     return generated_images
 
 

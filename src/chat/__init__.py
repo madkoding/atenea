@@ -2,7 +2,7 @@
 
 The agent loop lives here too because the two share a heavy amount of
 plumbing (context budget, model context, helpers). Keep the agent loop's
-historical import path ``src.agent_loop`` working via the facade
+historical import path ``src.chat.agent_loop`` working via the facade
 ``src.chat.agent_loop``; downstream code that imported
 ``from src.chat.handler import ...`` should now use
 ``from src.chat.handler import ...`` (and likewise for the other modules),

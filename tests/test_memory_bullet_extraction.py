@@ -8,10 +8,10 @@ matches the first branch, so ``group(1)`` is ``None`` and ``.strip()`` raised
 ``AttributeError``, crashing extraction for any assistant message that contains
 a bullet list (the dominant case).
 
-There are two copies of ``MemoryManager``: ``src.memory`` and the
+There are two copies of ``MemoryManager``: ``src.memory.store`` and the
 ``services.memory`` package that ``routes/memory_routes.py`` actually imports.
-The fix first landed only in ``src.memory`` while the live route path kept the
-broken copy, and this test imported ``src.memory`` so it stayed green. It now
+The fix first landed only in ``src.memory.store`` while the live route path kept the
+broken copy, and this test imported ``src.memory.store`` so it stayed green. It now
 exercises both copies so the two cannot drift back apart.
 """
 import pytest

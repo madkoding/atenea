@@ -105,7 +105,7 @@ DEFAULT_SETTINGS = {
     # Ceiling on the *auto-derived* input budget that #1230 introduced. Has
     # no effect when `agent_input_token_budget` is explicitly set (the user's
     # value is honoured regardless). Default matches
-    # `src.context_budget.DEFAULT_HARD_MAX`; lower this for cost-paranoid
+    # `src.chat.context_budget.DEFAULT_HARD_MAX`; lower this for cost-paranoid
     # setups, raise it on premium APIs with very large windows that you
     # want to actually use (e.g. 900_000 to fill a 1M-context model). See
     # `compute_input_token_budget` in src/context_budget.py.

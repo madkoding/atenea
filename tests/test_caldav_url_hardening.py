@@ -133,9 +133,9 @@ def test_sync_caldav_decrypts_stored_password_and_validates_url(monkeypatch):
     prefs_mod._save_for_user = lambda owner, prefs: saved.update({"owner": owner, "prefs": prefs})
     monkeypatch.setitem(sys.modules, "routes.prefs_routes", prefs_mod)
 
-    secret_mod = types.ModuleType("src.secret_storage")
+    secret_mod = types.ModuleType("src.security.secret_storage")
     secret_mod.decrypt = lambda value: "decrypted-password" if value == "enc:stored" else value
-    monkeypatch.setitem(sys.modules, "src.secret_storage", secret_mod)
+    monkeypatch.setitem(sys.modules, "src.security.secret_storage", secret_mod)
 
     captured = {}
 

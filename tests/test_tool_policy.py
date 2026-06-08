@@ -163,7 +163,7 @@ def test_guide_only_skips_tool_retrieval(monkeypatch):
     monkeypatch.setattr(al, "stream_llm_with_fallback", _fake_stream, raising=False)
     monkeypatch.setitem(
         sys.modules,
-        "src.tool_index",
+        "src.tools.index",
         SimpleNamespace(get_tool_index=_fail_tool_index, ALWAYS_AVAILABLE=set()),
     )
     policy = build_effective_tool_policy(last_user_message="Do not use tools.")
@@ -341,7 +341,7 @@ def test_guide_only_skips_teacher_escalation(monkeypatch):
     monkeypatch.setattr(al, "stream_llm_with_fallback", _fake_stream, raising=False)
     monkeypatch.setitem(
         sys.modules,
-        "src.teacher_escalation",
+        "src.agent.teacher_escalation",
         SimpleNamespace(run_teacher_inline=_fail_teacher),
     )
     policy = build_effective_tool_policy(last_user_message="Do not use tools.")

@@ -2,7 +2,7 @@ import sys
 from unittest.mock import MagicMock
 
 # Clean up any mocks from previous tests to ensure we load real modules
-for mod in ['src.agent_tools', 'src.tool_parsing', 'src.tool_schemas', 'src.tool_execution']:
+for mod in ['src.agent.tools_facade', 'src.tools.parsing', 'src.tools.schemas', 'src.tools.execution']:
     sys.modules.pop(mod, None)
 
 # Mock heavy database/model dependencies before importing

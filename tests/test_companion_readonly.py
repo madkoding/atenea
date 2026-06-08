@@ -128,10 +128,10 @@ def _call_models_route(monkeypatch, rows, request):
     monkeypatch.setattr(db_mod, "SessionLocal", lambda: db)
     monkeypatch.setattr(db_mod, "ModelEndpoint", _ModelEndpoint)
 
-    endpoint_mod = sys.modules.get("src.endpoint_resolver")
+    endpoint_mod = sys.modules.get("src.runtime.endpoint_resolver")
     if endpoint_mod is None:
-        endpoint_mod = types.ModuleType("src.endpoint_resolver")
-        sys.modules["src.endpoint_resolver"] = endpoint_mod
+        endpoint_mod = types.ModuleType("src.runtime.endpoint_resolver")
+        sys.modules["src.runtime.endpoint_resolver"] = endpoint_mod
     monkeypatch.setattr(
         endpoint_mod,
         "build_chat_url",

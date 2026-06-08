@@ -4,7 +4,7 @@
 import side effects. The downside is that those copies silently drift from the
 shipped code — they already lag `src/endpoint_resolver.py` (no OpenRouter
 headers, no `anthropic.com` host matching). This module instead imports the
-real `src.endpoint_resolver`, so it fails the moment the shipped resolution
+real `src.runtime.endpoint_resolver`, so it fails the moment the shipped resolution
 logic stops matching documented provider behavior. `conftest.py` stubs the
 heavy deps (sqlalchemy, `src.database`), so the import is side-effect free.
 

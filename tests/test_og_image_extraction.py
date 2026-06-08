@@ -12,7 +12,7 @@ def _soup(html: str) -> BeautifulSoup:
 
 
 def test_accepts_http_og_image():
-    # Regression: only https URLs were returned, so plain-http og:image
+    # Regression: only https URLs were returned, so plain-http og
     # (still common) yielded no thumbnail despite the docstring promising
     # "http(s)".
     html = '<meta property="og:image" content="http://example.com/cover.jpg">'

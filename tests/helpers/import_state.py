@@ -13,8 +13,8 @@ its companion ``src.database``) that another test left in import state, without
 touching a real ``core.database`` loaded from disk.
 
 Use ``clear_fake_endpoint_resolver_modules`` to evict a *stubbed*
-``src.endpoint_resolver`` (and the route modules that imported it) that another
-test left in import state, without touching a real ``src.endpoint_resolver``
+``src.runtime.endpoint_resolver`` (and the route modules that imported it) that another
+test left in import state, without touching a real ``src.runtime.endpoint_resolver``
 loaded from disk.
 
 Background: importing ``routes.session_routes`` also sets ``session_routes`` on
@@ -99,9 +99,9 @@ def clear_fake_database_modules():
 
 
 def clear_fake_endpoint_resolver_modules(*extra_modules):
-    """Evict a *stubbed* ``src.endpoint_resolver`` (and dependent route modules).
+    """Evict a *stubbed* ``src.runtime.endpoint_resolver`` (and dependent route modules).
 
-    Test-only. Several route tests need the *real* ``src.endpoint_resolver`` URL
+    Test-only. Several route tests need the *real* ``src.runtime.endpoint_resolver`` URL
     helpers, but another test may have installed a fake — a stub module with no
     on-disk ``__file__`` — into ``sys.modules`` and onto the ``src`` package
     during collection. The route modules (``routes.model_routes`` and any extras
@@ -111,7 +111,7 @@ def clear_fake_endpoint_resolver_modules(*extra_modules):
     Conservative, mirroring ``clear_fake_database_modules`` and the per-file
     guards it replaces:
 
-    * It acts only when ``src.endpoint_resolver`` is a fake/stub, detected by a
+    * It acts only when ``src.runtime.endpoint_resolver`` is a fake/stub, detected by a
       falsy ``__file__`` (missing, ``None``, or empty string) — exactly the
       truthiness check the old inline guards used. A real resolver loaded from
       disk carries a truthy ``__file__`` and is left untouched, as is the case
@@ -119,7 +119,7 @@ def clear_fake_endpoint_resolver_modules(*extra_modules):
       modules are left untouched too.
     * When it does act, it drops ``routes.model_routes`` plus every name in
       ``extra_modules``.
-    * It removes the ``src.endpoint_resolver`` parent-package attribute only when
+    * It removes the ``src.runtime.endpoint_resolver`` parent-package attribute only when
       that attribute is the same fake object being evicted.
 
     Behavior delta vs. the old bare ``sys.modules.pop(...)`` guards: dependent
@@ -131,10 +131,10 @@ def clear_fake_endpoint_resolver_modules(*extra_modules):
     """
     parent = sys.modules.get("src")
     attr = getattr(parent, "endpoint_resolver", None) if parent is not None else None
-    mod = sys.modules.get("src.endpoint_resolver") or attr
+    mod = sys.modules.get("src.runtime.endpoint_resolver") or attr
     if mod is None or getattr(mod, "__file__", None):
         return
-    sys.modules.pop("src.endpoint_resolver", None)
+    sys.modules.pop("src.runtime.endpoint_resolver", None)
     if parent is not None and attr is mod:
         delattr(parent, "endpoint_resolver")
     clear_module("routes.model_routes")

@@ -213,7 +213,7 @@ async def test_read_file_dispatch_blocks_etc_shadow(monkeypatch):
 
     monkeypatch.setattr(auth_mod, "AuthManager", lambda: _AdminAuth())
     monkeypatch.setattr(
-        "src.tool_execution.owner_is_admin_or_single_user",
+        "src.tools.execution.owner_is_admin_or_single_user",
         lambda owner: True,
     )
 
@@ -241,7 +241,7 @@ async def test_write_file_dispatch_blocks_authorized_keys(monkeypatch):
 
     monkeypatch.setattr(auth_mod, "AuthManager", lambda: _AdminAuth())
     monkeypatch.setattr(
-        "src.tool_execution.owner_is_admin_or_single_user",
+        "src.tools.execution.owner_is_admin_or_single_user",
         lambda owner: True,
     )
 
@@ -269,7 +269,7 @@ async def test_write_file_dispatch_blocks_cron(monkeypatch):
 
     monkeypatch.setattr(auth_mod, "AuthManager", lambda: _AdminAuth())
     monkeypatch.setattr(
-        "src.tool_execution.owner_is_admin_or_single_user",
+        "src.tools.execution.owner_is_admin_or_single_user",
         lambda owner: True,
     )
 

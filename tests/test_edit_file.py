@@ -38,11 +38,11 @@ async def test_edit_file_blocked_at_execution_for_non_admin(monkeypatch):
     # after #2684 (ALWAYS_AVAILABLE only changed advertisement, not execution).
     #
     # Resolve execute_tool_block from the live module object (te) rather than a
-    # top-level import: other test modules pop src.tool_execution from
+    # top-level import: other test modules pop src.tools.execution from
     # sys.modules and re-import it, so a stale top-level reference would call a
     # different module's function than the one monkeypatch targets — silently
     # bypassing the admin gate.
-    import src.tool_execution as te
+    import src.tools.execution as te
     monkeypatch.setattr(te, "_owner_is_admin", lambda owner: False)
     ws = tempfile.mkdtemp()
     p = os.path.join("/tmp", "ef_block.txt")

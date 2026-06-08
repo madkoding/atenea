@@ -1,4 +1,4 @@
-"""Tests for ``src.upload_handler.UploadHandler`` uploads.json RMW atomicity.
+"""Tests for ``src.uploads.handler.UploadHandler`` uploads.json RMW atomicity.
 
 The production code serialises the read-modify-write of ``uploads.json``
 under ``UploadHandler._index_lock`` and writes atomically via

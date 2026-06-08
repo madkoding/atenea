@@ -5,12 +5,12 @@ layers call into:
 
 - ``runs`` — persistent run history.
 - ``tools_facade`` — backward-compatible re-exports of the old
-  ``src.agent_tools`` module.
+  ``src.agent.tools_facade`` module.
 - ``ai_interaction`` — chat-with-model, debate, pipeline, self-managing AI.
 - ``assistant_log`` — per-user assistant log helpers.
 - ``teacher_escalation`` — the “ask the teacher” flow.
 
-The facade is kept for callers that still import ``src.agent_tools``;
+The facade is kept for callers that still import ``src.agent.tools_facade``;
 new code should import the specific submodule.
 """
 from src.agent.tools_facade import *  # noqa: F401,F403

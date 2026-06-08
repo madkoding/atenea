@@ -12,12 +12,12 @@ import os
 import re
 from typing import Any, Dict, List, Optional
 
-from src.constants import MAX_OUTPUT_CHARS, MAX_READ_CHARS
+from src.constants import MAX_OUTPUT_CHARS, MAX_READ_CHARS, DEEP_RESEARCH_DIR, VAULT_FILE
 from core.constants import internal_api_base
 
 
 def get_mcp_manager():
-    from src import agent_tools
+    import src.agent.tools_facade as agent_tools
     return agent_tools.get_mcp_manager()
 
 
@@ -1677,7 +1677,7 @@ async def do_manage_settings(content: str, owner: Optional[str] = None) -> Dict:
             return {"response": f"Reset {key} to default ({DEFAULT_SETTINGS[key]}).", "exit_code": 0}
 
         elif action in ("disable_tool", "enable_tool", "list_tools"):
-            # Tool-toggle actions. These edit settings.json:disabled_tools
+            # Tool-toggle actions. These edit settings.json
             # (the global list read on every chat request) rather than
             # prefs.json. Friendly aliases accepted: "shell" -> "bash",
             # "search" -> "web_search", "browser" -> "builtin_browser",
@@ -4057,7 +4057,7 @@ async def do_manage_research(content: str, owner: Optional[str] = None) -> Dict:
         args = {}
     action = (args.get("action") or "list").lower()
     rid = (args.get("id") or args.get("session_id") or args.get("research_id") or "").strip()
-    data_dir = _Path("data/deep_research")
+    data_dir = _Path(DEEP_RESEARCH_DIR)
 
     # SECURITY: the research id is interpolated straight into a filesystem
     # path (data/deep_research/<rid>.json) for read AND delete. Without this
@@ -4302,7 +4302,7 @@ async def do_manage_contact(content: str, owner: Optional[str] = None) -> Dict:
 def _load_vault_config() -> Dict:
     """Load Vaultwarden config from data/vault.json."""
     from pathlib import Path
-    p = Path("data/vault.json")
+    p = Path(VAULT_FILE)
     if p.exists():
         try:
             return json.loads(p.read_text(encoding="utf-8"))
@@ -4456,7 +4456,7 @@ async def do_vault_unlock(content: str, owner: Optional[str] = None) -> Dict:
 
     # Save session to vault.json
     from pathlib import Path
-    p = Path("data/vault.json")
+    p = Path(VAULT_FILE)
     cfg = {}
     if p.exists():
         try:

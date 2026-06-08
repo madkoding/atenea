@@ -6,7 +6,7 @@ for keybinds / TTS prefs), so non-admin and unauthenticated callers receive a
 reachable over a Cloudflare tunnel / reverse proxy. These pin the scrub: deep
 (nested), broad secret-key coverage, and no collateral damage to real prefs.
 
-Imports the stdlib-only `src.settings_scrub` directly, so the test does not pull
+Imports the stdlib-only `src.security.settings_scrub` directly, so the test does not pull
 in the FastAPI / auth / database import chain.
 """
 from src.security.settings_scrub import is_secret_key, scrub_settings

@@ -1,7 +1,7 @@
 """Tool-block primitives shared across the tool runtime.
 
 ``ToolBlock`` and ``TOOL_TAGS`` are used by both the agent facade
-(``src.agent_tools``) and the individual tool submodules
+(``src.agent.tools_facade``) and the individual tool submodules
 (``src.tools.schemas``, ``src.tools.execution``, ...). Defining them here
 breaks the historical circular import: nothing in this module imports
 back into the tool runtime, so it can be imported safely from anywhere.

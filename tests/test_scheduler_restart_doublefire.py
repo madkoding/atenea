@@ -23,8 +23,8 @@ def _test_utcnow():
 
 def _stub_heavy():
     for name in [
-        "src.builtin_actions", "src.ai_interaction", "src.endpoint_resolver",
-        "src.agent_loop", "src.session_manager",
+        "src.actions.builtin", "src.agent.ai_interaction", "src.runtime.endpoint_resolver",
+        "src.chat.agent_loop", "src.session_manager",
     ]:
         sys.modules.setdefault(name, types.ModuleType(name))
 

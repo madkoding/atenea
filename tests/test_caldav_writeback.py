@@ -140,10 +140,10 @@ def test_writeback_validates_saved_url_before_remote_call(monkeypatch):
             "password": "enc:pw",
         }
     }
-    secret_mod = types.ModuleType("src.secret_storage")
+    secret_mod = types.ModuleType("src.security.secret_storage")
     secret_mod.decrypt = lambda value: "plain-password"
     monkeypatch.setitem(sys.modules, "routes.prefs_routes", prefs_mod)
-    monkeypatch.setitem(sys.modules, "src.secret_storage", secret_mod)
+    monkeypatch.setitem(sys.modules, "src.security.secret_storage", secret_mod)
 
     captured = {}
 
@@ -198,10 +198,10 @@ def test_writeback_rejects_unsafe_saved_url_before_remote_call(monkeypatch):
             "password": "enc:pw",
         }
     }
-    secret_mod = types.ModuleType("src.secret_storage")
+    secret_mod = types.ModuleType("src.security.secret_storage")
     secret_mod.decrypt = lambda value: "plain-password"
     monkeypatch.setitem(sys.modules, "routes.prefs_routes", prefs_mod)
-    monkeypatch.setitem(sys.modules, "src.secret_storage", secret_mod)
+    monkeypatch.setitem(sys.modules, "src.security.secret_storage", secret_mod)
 
     called = False
 

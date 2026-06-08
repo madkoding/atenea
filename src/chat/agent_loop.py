@@ -686,20 +686,20 @@ def _build_system_prompt(
         # Skill index is user-editable (name + description), so it must never
         # live in the trusted system role and is NOT cached. Always recompute
         # when the cache hits.
-        _, _skill_index_block = _build_base_prompt(
-            disabled_tools, mcp_mgr, needs_admin, relevant_tools,
+        _, _skill_index_block = _build_base_prompt(disabled_tools, mcp_mgr, needs_admin, relevant_tools,
             mcp_disabled_map=mcp_disabled_map, compact=compact,
             suppress_local_context=suppress_local_context,
+            ui_language=ui_language
         )
     else:
-        agent_prompt, _skill_index_block = _build_base_prompt(
-            disabled_tools,
+        agent_prompt, _skill_index_block = _build_base_prompt(disabled_tools,
             mcp_mgr,
             needs_admin,
             relevant_tools,
             mcp_disabled_map=mcp_disabled_map,
             compact=compact,
             suppress_local_context=suppress_local_context,
+            ui_language=ui_language
         )
         if not active_document:
             _cached_base_prompt = agent_prompt
@@ -1072,6 +1072,7 @@ def _build_base_prompt(
     mcp_disabled_map=None,
     compact: bool = False,
     suppress_local_context: bool = False,
+    ui_language: Optional[str] = None,
 ):
     """Build the agent prompt with only relevant tools included.
 
