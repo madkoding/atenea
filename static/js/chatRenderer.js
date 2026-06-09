@@ -80,6 +80,26 @@ function _formatSize(bytes) {
 
 // Build the `.attach-cards` element for a message's attachment list. Shared by
 // addMessage and updateMessageAttachments so a live (optimistic) user bubble
+
+function _injectAvatar(msgEl) {
+  if (msgEl.querySelector('.msg-avatar')) return;
+  const role = msgEl.classList.contains('msg-user') ? 'user' : 'assistant';
+  const avatarUrl = role === 'user' ? (window._userAvatar || '') : (window._assistantAvatar || '');
+  const av = document.createElement('div');
+  av.className = 'msg-avatar';
+  if (avatarUrl) {
+    const img = document.createElement('img');
+    img.src = avatarUrl;
+    img.alt = '';
+    img.draggable = false;
+    av.appendChild(img);
+  } else {
+    const initial = role === 'user' ? 'U' : 'A';
+    av.textContent = initial;
+  }
+  msgEl.insertBefore(av, msgEl.firstChild);
+}
+if (typeof window !== 'undefined') window._injectAvatar = _injectAvatar;
 // can be re-rendered with real upload ids once the upload resolves.
 function buildAttachCards(attachments) {
   const attachWrap = document.createElement('div');
@@ -2033,6 +2053,7 @@ export function addMessage(role, content, modelName, metadata) {
           wrap.appendChild(body);
           wrap.dataset.raw = txt;
           if (metadata?._db_id) wrap.dataset.dbId = metadata._db_id;
+          _injectAvatar(wrap);
           box.appendChild(wrap);
           lastWrap = wrap;
           if (!firstMsgAi) firstMsgAi = wrap;
@@ -2123,23 +2144,24 @@ export function addMessage(role, content, modelName, metadata) {
     const wrap = document.createElement('div');
     wrap.className = 'msg ' + (role === 'user' ? 'msg-user' : 'msg-ai');
 
-    const r = document.createElement('div');
-    r.className = 'role';
+    var r = null;
     const isSlash = metadata?.source === 'slash';
     const isCompacted = metadata?.compacted;
     const replyModels = replyModelPair(modelName, metadata);
     const resolvedModel = replyModels.actualModel || replyModels.requestedModel;
-    var _roleText = role === 'user' ? 'You' : (isSlash || isCompacted) ? 'Odysseus' : modelRouteLabel(replyModels.requestedModel, resolvedModel);
-    if (role === 'assistant' && (metadata?.research || metadata?.research_clarification)) {
-      _roleText += ' (Research)';
-    }
-    if (metadata?.group_model && role !== 'user') {
-      _roleText = metadata.group_model;
-    } else if (metadata?.character_name && role !== 'user' && !isSlash && !isCompacted) {
-      _roleText = metadata.character_name;
-    }
-    r.textContent = _roleText;
     if (role !== 'user') {
+      r = document.createElement('div');
+      r.className = 'role';
+      var _roleText = (isSlash || isCompacted) ? 'Odysseus' : modelRouteLabel(replyModels.requestedModel, resolvedModel);
+      if (metadata?.research || metadata?.research_clarification) {
+        _roleText += ' (Research)';
+      }
+      if (metadata?.group_model) {
+        _roleText = metadata.group_model;
+      } else if (metadata?.character_name && !isSlash && !isCompacted) {
+        _roleText = metadata.character_name;
+      }
+      r.textContent = _roleText;
       if (!isSlash && !isCompacted && replyModels.requestedModel && resolvedModel && !sameModelName(replyModels.requestedModel, resolvedModel)) {
         r.title = replyModels.requestedModel + ' -> ' + resolvedModel;
       }
@@ -2241,7 +2263,7 @@ export function addMessage(role, content, modelName, metadata) {
       }
     }
 
-    wrap.appendChild(r);
+    if (r) wrap.appendChild(r);
     wrap.appendChild(b);
 
     // Add stopped indicator + continue button for messages that were stopped by user
@@ -2388,12 +2410,10 @@ export function addMessage(role, content, modelName, metadata) {
       wrap.appendChild(createMsgFooter(wrap));
       if (metadata) displayMetrics(wrap, metadata);
     } else {
-      // Add timestamp to user header (like AI messages)
-      r.appendChild(roleTimestamp(metadata?.timestamp));
-
       wrap.appendChild(createUserMsgFooter(wrap));
     }
 
+    _injectAvatar(wrap);
     box.appendChild(wrap);
 
     // TTS is now part of the msg-actions system

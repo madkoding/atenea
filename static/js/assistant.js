@@ -178,6 +178,16 @@ function _renderSettingsBody(body, data, tzList) {
         <input type="text" id="assistant-name" value="${_esc(crew.name)}" placeholder="Assistant" />
       </label>
       <div class="assistant-field">
+        <span>Avatar</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <img id="assistant-avatar-preview" style="width:36px;height:36px;border-radius:50%;object-fit:cover;background:color-mix(in srgb, var(--fg) 10%, transparent);flex-shrink:0;${crew.avatar ? '' : 'display:none;'}" src="${_esc(crew.avatar || '')}" />
+          <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+            <input type="file" id="assistant-avatar-file" accept="image/png,image/jpeg,image/gif,image/webp" style="font-size:11px;" />
+            <input type="text" id="assistant-avatar-url" value="${_esc(crew.avatar || '')}" placeholder="or paste image URL" style="padding:4px 6px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--fg);font-family:inherit;font-size:11px;" />
+          </div>
+        </div>
+      </div>
+      <div class="assistant-field">
         <span style="display:flex;align-items:center;gap:8px;">Personality
           <select id="assistant-character-pick" style="font-size:11px;padding:1px 6px;border:1px solid var(--border);border-radius:3px;background:var(--bg);color:var(--fg);max-width:180px;">
             <option value="">-- pick from persona --</option>
@@ -337,13 +347,41 @@ function _renderSettingsBody(body, data, tzList) {
     });
   }
 
+  // ── Avatar file picker ──
+  const avatarFile = body.querySelector('#assistant-avatar-file');
+  const avatarUrl = body.querySelector('#assistant-avatar-url');
+  const avatarPreview = body.querySelector('#assistant-avatar-preview');
+  if (avatarFile && avatarUrl) {
+    avatarFile.addEventListener('change', () => {
+      const file = avatarFile.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) { uiModule.showToast('File too large (max 2 MB)'); return; }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        avatarUrl.value = e.target.result;
+        if (avatarPreview) { avatarPreview.src = e.target.result; avatarPreview.style.display = ''; }
+      };
+      reader.readAsDataURL(file);
+    });
+    avatarUrl.addEventListener('input', () => {
+      if (avatarPreview && avatarUrl.value.trim()) {
+        avatarPreview.src = avatarUrl.value.trim();
+        avatarPreview.style.display = '';
+      } else if (avatarPreview) {
+        avatarPreview.style.display = 'none';
+      }
+    });
+  }
+
   // ── Event wiring ──
   body.querySelector('#assistant-settings-cancel').addEventListener('click', _closeModal);
   body.querySelector('#assistant-settings-save').addEventListener('click', async () => {
     const selectedTools = [];
     body.querySelectorAll('.assistant-tool-cb:checked').forEach(cb => selectedTools.push(cb.value));
+    const avatarVal = (body.querySelector('#assistant-avatar-url')?.value || '').trim();
     const payload = {
       name: body.querySelector('#assistant-name').value.trim(),
+      avatar: avatarVal || null,
       personality: body.querySelector('#assistant-personality').value,
       timezone: body.querySelector('#assistant-timezone').value || null,
       model: body.querySelector('#assistant-model').value || null,
@@ -359,6 +397,8 @@ function _renderSettingsBody(body, data, tzList) {
     };
     try {
       await _saveSettings(payload);
+      window._assistantAvatar = payload.avatar || '';
+      if (window._updateAvatars) window._updateAvatars();
       uiModule.showToast('Assistant settings saved');
       _closeModal();
     } catch (e) {

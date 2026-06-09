@@ -23,6 +23,7 @@ import memoryModule from './js/memory.js';
 import voiceRecorderModule from './js/voiceRecorder.js';
 import censorModule from './js/censor.js';
 import galleryModule from './js/gallery.js';
+import imagesModule from './js/images.js';
 import tasksModule from './js/tasks.js';
 import calendarModule from './js/calendar.js';
 import notesModule from './js/notes.js';
@@ -864,6 +865,18 @@ function initializeEventListeners() {
     });
   }
 
+  // Images tool button
+  const toolImagesBtn = el('tool-images-btn');
+  if (toolImagesBtn) {
+    toolImagesBtn.addEventListener('click', async () => {
+      if (!imagesModule) return;
+      const Modals = await import('./js/modalManager.js');
+      if (!Modals.toggle('images-modal')) {
+        imagesModule.isImagesOpen() ? imagesModule.closeImages() : imagesModule.openImages();
+      }
+    });
+  }
+
   // Gallery tool button
   const toolGalleryBtn = el('tool-gallery-btn');
   if (toolGalleryBtn) {
@@ -1043,6 +1056,7 @@ function initializeEventListeners() {
       setTimeout(_goFullscreen, 200);
     },
     '/memory':   () => document.getElementById('tool-memory-btn')?.click(),
+    '/images':   () => document.getElementById('tool-images-btn')?.click(),
     '/gallery':  () => document.getElementById('tool-gallery-btn')?.click(),
     '/tasks':    () => document.getElementById('tool-tasks-btn')?.click(),
     '/library':  () => sessionModule && sessionModule.openLibrary && sessionModule.openLibrary(),
@@ -1129,11 +1143,73 @@ function initializeEventListeners() {
     userBarAdmin.addEventListener('click', () => adminModule.open());
   }
 
+  // Initialize avatar globals before async fetches
+  window._userAvatar = '';
+  window._assistantAvatar = '';
+
+  function _updateAvatars() {
+    const box = document.getElementById('chat-history');
+    if (!box) return;
+    const userUrl = window._userAvatar || '';
+    const aiUrl = window._assistantAvatar || '';
+    box.querySelectorAll('.msg-avatar').forEach(av => {
+      const isUser = av.closest('.msg-user');
+      const url = isUser ? userUrl : aiUrl;
+      const existingImg = av.querySelector('img');
+      if (url) {
+        if (existingImg) {
+          existingImg.src = url;
+        } else {
+          av.textContent = '';
+          const img = document.createElement('img');
+          img.src = url;
+          img.alt = '';
+          img.draggable = false;
+          av.appendChild(img);
+        }
+      } else {
+        if (!existingImg) return;
+        av.innerHTML = '';
+        const role = isUser ? 'user' : 'assistant';
+        av.textContent = role === 'user' ? 'U' : 'A';
+      }
+    });
+  }
+  window._updateAvatars = _updateAvatars;
+
+  // Observe chat-history for messages created outside addMessage
+  const _avatarObserver = new MutationObserver((muts) => {
+    for (const mut of muts) {
+      for (const n of mut.addedNodes) {
+        if (n.nodeType === 1) {
+          if (n.classList && (n.classList.contains('msg-ai') || n.classList.contains('msg-user'))) {
+            if (window._injectAvatar) window._injectAvatar(n);
+          }
+          n.querySelectorAll?.('.msg-ai, .msg-user').forEach(el => {
+            if (window._injectAvatar && !el.querySelector('.msg-avatar')) window._injectAvatar(el);
+          });
+        }
+      }
+    }
+  });
+  const _box = document.getElementById('chat-history');
+  if (_box) {
+    _avatarObserver.observe(_box, { childList: true, subtree: false });
+    // Inject into existing messages
+    _box.querySelectorAll('.msg-ai, .msg-user').forEach(el => {
+      if (window._injectAvatar) window._injectAvatar(el);
+    });
+  }
+  window._avatarObserver = _avatarObserver;
+
   // Fetch auth status — populate user bar and show admin button if admin
   fetch(`${API_BASE}/api/auth/status`, { credentials: 'same-origin' })
     .then(r => r.json())
     .then(d => {
       window._isAdmin = !!d.is_admin;
+      window._username = d.username || '';
+      window._userAvatar = d.avatar || '';
+      _updateAvatars();
       if (d.is_admin && userBarAdmin) userBarAdmin.style.display = '';
       const userBarName = el('user-bar-name');
       const userBarAvatar = el('user-bar-avatar');
@@ -1146,7 +1222,13 @@ function initializeEventListeners() {
           displayName = local.charAt(0) + '•••@••••' + ext;
         }
         userBarName.textContent = displayName;
-        if (userBarAvatar) userBarAvatar.textContent = d.username.charAt(0).toUpperCase();
+        if (userBarAvatar) {
+          if (d.avatar) {
+            userBarAvatar.innerHTML = `<img src="${uiModule.esc(d.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`;
+          } else {
+            userBarAvatar.textContent = d.username.charAt(0).toUpperCase();
+          }
+        }
       }
       // Apply per-user privilege restrictions
       if (d.privileges) {
@@ -1184,6 +1266,17 @@ function initializeEventListeners() {
           if (imgBtn) imgBtn.style.display = 'none';
         }
       }
+    })
+    .catch(() => {});
+
+  // Load assistant avatar
+  fetch('/api/assistant/settings', { credentials: 'same-origin' })
+    .then(r => r.json())
+    .then(data => {
+      if (data?.crew?.avatar) {
+        window._assistantAvatar = data.crew.avatar;
+      }
+      _updateAvatars();
     })
     .catch(() => {});
 
@@ -1338,6 +1431,7 @@ function initializeEventListeners() {
         web_search:      ['web-toggle-btn'],
         deep_research:   ['research-toggle-btn', 'tool-research-btn', 'overflow-research-btn', 'rail-research'],
         document_editor: ['overflow-doc-btn', 'rail-documents'],
+        images:          ['tool-images-btn', 'rail-images'],
         gallery:         ['tool-gallery-btn', 'rail-gallery'],
       };
       Object.entries(map).forEach(([key, ids]) => {
@@ -2490,6 +2584,7 @@ function initializeEventListeners() {
     'tool-compare':        '#tool-compare-btn',
     'tool-cookbook':       '#tool-cookbook-btn',
     'tool-research':       '#tool-research-btn',
+    'tool-images':         '#tool-images-btn',
     'tool-gallery':        '#tool-gallery-btn',
     'tool-library':        '#tool-library-btn',
     'tool-memory':         '#tool-memory-btn',
@@ -2824,7 +2919,7 @@ function initializeEventListeners() {
     // custom-preset-modal (the Prompt window) is handled by the new
     // modalManager dock (registered in _AUTO_WIRE), so the legacy dock must
     // not also inject a `_`/chip for it.
-    const SKIP_IDS = new Set(['styled-confirm-overlay', 'custom-preset-modal']);
+    const SKIP_IDS = new Set(['styled-confirm-overlay', 'custom-preset-modal', 'images-modal']);
     const dockEntries = new Map(); // modal element -> dock entry element
 
     let dock = document.getElementById('modal-dock');
@@ -3505,6 +3600,7 @@ function startOdysseusApp() {
     'rail-research':  'tool-research-btn',
     'rail-cookbook':   'tool-cookbook-btn',
     'rail-archive':   'tool-library-btn',
+    'rail-images':    'tool-images-btn',
     'rail-gallery':   'tool-gallery-btn',
     'rail-tasks':     'tool-tasks-btn',
     'rail-calendar':  'tool-calendar-btn',

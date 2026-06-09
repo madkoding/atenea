@@ -46,9 +46,12 @@ async function loadUsers() {
       const header = document.createElement('div');
       header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;';
       const initial = u.username.charAt(0).toUpperCase();
+      const avatarHtml = u.avatar
+        ? `<img src="${esc(u.avatar)}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;" />`
+        : `<div style="width:28px;height:28px;border-radius:50%;background:color-mix(in srgb, var(--accent) 20%, var(--panel));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;color:var(--accent);">${esc(initial)}</div>`;
       header.innerHTML = `
         <div class="admin-user-info">
-          <div style="width:28px;height:28px;border-radius:50%;background:color-mix(in srgb, var(--accent) 20%, var(--panel));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;color:var(--accent);">${esc(initial)}</div>
+          ${avatarHtml}
           <div>
             <span class="admin-user-name">${esc(u.username)}</span>
             ${u.is_admin ? '<span class="admin-badge" style="margin-left:6px;">ADMIN</span>' : '<span style="font-size:10px;opacity:0.4;display:block;">Click to manage privileges</span>'}

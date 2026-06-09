@@ -4014,6 +4014,45 @@ async def do_list_cached_models(content: str, owner: Optional[str] = None) -> Di
 
 # ── Gallery tools ──
 
+async def do_generate_images(content: str, owner: Optional[str] = None) -> Dict:
+    """Generate an image via A1111 txt2img API."""
+    import httpx
+    try:
+        args = _parse_tool_args(content)
+    except ValueError:
+        return {"error": "Invalid JSON arguments", "exit_code": 1}
+    prompt = (args.get("prompt") or "").strip()
+    if not prompt:
+        return {"error": "prompt is required", "exit_code": 1}
+    payload = {
+        "prompt": prompt,
+        "width": args.get("width", 1024),
+        "height": args.get("height", 768),
+        "negative_prompt": (args.get("negative_prompt") or "").strip(),
+        "steps": args.get("steps", 20),
+        "cfg_scale": args.get("cfg_scale", 7),
+        "sampler_name": args.get("sampler_name", "Euler a"),
+    }
+    try:
+        async with httpx.AsyncClient(timeout=300) as client:
+            resp = await client.post(f"{_INTERNAL_BASE}/api/images/generate", json=payload)
+            if resp.status_code != 200:
+                err = resp.json().get("detail", resp.text[:300])
+                return {"error": f"Image generation failed: {err}", "exit_code": 1}
+            data = resp.json()
+            return {
+                "output": f"Generated image: {data['image_url']}\nPrompt: {data['prompt']}\nSize: {data['width']}x{data['height']}",
+                "image_url": data["image_url"],
+                "image_prompt": data["prompt"],
+                "image_size": f"{data['width']}x{data['height']}",
+                "exit_code": 0,
+            }
+    except httpx.ConnectError:
+        return {"error": "Cannot reach A1111. Is the container running and a1111_enabled=true?", "exit_code": 1}
+    except Exception as e:
+        return {"error": str(e), "exit_code": 1}
+
+
 async def do_edit_image(content: str, owner: Optional[str] = None) -> Dict:
     """Edit a gallery image (upscale, rembg, inpaint, harmonize)."""
     import httpx

@@ -626,6 +626,10 @@ app.include_router(setup_signature_routes())
 from routes.gallery_routes import setup_gallery_routes
 app.include_router(setup_gallery_routes())
 
+# A1111 Image Generation
+from routes.image_routes import setup_image_routes
+app.include_router(setup_image_routes())
+
 # Persisted image-editor drafts (server-backed projects)
 from routes.editor_draft_routes import setup_editor_draft_routes
 app.include_router(setup_editor_draft_routes())

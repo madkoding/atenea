@@ -216,6 +216,7 @@ class AuthManager:
                 "created": time.time(),
                 "is_admin": is_admin,
                 "privileges": dict(ADMIN_PRIVILEGES if is_admin else DEFAULT_PRIVILEGES),
+                "avatar": None,
             }
             self._save()
         logger.info(f"Created user '{username}' (admin={is_admin})")
@@ -306,7 +307,7 @@ class AuthManager:
 
     def list_users(self) -> List[Dict[str, Any]]:
         return [
-            {"username": u, "is_admin": d.get("is_admin", False), "privileges": self.get_privileges(u)}
+            {"username": u, "is_admin": d.get("is_admin", False), "privileges": self.get_privileges(u), "avatar": d.get("avatar", None)}
             for u, d in self.users.items()
         ]
 
@@ -542,7 +543,17 @@ class AuthManager:
             "authenticated": authenticated,
             "username": username,
             "is_admin": self.is_admin(username) if username else False,
+            "avatar": self.users.get(username, {}).get("avatar", None) if username else None,
         }
         if authenticated:
             result["privileges"] = self.get_privileges(username)
         return result
+
+    def set_avatar(self, username: str, avatar: Optional[str]) -> bool:
+        username = username.strip().lower()
+        with self._config_lock:
+            if username not in self.users:
+                return False
+            self._config["users"][username]["avatar"] = avatar
+            self._save()
+        return True

@@ -67,6 +67,9 @@ class DeleteUserRequest(BaseModel):
 class RenameUserRequest(BaseModel):
     username: str
 
+class UpdateAvatarRequest(BaseModel):
+    avatar: Optional[str] = None
+
 class SetOpenRegistrationRequest(BaseModel):
     enabled: bool
 
@@ -393,6 +396,16 @@ def setup_auth_routes(auth_manager: AuthManager) -> APIRouter:
         except Exception:
             pass
         return {"ok": True}
+
+    @router.patch("/avatar")
+    async def update_avatar(body: UpdateAvatarRequest, request: Request):
+        user = _get_current_user(request)
+        if not user:
+            raise HTTPException(401, "Not authenticated")
+        ok = auth_manager.set_avatar(user, body.avatar)
+        if not ok:
+            raise HTTPException(400, "Failed to update avatar")
+        return {"ok": True, "avatar": body.avatar}
 
     # ---- Feature visibility (admin-managed) ----
 

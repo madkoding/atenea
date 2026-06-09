@@ -985,6 +985,26 @@ FUNCTION_TOOL_SCHEMAS = [
     {
         "type": "function",
         "function": {
+            "name": "images",
+            "description": "Generate an image using A1111 Stable Diffusion WebUI. Provide a prompt and optional width/height. Uses the configured A1111 API endpoint.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "prompt": {"type": "string", "description": "Image description prompt (required)"},
+                    "width": {"type": "integer", "description": "Image width in pixels (default: 1024)"},
+                    "height": {"type": "integer", "description": "Image height in pixels (default: 768)"},
+                    "negative_prompt": {"type": "string", "description": "Things to exclude from the image"},
+                    "steps": {"type": "integer", "description": "Sampling steps (default: 20)"},
+                    "cfg_scale": {"type": "number", "description": "CFG scale (default: 7)"},
+                    "sampler_name": {"type": "string", "description": "Sampler (default: Euler a)"},
+                },
+                "required": ["prompt"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "trigger_research",
             "description": "Start a deep research task on a topic. Returns a task ID for tracking.",
             "parameters": {

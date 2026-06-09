@@ -2010,7 +2010,149 @@ function initAccount() {
         const initial = (d.username || '?')[0].toUpperCase();
         avatarEl.textContent = initial;
       }
+      window._username = d.username || '';
+      // Set avatar preview
+      const preview = el('settings-account-avatar-preview');
+      if (preview) {
+        if (d.avatar) {
+          preview.src = d.avatar;
+          preview.style.display = '';
+        } else {
+          preview.style.display = 'none';
+        }
+      }
+      window._userAvatar = d.avatar || '';
     }).catch(() => {});
+
+  // Avatar save
+  const avatarSaveBtn = el('settings-avatar-save');
+  if (avatarSaveBtn) {
+    const fileInput = el('settings-avatar-file');
+    const urlInput = el('settings-avatar-url');
+    const preview = el('settings-account-avatar-preview');
+    const msgEl = el('settings-avatar-msg');
+
+    // File picker preview
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        msgEl.textContent = 'File too large (max 2 MB)';
+        msgEl.style.color = 'var(--red)';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        urlInput.value = e.target.result;
+        if (preview) { preview.src = e.target.result; preview.style.display = ''; }
+        msgEl.textContent = '';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // URL input preview
+    urlInput.addEventListener('input', () => {
+      const val = urlInput.value.trim();
+      if (preview && val) { preview.src = val; preview.style.display = ''; }
+      else if (preview && !val) preview.style.display = 'none';
+    });
+
+    avatarSaveBtn.addEventListener('click', async () => {
+      const avatarVal = urlInput.value.trim() || '';
+      msgEl.textContent = '';
+      msgEl.style.color = '';
+      avatarSaveBtn.disabled = true;
+      try {
+        const res = await fetch('/api/auth/avatar', {
+          method: 'PATCH', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ avatar: avatarVal || null }),
+        });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Failed'); }
+        msgEl.textContent = 'Avatar saved';
+        msgEl.style.color = 'var(--green)';
+        window._userAvatar = avatarVal;
+        if (window._updateAvatars) window._updateAvatars();
+        // Update sidebar avatar
+        const barAvatar = el('user-bar-avatar');
+        if (barAvatar) {
+          if (avatarVal) {
+            barAvatar.innerHTML = `<img src="${esc(avatarVal)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`;
+          } else {
+            const initial = ((window._username || '?')[0] || '?').toUpperCase();
+            barAvatar.textContent = initial;
+            barAvatar.innerHTML = initial;
+          }
+        }
+      } catch (e) {
+        msgEl.textContent = e.message;
+        msgEl.style.color = 'var(--red)';
+      } finally {
+        avatarSaveBtn.disabled = false;
+      }
+    });
+  }
+
+  // ── AI Assistant Avatar ──
+  const aiAvatarSaveBtn = el('settings-ai-avatar-save');
+  if (aiAvatarSaveBtn) {
+    const aiFileInput = el('settings-ai-avatar-file');
+    const aiUrlInput = el('settings-ai-avatar-url');
+    const aiPreview = el('settings-ai-avatar-preview');
+    const aiMsgEl = el('settings-ai-avatar-msg');
+
+    // Load current AI avatar
+    fetch('/api/assistant/settings', { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(data => {
+        const avatar = data?.crew?.avatar || '';
+        if (aiUrlInput) aiUrlInput.value = avatar;
+        if (aiPreview && avatar) { aiPreview.src = avatar; aiPreview.style.display = ''; }
+      }).catch(() => {});
+
+    aiFileInput.addEventListener('change', () => {
+      const file = aiFileInput.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) { aiMsgEl.textContent = 'File too large (max 2 MB)'; aiMsgEl.style.color = 'var(--red)'; return; }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        aiUrlInput.value = e.target.result;
+        if (aiPreview) { aiPreview.src = e.target.result; aiPreview.style.display = ''; }
+        aiMsgEl.textContent = '';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    aiUrlInput.addEventListener('input', () => {
+      const val = aiUrlInput.value.trim();
+      if (aiPreview && val) { aiPreview.src = val; aiPreview.style.display = ''; }
+      else if (aiPreview && !val) aiPreview.style.display = 'none';
+    });
+
+    aiAvatarSaveBtn.addEventListener('click', async () => {
+      const avatarVal = aiUrlInput.value.trim() || '';
+      aiMsgEl.textContent = '';
+      aiMsgEl.style.color = '';
+      aiAvatarSaveBtn.disabled = true;
+      try {
+        const res = await fetch('/api/assistant/settings', {
+          method: 'PATCH', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ avatar: avatarVal || null }),
+        });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Failed'); }
+        aiMsgEl.textContent = 'AI avatar saved';
+        aiMsgEl.style.color = 'var(--green)';
+        window._assistantAvatar = avatarVal;
+        if (window._updateAvatars) window._updateAvatars();
+      } catch (e) {
+        aiMsgEl.textContent = e.message;
+        aiMsgEl.style.color = 'var(--red)';
+      } finally {
+        aiAvatarSaveBtn.disabled = false;
+      }
+    });
+  }
 
   // Change password
   const saveBtn = el('settings-pw-save');

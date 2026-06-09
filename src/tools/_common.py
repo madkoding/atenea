@@ -40,7 +40,7 @@ TOOL_TAGS = {
     "search_hf_models", "list_cached_models",
     "list_serve_presets", "serve_preset", "adopt_served_model",
     "list_cookbook_servers",
-    "edit_image", "trigger_research", "manage_research",
+    "edit_image", "images", "trigger_research", "manage_research",
     "app_api",
 }
 

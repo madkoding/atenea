@@ -29,6 +29,9 @@ DEFAULT_SETTINGS = {
     "image_gen_enabled": True,
     "image_model": "",
     "image_quality": "medium",
+    "a1111_enabled": False,
+    "a1111_api_base": "http://a1111:7860",
+    "a1111_defaults": {"steps": 20, "cfg_scale": 7, "sampler_name": "Euler a"},
     "vision_model": "",
     "vision_enabled": True,
     # Ordered fallback chain for the Vision model (image analysis, OCR, tagging).
@@ -237,6 +240,7 @@ def is_setting_overridden(key: str) -> bool:
 _PER_USER_KEYS = {
     "vision_model", "vision_enabled", "vision_model_fallbacks",
     "image_model", "image_gen_enabled", "image_quality",
+    "a1111_enabled", "a1111_api_base", "a1111_defaults",
     # Default chat endpoint / model — without per-user resolution every new
     # account inherited whatever the most-recent admin picked, which then
     # got injected into the chat composer on first open.

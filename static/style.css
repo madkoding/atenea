@@ -2010,6 +2010,7 @@ pre, code, .markdown-code, .message-content pre, .message-content code {
       width: fit-content;
       max-width: 85%;
       min-width: 80px;
+      min-height: 72px;
       border-radius: 12px;
       padding: 10px 12px;
       line-height: 1.4;
@@ -2041,7 +2042,7 @@ pre, code, .markdown-code, .message-content pre, .message-content code {
       border: 1px solid var(--bubble-border, var(--border));
       border-radius: 18px 18px 18px 0;
       align-self: flex-start;
-      width: 85%;
+      width: fit-content;
       max-width: 85%;
       min-width: 80px;
       word-wrap: break-word;
@@ -2071,21 +2072,30 @@ pre, code, .markdown-code, .message-content pre, .message-content code {
     .role-provider-logo { display: inline-flex; align-items: center; flex-shrink: 0; }
     .role-provider-logo svg { width: 12px; height: 12px; }
     .msg-user .role {
+      padding-right: 68px;
       color: color-mix(in srgb, var(--fg) 60%, transparent);
     }
     .msg-user .role::before {
       background: color-mix(in srgb, var(--fg) 40%, transparent);
     }
+    .msg-ai .role {
+      padding-left: 68px;
+    }
     .msg .body {
-      width: 100%;
+      width: auto;
       white-space: normal;
       word-break: break-word;
       overflow-wrap: anywhere;
       line-height: 1.5;
       font-size: 0.95em;
       margin: 0;
+      padding: 0 0 0 68px;
       overflow: hidden;
+      border-radius: inherit;
       max-width: 100%;
+    }
+    .msg-user .body {
+      padding: 0 68px 0 0;
     }
     .msg .body > * {
       margin-top: 8px;
@@ -2105,6 +2115,47 @@ pre, code, .markdown-code, .message-content pre, .message-content code {
     }
     .msg-ai .body {
       color: var(--fg);
+    }
+    .msg-avatar {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: color-mix(in srgb, var(--fg) 8%, var(--bg));
+      overflow: hidden;
+      user-select: none;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--fg);
+      z-index: 2;
+    }
+    .msg-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+    .msg-ai .msg-avatar {
+      left: 8px;
+      top: 8px;
+    }
+    .msg-user .msg-avatar {
+      right: 8px;
+      top: 8px;
+    }
+    .msg-ai .role,
+    .msg-ai .body,
+    .msg-ai .msg-footer,
+    .msg-user .role,
+    .msg-user .body,
+    .msg-user .msg-footer {
+      position: relative;
+      z-index: 1;
     }
     .rag-sources {
       margin-top: 12px;
