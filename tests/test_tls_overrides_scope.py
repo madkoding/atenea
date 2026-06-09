@@ -1,4 +1,4 @@
-"""Scope tests for src/tls_overrides.
+"""Scope tests for src/security/tls_overrides.
 
 #722 / PR #769 added an opt-in extra CA bundle (LLM_CA_BUNDLE) for
 private-CA LLM providers. The whole point is that the override stays
@@ -52,7 +52,7 @@ def _grep_files(pattern: str) -> set[str]:
         rel = path.relative_to(REPO).as_posix()
         if rel.startswith("tests/"):
             continue
-        if rel == "src/tls_overrides.py":  # definition site, not a caller
+        if rel == "src/security/tls_overrides.py":  # definition site, not a caller
             continue
         if rel.startswith(".claude/") or "/.claude/" in rel:
             continue
@@ -90,7 +90,7 @@ def test_llm_verify_only_used_in_allowlisted_files():
 
 
 def test_tls_overrides_does_not_weaken_global_tls():
-    """src/tls_overrides must never reach for a TLS-weakening knob.
+    """src/security/tls_overrides must never reach for a TLS-weakening knob.
 
     Several common ways to silently weaken TLS in Python:
       - ssl._create_default_https_context = ssl._create_unverified_context
@@ -104,7 +104,7 @@ def test_tls_overrides_does_not_weaken_global_tls():
     bundle into an ssl.SSLContext built on top of the system default. It
     must never silently disable verification.
     """
-    body = (REPO / "src" / "tls_overrides.py").read_text(encoding="utf-8")
+    body = (REPO / "src" / "security" / "tls_overrides.py").read_text(encoding="utf-8")
     forbidden = [
         r"_create_default_https_context\s*=",
         r"_create_unverified_context",
@@ -113,7 +113,7 @@ def test_tls_overrides_does_not_weaken_global_tls():
     ]
     for pat in forbidden:
         assert not re.search(pat, body), (
-            f"src/tls_overrides.py contains forbidden pattern {pat!r}. "
+            f"src/security/tls_overrides.py contains forbidden pattern {pat!r}. "
             "The extra CA bundle must only ADD trust, never weaken it."
         )
 

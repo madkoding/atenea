@@ -130,13 +130,14 @@ def clear_fake_endpoint_resolver_modules(*extra_modules):
     family already applies.
     """
     parent = sys.modules.get("src")
-    attr = getattr(parent, "endpoint_resolver", None) if parent is not None else None
+    runtime = getattr(parent, "runtime", None) if parent is not None else None
+    attr = getattr(runtime, "endpoint_resolver", None) if runtime is not None else None
     mod = sys.modules.get("src.runtime.endpoint_resolver") or attr
     if mod is None or getattr(mod, "__file__", None):
         return
     sys.modules.pop("src.runtime.endpoint_resolver", None)
-    if parent is not None and attr is mod:
-        delattr(parent, "endpoint_resolver")
+    if runtime is not None and attr is mod:
+        delattr(runtime, "endpoint_resolver")
     clear_module("routes.model_routes")
     for name in extra_modules:
         clear_module(name)

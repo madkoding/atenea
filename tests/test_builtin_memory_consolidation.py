@@ -30,7 +30,7 @@ def _read_memories(data_dir):
 async def test_consolidate_memory_empty_owner_treats_each_owner_separately(monkeypatch, tmp_path):
     import src.constants as constants
     import src.runtime.endpoint_resolver as endpoint_resolver
-    from src.llm_core import llm_core
+    import src.llm_core as llm_core
     action_consolidate_memory = _import_consolidate_action()
 
     long_alice_text = "Alice private project context. " + ("A" * 2200)

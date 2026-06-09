@@ -16,6 +16,7 @@ services:
     ports:
       - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7000}:7000"
     volumes:
+      - ./static:/app/static:z
       - ./data:/app/data:z
       - ./logs:/app/logs:z
       # Cookbook remote-server SSH identity. Odysseus can generate a key here;

@@ -12,6 +12,7 @@ app, not here, consistent with how this project tests browser-coupled code.
 
 import shutil
 import subprocess
+import os
 from pathlib import Path
 
 import pytest
@@ -25,14 +26,20 @@ def test_streaming_segmenter_suite():
     test_files = sorted(str(p) for p in (_REPO / "tests" / "streaming").glob("*.test.mjs"))
     assert test_files, "no streaming test files found"
 
-    result = subprocess.run(
-        ["node", "--test", *test_files],
-        cwd=_REPO,
-        capture_output=True,
-        timeout=180,
-        text=True,
-    )
-    if result.returncode != 0:
-        raise AssertionError(
-            f"node --test failed:\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+    for test_file in test_files:
+        env = dict(os.environ)
+        node_opts = env.get("NODE_OPTIONS", "").strip()
+        env["NODE_OPTIONS"] = (node_opts + " --jitless").strip() if node_opts else "--jitless"
+        result = subprocess.run(
+            ["node", "--test", "--test-concurrency=1", test_file],
+            cwd=_REPO,
+            env=env,
+            capture_output=True,
+            timeout=180,
+            text=True,
         )
+        if result.returncode != 0:
+            raise AssertionError(
+                f"node --test failed for {test_file}:\n"
+                f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+            )
