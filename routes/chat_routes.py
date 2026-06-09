@@ -440,24 +440,34 @@ def setup_chat_routes(
         _set_user_time_from_request(request)
 
         form_data = await request.form()
-        message = form_data.get("message")
-        session = form_data.get("session")
-        attachments = form_data.get("attachments")
-        use_web = form_data.get("use_web")
-        use_research = form_data.get("use_research")
-        time_filter = form_data.get("time_filter")
-        preset_id = form_data.get("preset_id")
-        allow_bash = form_data.get("allow_bash")
-        allow_web_search = form_data.get("allow_web_search")
-        use_rag = form_data.get("use_rag")
-        search_context = form_data.get("search_context")  # pre-fetched web search results (compare mode)
-        compare_mode = str(form_data.get("compare_mode", "")).lower() == "true"
-        incognito = str(form_data.get("incognito", "")).lower() == "true"
-        plan_mode = str(form_data.get("plan_mode", "")).lower() == "true"
-        chat_mode = str(form_data.get("mode", "")).lower()  # 'chat' or 'agent'
+
+        # chat_stream accepts multipart/form-data and JSON payloads.
+        # Prefer form values when present, then fall back to parsed JSON body.
+        def _request_value(key: str, default: Any = None) -> Any:
+            if key in form_data:
+                return form_data.get(key)
+            if isinstance(body, dict):
+                return body.get(key, default)
+            return default
+
+        message = _request_value("message")
+        session = _request_value("session")
+        attachments = _request_value("attachments")
+        use_web = _request_value("use_web")
+        use_research = _request_value("use_research")
+        time_filter = _request_value("time_filter")
+        preset_id = _request_value("preset_id")
+        allow_bash = _request_value("allow_bash")
+        allow_web_search = _request_value("allow_web_search")
+        use_rag = _request_value("use_rag")
+        search_context = _request_value("search_context")  # pre-fetched web search results (compare mode)
+        compare_mode = str(_request_value("compare_mode", "")).lower() == "true"
+        incognito = str(_request_value("incognito", "")).lower() == "true"
+        plan_mode = str(_request_value("plan_mode", "")).lower() == "true"
+        chat_mode = str(_request_value("mode", "")).lower()  # 'chat' or 'agent'
         # Workspace: confine the agent's file/shell tools to this folder. Validate
         # it's a real directory; ignore (no confinement) otherwise.
-        workspace = (form_data.get("workspace") or "").strip()
+        workspace = (_request_value("workspace") or "").strip()
         if workspace:
             _ws_real = os.path.realpath(os.path.expanduser(workspace))
             workspace = _ws_real if os.path.isdir(_ws_real) else ""
@@ -471,7 +481,7 @@ def setup_chat_routes(
         # huge plan can't blow the prompt.
         approved_plan = ""
         if not plan_mode:
-            approved_plan = (form_data.get("approved_plan") or "").strip()[:8192]
+            approved_plan = (_request_value("approved_plan") or "").strip()[:8192]
         # Did the USER explicitly pick agent mode? (vs. us auto-escalating
         # below). Skill extraction should only learn from real agent sessions,
         # not chats we quietly promoted for a notes/calendar intent.
@@ -493,7 +503,7 @@ def setup_chat_routes(
                 _tool_intent.category,
                 _tool_intent.reason,
             )
-        active_doc_id = form_data.get("active_doc_id", "").strip()
+        active_doc_id = str(_request_value("active_doc_id", "")).strip()
         logger.info(f"[doc-inject] chat_mode={chat_mode}, active_doc_id={active_doc_id!r}")
 
         try:
@@ -559,7 +569,7 @@ def setup_chat_routes(
             except Exception:
                 pass
 
-        no_memory = str(form_data.get("no_memory", "")).lower() == "true"
+        no_memory = str(_request_value("no_memory", "")).lower() == "true"
         pre_context_tool_policy = build_effective_tool_policy(
             last_user_message=message,
         )
