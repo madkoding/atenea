@@ -9,7 +9,7 @@ def _load_cli(monkeypatch):
     personal_docs = types.ModuleType("src.personal.docs")
     personal_docs.PersonalDocsManager = MagicMock()
     monkeypatch.setitem(sys.modules, "src.personal.docs", personal_docs)
-    return load_script("odysseus-personal")
+    return load_script("atenea-personal")
 
 
 def test_file_rows_skips_invalid_rows(monkeypatch):

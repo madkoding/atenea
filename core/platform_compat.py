@@ -1,6 +1,6 @@
 """Cross-platform OS compatibility helpers.
 
-Odysseus began as a Linux/macOS/Docker-only app. This module centralizes the
+Atenea began as a Linux/macOS/Docker-only app. This module centralizes the
 small set of OS differences needed to run it *natively* on Windows so the rest
 of the codebase can stay platform-agnostic. Import from here instead of
 sprinkling ``os.name == "nt"`` checks (and POSIX-only calls) across modules.
@@ -230,7 +230,7 @@ def git_bash_path(path: str | Path) -> str:
 def find_bash() -> str | None:
     """Locate a real ``bash`` interpreter, or None.
 
-    On Windows this is typically Git Bash / WSL. Many Odysseus features (the
+    On Windows this is typically Git Bash / WSL. Many Atenea features (the
     agent ``bash`` tool, background jobs, Cookbook scripts) emit bash syntax, so
     when a bash is present we use it and keep full parity with POSIX. Result is
     cached.

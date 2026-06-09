@@ -77,7 +77,7 @@ def chatgpt_headers(access_token: str | None) -> dict[str, str]:
         "Accept": "application/json, text/event-stream",
         "Origin": "https://chatgpt.com",
         "Referer": "https://chatgpt.com/codex",
-        "User-Agent": "Odysseus ChatGPT Subscription",
+        "User-Agent": "Atenea ChatGPT Subscription",
     }
     if access_token:
         headers["Authorization"] = f"Bearer {access_token}"

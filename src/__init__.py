@@ -1,1 +1,1 @@
-"""Odysseus application package root."""
+"""Atenea application package root."""

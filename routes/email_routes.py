@@ -58,7 +58,7 @@ from routes.email_pollers import _start_poller
 
 logger = logging.getLogger(__name__)
 
-ODYSSEUS_MAIL_ORIGIN = "odysseus-ui"
+ATENEA_MAIL_ORIGIN = "atenea-ui"
 EMAIL_COMPOSE_UPLOAD_MAX_BYTES = 25 * 1024 * 1024
 
 
@@ -322,12 +322,12 @@ def _move_email_message(conn, uid: str, dest: str, role: str = "") -> bool:
     return False
 
 
-def _apply_odysseus_headers(msg, kind: str | None = None, ref_id: str | None = None):
-    msg["X-Odysseus-Origin"] = ODYSSEUS_MAIL_ORIGIN
+def _apply_atenea_headers(msg, kind: str | None = None, ref_id: str | None = None):
+    msg["X-Atenea-Origin"] = ATENEA_MAIL_ORIGIN
     if kind:
-        msg["X-Odysseus-Kind"] = re.sub(r"[^A-Za-z0-9_.-]", "-", kind)[:64]
+        msg["X-Atenea-Kind"] = re.sub(r"[^A-Za-z0-9_.-]", "-", kind)[:64]
     if ref_id:
-        msg["X-Odysseus-Ref"] = re.sub(r"[^A-Za-z0-9_.:-]", "-", ref_id)[:128]
+        msg["X-Atenea-Ref"] = re.sub(r"[^A-Za-z0-9_.:-]", "-", ref_id)[:128]
 
 
 def _envelope_recipients(*fields: str) -> list:
@@ -650,12 +650,12 @@ def setup_email_routes():
                 # All emails NOT marked as answered/done (read or unread).
                 status, data = _imap_uid_search(conn, f"(UNANSWERED{from_clause})")
             elif filter_ == "reminders":
-                # Prefer the Odysseus marker header, but include the subject
-                # fallback too. The fallback uses a distinct Odysseus prefix
+                # Prefer the Atenea marker header, but include the subject
+                # fallback too. The fallback uses a distinct Atenea prefix
                 # so ordinary emails containing "Reminder" don't get mixed in.
                 status, data = _imap_uid_search(
                     conn,
-                    f'(OR HEADER X-Odysseus-Kind "reminder" SUBJECT "Reminder (Odysseus):"{from_clause})',
+                    f'(OR HEADER X-Atenea-Kind "reminder" SUBJECT "Reminder (Atenea):"{from_clause})',
                 )
             elif filter_ == "pending_30d":
                 # "What's pending in the last month" — UNANSWERED + delivered
@@ -1756,13 +1756,13 @@ def setup_email_routes():
             logger.error(f"Failed to permanently delete email {uid}: {e}")
             return {"success": False, "error": "Mail operation failed"}
 
-    @router.delete("/odysseus/reminders")
-    async def delete_odysseus_reminder_emails(
+    @router.delete("/atenea/reminders")
+    async def delete_atenea_reminder_emails(
         account_id: str | None = Query(None),
         permanent: bool = Query(False),
         owner: str = Depends(require_owner),
     ):
-        """Delete email messages stamped as Odysseus reminders."""
+        """Delete email messages stamped as Atenea reminders."""
         if account_id:
             _assert_owns_account(account_id, owner)
         deleted = 0
@@ -1800,12 +1800,12 @@ def setup_email_routes():
                         # Match the Reminders filter: new messages have the
                         # explicit kind header, and subject fallback catches
                         # clients/providers that stripped custom headers.
-                        uids.update(_search_uids(conn, f'(HEADER X-Odysseus-Kind {_search_quote("reminder")})'))
-                        uids.update(_search_uids(conn, f'(SUBJECT {_search_quote("Reminder (Odysseus):")})'))
+                        uids.update(_search_uids(conn, f'(HEADER X-Atenea-Kind {_search_quote("reminder")})'))
+                        uids.update(_search_uids(conn, f'(SUBJECT {_search_quote("Reminder (Atenea):")})'))
                         for addr in own_addrs:
                             addr_q = _search_quote(addr)
-                            uids.update(_search_uids(conn, f'(FROM {addr_q} SUBJECT {_search_quote("Reminder (Odysseus):")})'))
-                            # Legacy reminders created before the Odysseus
+                            uids.update(_search_uids(conn, f'(FROM {addr_q} SUBJECT {_search_quote("Reminder (Atenea):")})'))
+                            # Legacy reminders created before the Atenea
                             # prefix still came from this mailbox as
                             # "Reminder: ..."; include them in Clear without
                             # sweeping unrelated external reminder emails.
@@ -1828,7 +1828,7 @@ def setup_email_routes():
             _invalidate_list_cache(account_id)
             return {"success": True, "deleted": deleted, "folders_checked": folders_checked}
         except Exception as e:
-            logger.error(f"delete_odysseus_reminder_emails failed: {e}")
+            logger.error(f"delete_atenea_reminder_emails failed: {e}")
             return {"success": False, "error": "Mail operation failed"}
 
     @router.post("/move/{uid}")
@@ -1928,7 +1928,7 @@ def setup_email_routes():
 
     async def _send_email_sync(
         to, cc, bcc, subject, body, in_reply_to, references, attachments,
-        account_id=None, owner="", odysseus_kind=None, odysseus_ref=None,
+        account_id=None, owner="", atenea_kind=None, atenea_ref=None,
     ):
         """Shared send logic used by both /send and scheduled delivery.
 
@@ -1952,7 +1952,7 @@ def setup_email_routes():
             outer["Cc"] = cc
         outer["Subject"] = subject or ""
         outer["Date"] = _utcnow_naive().strftime("%a, %d %b %Y %H:%M:%S +0000")
-        _apply_odysseus_headers(outer, odysseus_kind or "scheduled", odysseus_ref)
+        _apply_atenea_headers(outer, atenea_kind or "scheduled", atenea_ref)
         if in_reply_to:
             outer["In-Reply-To"] = in_reply_to
         if references:
@@ -2011,7 +2011,7 @@ def setup_email_routes():
             conn = sqlite3.connect(SCHEDULED_DB)
             conn.execute("""
                 INSERT INTO scheduled_emails
-                (id, to_addr, cc, bcc, subject, body, in_reply_to, references_hdr, attachments, send_at, created_at, status, account_id, odysseus_kind, owner)
+                (id, to_addr, cc, bcc, subject, body, in_reply_to, references_hdr, attachments, send_at, created_at, status, account_id, atenea_kind, owner)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
             """, (
                 sid,
@@ -2026,7 +2026,7 @@ def setup_email_routes():
                 send_at,
                 _utcnow_naive().isoformat(),
                 req.get("account_id") or None,
-                req.get("odysseus_kind") or "scheduled",
+                req.get("atenea_kind") or "scheduled",
                 owner or "",
             ))
             conn.commit()
@@ -2155,14 +2155,14 @@ def setup_email_routes():
             outer["Cc"] = req.cc
         outer["Subject"] = req.subject
         outer["Date"] = _utcnow_naive().strftime("%a, %d %b %Y %H:%M:%S +0000")
-        outer["Message-ID"] = email.utils.make_msgid(domain="odysseus.local")
+        outer["Message-ID"] = email.utils.make_msgid(domain="atenea.local")
 
         if req.in_reply_to:
             outer["In-Reply-To"] = req.in_reply_to
         if req.references:
             outer["References"] = req.references
-        if req.odysseus_kind:
-            _apply_odysseus_headers(outer, req.odysseus_kind)
+        if req.atenea_kind:
+            _apply_atenea_headers(outer, req.atenea_kind)
 
         # Plain + HTML body. Escape user content so a `<script>` or
         # `<img onerror=...>` paste in compose doesn't end up as live HTML

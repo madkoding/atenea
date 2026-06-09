@@ -131,7 +131,7 @@ def test_image_generate_http_success_returns_payload(monkeypatch, tmp_path):
         "a1111_enabled": True,
         "a1111_defaults": {},
         "a1111_api_base": "http://a1111:7860",
-        "app_public_url": "https://odysseus.example.com",
+        "app_public_url": "https://atenea.example.com",
     }
     _patch_common(monkeypatch, settings, tmp_path)
     monkeypatch.setattr(
@@ -156,4 +156,4 @@ def test_image_generate_http_success_returns_payload(monkeypatch, tmp_path):
     assert body["width"] == 640
     assert body["height"] == 480
     assert body["seed"] == 123
-    assert body["image_url"].startswith("https://odysseus.example.com/api/generated-image/")
+    assert body["image_url"].startswith("https://atenea.example.com/api/generated-image/")

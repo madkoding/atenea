@@ -20,7 +20,7 @@ class LLMConfig:
     # 0 = "do not set num_predict on the Ollama payload". Each Ollama
     # deployment configures its own response budget (typically via the
     # OLLAMA_NUM_PREDICT env var or the model's Modelfile ``num_predict``
-    # parameter). Odysseus does not pick a budget for the runtime.
+    # parameter). Atenea does not pick a budget for the runtime.
     DEFAULT_MAX_TOKENS = 0
     MAX_RETRIES = 3
     RETRY_DELAY = 0.5
@@ -295,9 +295,9 @@ def _normalize_ollama_url(url: str) -> str:
 
 
 def _ollama_normalize_tool_messages(messages: list[dict]) -> list[dict]:
-    """Adapt Odysseus' canonical OpenAI-style messages to native Ollama /api/chat.
+    """Adapt Atenea' canonical OpenAI-style messages to native Ollama /api/chat.
 
-    Odysseus carries assistant tool calls in the OpenAI shape, where
+    Atenea carries assistant tool calls in the OpenAI shape, where
     `function.arguments` is a JSON *string*. Native Ollama expects it to be a
     JSON *object*; given the string it fails the whole request with HTTP 400
     "Value looks like object, but can't find closing '}' symbol", which aborts
@@ -441,8 +441,8 @@ def _provider_headers(provider: str, headers: dict | None = None) -> dict[str, s
     if isinstance(headers, dict):
         h.update(headers)
     if provider == "openrouter":
-        h.setdefault("HTTP-Referer", "https://github.com/pewdiepie-archdaemon/odysseus")
-        h.setdefault("X-OpenRouter-Title", "Odysseus")
+        h.setdefault("HTTP-Referer", "https://github.com/pewdiepie-archdaemon/atenea")
+        h.setdefault("X-OpenRouter-Title", "Atenea")
     if provider == "copilot":
         # Ensure the Copilot-required headers are present even when the caller
         # didn't pass pre-built headers (e.g. model listing). build_headers()
@@ -801,7 +801,7 @@ def _as_content_blocks(content) -> list[dict]:
 
 
 def _sanitize_llm_messages(messages: list[dict]) -> list[dict]:
-    """Strip Odysseus-only metadata before sending messages to providers.
+    """Strip Atenea-only metadata before sending messages to providers.
 
     Per the OpenAI chat format: user/system messages must have content; a tool
     message needs content + tool_call_id; an assistant message may carry content,
