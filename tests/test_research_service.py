@@ -8,7 +8,6 @@ every successful research call).
 
 import asyncio
 
-import pytest
 
 from services.research.service import (
     ResearchService,

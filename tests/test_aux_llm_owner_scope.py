@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from tests.helpers.ast_check import assert_call_has_arg, assert_source_has
+from tests.helpers.ast_check import assert_call_has_arg, assert_source_does_not_have, assert_source_has
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -12,7 +12,7 @@ def test_registered_manual_compaction_uses_session_owner_for_utility_endpoint():
 
 def test_task_name_generation_uses_owner_scoped_session_endpoint():
     rp = ROOT / "routes/task_routes.py"
-    assert_source_has(rp, "async def _generate_task_name(prompt: str, owner: Optional[str] = None)")
+    assert_source_has(rp, "async def _generate_task_name(prompt: str, owner: str | None = None)")
     assert_source_has(rp, "q = q.filter(DbSession.owner == owner)")
     assert_source_has(rp, "headers = recent.headers or {}")
     assert_source_has(rp, "headers=headers")
@@ -23,7 +23,7 @@ def test_auto_compaction_utility_endpoint_keeps_chat_owner():
     helper_rp = ROOT / "routes/chat_helpers.py"
     compact_rp = ROOT / "src/chat/context_compactor.py"
     assert_source_has(helper_rp, "owner=user")
-    assert_source_has(compact_rp, "owner: Optional[str] = None")
+    assert_source_has(compact_rp, "owner: str | None = None")
     assert_call_has_arg(compact_rp, "resolve_endpoint", "owner")
 
 
@@ -47,6 +47,5 @@ def test_research_routes_fallbacks_are_owner_scoped():
     assert_call_has_arg(rp, "resolve_endpoint", "owner")
     assert_source_has(rp, "ep = _owned_enabled_endpoint(db, user)")
     # Verify no unowned endpoint fallback (no direct query without owner filter)
-    src = (ROOT / "routes/research_routes.py").read_text(encoding="utf-8")
-    assert "db.query(ModelEndpoint).filter(ModelEndpoint.is_enabled == True).first()" not in src
+    assert_source_does_not_have(rp, "db.query(ModelEndpoint).filter(ModelEndpoint.is_enabled == True).first()")
     assert_source_has(rp, 'getattr(sess, "owner", None) or None')

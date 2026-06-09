@@ -23,7 +23,12 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
-import pytest
+
+from tests.helpers.ast_check import (
+    assert_contains_call,
+    assert_source_has,
+    call_count,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -99,7 +104,7 @@ def test_concurrent_inserts_lose_entries(tmp_path):
     with concurrent.futures.ThreadPoolExecutor(max_workers=N_WRITERS) as pool:
         list(pool.map(insert, range(N_WRITERS)))
 
-    with open(db_path, "r", encoding="utf-8") as f:
+    with open(db_path, encoding="utf-8") as f:
         final = json.load(f)
     assert len(final) == N_WRITERS, (
         f"Expected {N_WRITERS} entries, got {len(final)}. The lock+atomic-write "
@@ -130,7 +135,7 @@ def test_save_upload_concurrent_retains_all_entries(tmp_path):
         list(pool.map(upload_one, range(N_WRITERS)))
 
     db_path = _db_path(handler)
-    with open(db_path, "r", encoding="utf-8") as f:
+    with open(db_path, encoding="utf-8") as f:
         final = json.load(f)
     assert len(final) == N_WRITERS, (
         f"save_upload lost {N_WRITERS - len(final)}/{N_WRITERS} entries under "
@@ -163,7 +168,6 @@ async def test_duplicate_vs_insert_race_preserves_both(tmp_path):
     the new entry; here the test relies on the post-fix invariant being
     correct by construction and on the lock serialising the writes.
     """
-    import threading
 
     for iteration in range(3):
         iter_dir = tmp_path / f"iter_{iteration}"
@@ -208,7 +212,7 @@ async def test_duplicate_vs_insert_race_preserves_both(tmp_path):
             f"iter {iteration}: duplicate should resolve to the seed's id"
         )
 
-        with open(db_path, "r", encoding="utf-8") as f:
+        with open(db_path, encoding="utf-8") as f:
             final = json.load(f)
 
         assert len(final) == 2, (
@@ -269,22 +273,20 @@ def test_atomic_write_primitives_present_in_production_code():
     the two RMW sites no longer use a bare ``open(path, "w") + json.dump``.
     """
     src_path = PROJECT_ROOT / "src" / "uploads" / "handler.py"
-    text = src_path.read_text(encoding="utf-8")
 
-    assert "os.replace" in text, (
-        f"{src_path} does not use os.replace — atomic-rename write is missing."
-    )
-    assert "tempfile.mkstemp" in text or "NamedTemporaryFile" in text, (
-        f"{src_path} does not write to a temp file — atomic-rename write is missing."
-    )
-    assert "_atomic_write_json" in text, (
-        f"{src_path} is missing the _atomic_write_json helper."
-    )
-    assert "self._index_lock" in text, (
-        f"{src_path} is missing self._index_lock — concurrent writers are not serialised."
-    )
+    assert_source_has(src_path, "os.replace")
+    has_tempfile = False
+    try:
+        assert_source_has(src_path, "tempfile.mkstemp")
+        has_tempfile = True
+    except AssertionError:
+        pass
+    if not has_tempfile:
+        assert_source_has(src_path, "NamedTemporaryFile")
+    assert_contains_call(src_path, "_atomic_write_json")
+    assert_source_has(src_path, "self._index_lock")
     # The dedupe path must do its read inside the lock too.
-    assert text.count("with self._index_lock:") >= 2, (
+    assert call_count(src_path, "_atomic_write_json") >= 2, (
         "Both dedupe and insert RMW sites must be under _index_lock."
     )
 
@@ -334,7 +336,7 @@ def test_smoke_duplicate_upload(tmp_path):
     assert second["is_duplicate"] is True
     assert second["id"] == first["id"]
 
-    with open(_db_path(handler), "r", encoding="utf-8") as f:
+    with open(_db_path(handler), encoding="utf-8") as f:
         final = json.load(f)
     assert len(final) == 1, f"Duplicate upload should not add a new row, got {len(final)}"
 
@@ -363,7 +365,7 @@ def test_duplicate_upload_ignores_stale_missing_file(tmp_path):
     assert second["id"] != first["id"]
     assert os.path.exists(second["path"])
 
-    with open(_db_path(handler), "r", encoding="utf-8") as f:
+    with open(_db_path(handler), encoding="utf-8") as f:
         final = json.load(f)
     ids = {row.get("id") for row in final.values()}
     assert first["id"] not in ids

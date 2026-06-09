@@ -8,10 +8,8 @@ Covers the five cases requested during PR review:
   5. Streaming agent path: reasoning tokens are NOT duplicated as normal answer text
 """
 import asyncio
-import json
 
 import httpx
-import pytest
 
 import src.llm_core as llm_core
 

@@ -1,6 +1,5 @@
 """Tests for topic keyword matching (src/topic_analyzer.py)."""
 from types import SimpleNamespace
-import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -11,7 +10,7 @@ clear_fake_database_modules()
 from core.database import Base, Session as DbSession, ChatMessage as DbChatMessage
 from core.session_manager import SessionManager
 from src.research.topic_analyzer import analyze_topics
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 
 def _sm(*messages):
@@ -59,15 +58,15 @@ def test_topic_analyzer_hydrates_sessions(monkeypatch):
         model="gpt-4",
         owner="alice",
         message_count=1,
-        created_at=datetime.now(timezone.utc).replace(tzinfo=None),
-        updated_at=datetime.now(timezone.utc).replace(tzinfo=None)
+        created_at=datetime.now(UTC).replace(tzinfo=None),
+        updated_at=datetime.now(UTC).replace(tzinfo=None)
     )
     m = DbChatMessage(
         id="msg-1",
         session_id=session_id,
         role="user",
         content="I love writing python code.",
-        timestamp=datetime.now(timezone.utc).replace(tzinfo=None)
+        timestamp=datetime.now(UTC).replace(tzinfo=None)
     )
     
     db.add(s)

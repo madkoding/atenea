@@ -1,4 +1,3 @@
-import os
 import json
 from src.clients.api_key_manager import APIKeyManager
 from cryptography.fernet import Fernet
@@ -15,7 +14,7 @@ def test_api_key_manager_load_resilience(tmp_path):
     undecryptable_token = other_f.encrypt(b"bad_value").decode()
     
     # Manually edit api_keys.json to include the undecryptable token
-    with open(mgr.api_keys_file, "r", encoding="utf-8") as f:
+    with open(mgr.api_keys_file, encoding="utf-8") as f:
         keys = json.load(f)
     
     keys["bad_provider"] = undecryptable_token

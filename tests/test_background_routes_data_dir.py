@@ -1,12 +1,14 @@
 import os
 from pathlib import Path
 
+from tests.helpers.ast_check import assert_source_does_not_have, assert_source_has
+
+ROUTES = Path(__file__).resolve().parents[1] / "routes" / "background_routes.py"
+
 
 def test_background_routes_uses_upload_dir_constant_in_source():
-    source = Path("routes/background_routes.py").read_text(encoding="utf-8")
-
-    assert 'from src.constants import UPLOAD_DIR' in source
-    assert 'os.path.join("data", "uploads", "backgrounds")' not in source
+    assert_source_has(ROUTES, 'from src.constants import UPLOAD_DIR')
+    assert_source_does_not_have(ROUTES, 'os.path.join("data", "uploads", "backgrounds")')
 
 
 def test_background_dir_resolves_under_upload_dir():

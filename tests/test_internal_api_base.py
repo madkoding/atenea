@@ -1,8 +1,6 @@
 """internal_api_base() resolution + a guard that loopback call sites use it."""
-import importlib
 import pathlib
 
-import pytest
 
 import core.constants as cc
 

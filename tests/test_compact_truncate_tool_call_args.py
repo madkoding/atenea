@@ -12,7 +12,6 @@ import json
 import sys
 from unittest.mock import MagicMock
 
-import pytest
 
 for mod in [
     'sqlalchemy', 'sqlalchemy.orm', 'sqlalchemy.ext', 'sqlalchemy.ext.declarative',

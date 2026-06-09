@@ -6,15 +6,18 @@ to the code executor as if it were python/bash.
 import sys
 from unittest.mock import MagicMock
 
-for mod in ['src.agent.tools_facade', 'src.tools.parsing', 'src.tools.schemas', 'src.tools.execution']:
-    sys.modules.pop(mod, None)
-for mod in [
-    'sqlalchemy', 'sqlalchemy.orm', 'sqlalchemy.ext', 'sqlalchemy.ext.declarative',
-    'sqlalchemy.ext.hybrid', 'sqlalchemy.sql', 'sqlalchemy.sql.expression',
-    'src.database', 'core.models', 'core.database', 'core.auth'
-]:
-    if mod not in sys.modules:
-        sys.modules[mod] = MagicMock()
+from tests.helpers.import_state import preserve_import_state
+
+with preserve_import_state("src.agent.tools_facade", "src.tools.parsing", "src.tools.schemas", "src.tools.execution"):
+    for mod in ['src.agent.tools_facade', 'src.tools.parsing', 'src.tools.schemas', 'src.tools.execution']:
+        sys.modules.pop(mod, None)
+    for mod in [
+        'sqlalchemy', 'sqlalchemy.orm', 'sqlalchemy.ext', 'sqlalchemy.ext.declarative',
+        'sqlalchemy.ext.hybrid', 'sqlalchemy.sql', 'sqlalchemy.sql.expression',
+        'src.database', 'core.models', 'core.database', 'core.auth'
+    ]:
+        if mod not in sys.modules:
+            sys.modules[mod] = MagicMock()
 
 import src.agent.tools_facade as agent_tools  # noqa: E402, F401
 from src.tools.parsing import parse_tool_blocks  # noqa: E402

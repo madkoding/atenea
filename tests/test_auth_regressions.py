@@ -300,7 +300,6 @@ def test_pop_notifications_owner_filtered():
     # Reuse the real class so the test catches future regressions of
     # the filter logic.
     import sys, types
-    from unittest.mock import MagicMock as _MM
     # `task_scheduler` pulls in lots of helpers — stub the ones it uses.
     for s in ["src.actions.builtin", "src.agent.ai_interaction", "src.runtime.endpoint_resolver",
               "src.chat.agent_loop", "src.session_manager"]:

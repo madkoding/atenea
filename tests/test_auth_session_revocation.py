@@ -8,6 +8,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+from tests.helpers.import_state import preserve_import_state
+
 import pytest
 from fastapi import HTTPException
 
@@ -81,15 +83,16 @@ def test_password_change_allows_new_password_and_blocks_old_password(tmp_path):
 
 
 def _change_password_endpoint(auth_manager):
-    sys.modules.pop("routes.auth_routes", None)
-    _real_core_package()
-    from routes.auth_routes import ChangePasswordRequest, setup_auth_routes
+    with preserve_import_state("routes.auth_routes"):
+        sys.modules.pop("routes.auth_routes", None)
+        _real_core_package()
+        from routes.auth_routes import ChangePasswordRequest, setup_auth_routes
 
-    router = setup_auth_routes(auth_manager)
-    for route in router.routes:
-        if getattr(route, "path", None) == "/api/auth/change-password":
-            return route.endpoint, ChangePasswordRequest
-    raise AssertionError("change-password route not found")
+        router = setup_auth_routes(auth_manager)
+        for route in router.routes:
+            if getattr(route, "path", None) == "/api/auth/change-password":
+                return route.endpoint, ChangePasswordRequest
+        raise AssertionError("change-password route not found")
 
 
 def test_change_password_route_revokes_other_sessions_after_success(monkeypatch):

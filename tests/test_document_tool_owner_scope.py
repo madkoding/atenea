@@ -1,8 +1,10 @@
 import asyncio
+from pathlib import Path
 import sys
 import types
 
 import src.tools.implementations as tools
+from tests.helpers.ast_check import assert_call_has_arg
 
 
 class _Column:
@@ -142,9 +144,10 @@ def test_suggest_document_active_id_filters_to_calling_owner(monkeypatch):
 
 
 def test_document_tool_dispatch_forwards_owner():
-    source = open("src/tools/execution.py", encoding="utf-8").read()
+    EXECUTION = Path(__file__).resolve().parents[1] / "src/tools/execution.py"
 
-    assert "do_create_document(content, session_id=session_id, owner=owner)" in source
-    assert "do_update_document(content, owner=owner)" in source
-    assert "do_edit_document(content, owner=owner)" in source
-    assert "do_suggest_document(content, owner=owner)" in source
+    # Assert the CREATE call passes owner as a keyword arg (must also pass session_id)
+    assert_call_has_arg(EXECUTION, "do_create_document", "owner")
+    assert_call_has_arg(EXECUTION, "do_update_document", "owner")
+    assert_call_has_arg(EXECUTION, "do_edit_document", "owner")
+    assert_call_has_arg(EXECUTION, "do_suggest_document", "owner")

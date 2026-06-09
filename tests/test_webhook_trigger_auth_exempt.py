@@ -17,6 +17,8 @@ non-public task paths are NOT.
 import os
 import re
 
+from tests.helpers.ast_check import assert_source_has
+
 
 def _read_app_source() -> str:
     app_path = os.path.join(
@@ -89,7 +91,5 @@ def test_webhook_trigger_handler_still_validates_token():
         "routes",
         "task_routes.py",
     )
-    with open(routes_path, encoding="utf-8") as fh:
-        src = fh.read()
-    assert "ScheduledTask.webhook_token == token" in src
-    assert '@router.post("/{task_id}/webhook/{token}")' in src
+    assert_source_has(routes_path, "ScheduledTask.webhook_token == token")
+    assert_source_has(routes_path, '@router.post("/{task_id}/webhook/{token}")')

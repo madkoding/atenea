@@ -9,19 +9,22 @@ bare string (back-compat).
 import sys
 from unittest.mock import MagicMock
 
-# Clean up any mocks from previous tests to ensure we load real modules.
-for mod in ['src.agent.tools_facade', 'src.tools.parsing', 'src.tools.schemas', 'src.tools.execution']:
-    sys.modules.pop(mod, None)
+from tests.helpers.import_state import preserve_import_state
 
-# Mock heavy database/model dependencies before importing (avoids the
-# src.tools.schemas <-> src.agent.tools_facade circular import pulling in the DB layer).
-for mod in [
-    'sqlalchemy', 'sqlalchemy.orm', 'sqlalchemy.ext', 'sqlalchemy.ext.declarative',
-    'sqlalchemy.ext.hybrid', 'sqlalchemy.sql', 'sqlalchemy.sql.expression',
-    'src.database', 'core.models', 'core.database', 'core.auth'
-]:
-    if mod not in sys.modules:
-        sys.modules[mod] = MagicMock()
+# Clean up any mocks from previous tests to ensure we load real modules.
+with preserve_import_state("src.agent.tools_facade", "src.tools.parsing", "src.tools.schemas", "src.tools.execution"):
+    for mod in ['src.agent.tools_facade', 'src.tools.parsing', 'src.tools.schemas', 'src.tools.execution']:
+        sys.modules.pop(mod, None)
+
+    # Mock heavy database/model dependencies before importing (avoids the
+    # src.tools.schemas <-> src.agent.tools_facade circular import pulling in the DB layer).
+    for mod in [
+        'sqlalchemy', 'sqlalchemy.orm', 'sqlalchemy.ext', 'sqlalchemy.ext.declarative',
+        'sqlalchemy.ext.hybrid', 'sqlalchemy.sql', 'sqlalchemy.sql.expression',
+        'src.database', 'core.models', 'core.database', 'core.auth'
+    ]:
+        if mod not in sys.modules:
+            sys.modules[mod] = MagicMock()
 
 import json  # noqa: E402
 

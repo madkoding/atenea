@@ -1,6 +1,5 @@
 """DB-backed tests for Copilot endpoint provisioning (routes/copilot_routes.py)."""
 import json
-import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 

@@ -11,14 +11,13 @@ test asserts the opposite: the task fires at most once across two consecutive
 polls.
 """
 import sys, types, asyncio
-from datetime import datetime, timedelta, timezone
-from unittest.mock import MagicMock
-from sqlalchemy import create_engine, Column, String, DateTime, Integer, Boolean, Text
+from datetime import datetime, timedelta, UTC
+from sqlalchemy import create_engine, Column, String, DateTime, Integer, Text
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 
 def _test_utcnow():
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 def _stub_heavy():

@@ -21,7 +21,6 @@ silently mutates a file owned by a different user AND overwrites the
 `owner` field with an attacker's value.
 """
 
-import os
 import sys
 import textwrap
 from pathlib import Path
@@ -40,7 +39,7 @@ for _mod in ("sqlalchemy", "sqlalchemy.orm", "sqlalchemy.ext", "sqlalchemy.ext.d
             sys.modules[_mod] = MagicMock()
 
 from services.memory.skills import SkillsManager  # noqa: E402
-from services.memory.skill_format import Skill, slugify  # noqa: E402
+from services.memory.skill_format import slugify  # noqa: E402
 
 
 def _write_skill_md(skills_root: Path, category: str, name: str,

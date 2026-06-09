@@ -9,13 +9,13 @@ AI_PATH = Path(ai_interaction.__file__)
 
 
 def test_model_resolver_applies_owner_filter():
-    assert_source_has(AI_PATH, "owner: Optional[str] = None")
+    assert_source_has(AI_PATH, "owner: str | None = None")
     assert_source_has(AI_PATH, "from src.auth.helpers import owner_filter")
     assert_source_has(AI_PATH, "owner_filter(query, ModelEndpoint, owner)")
 
 
 def test_model_listing_and_image_fallback_are_owner_scoped():
-    assert_source_has(AI_PATH, "owner: Optional[str] = None")
+    assert_source_has(AI_PATH, "owner: str | None = None")
     assert_source_has(AI_PATH, "owner_filter(query, ModelEndpoint, owner)")
     assert_call_has_arg(AI_PATH, "_resolve_model", "owner")
     assert_source_has(AI_PATH, "owner_filter(_img_q, ModelEndpoint, owner)")

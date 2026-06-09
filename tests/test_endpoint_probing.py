@@ -53,7 +53,6 @@ with preserve_import_state("core.database", "src.database", "core.session_manage
         _resolve_probe_key,
         _classify_endpoint,
         _rewrite_loopback_for_docker,
-        _PROVIDER_CURATED,
     )
 
 

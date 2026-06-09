@@ -101,6 +101,17 @@ def assert_source_has(source_path: str | Path, pattern: str) -> None:
         raise AssertionError(f"{source_path}: string {pattern!r} not found")
 
 
+def assert_source_does_not_have(source_path: str | Path, pattern: str) -> None:
+    """Negative string check: assert *pattern* does NOT appear in the source.
+
+    Use sparingly — positive assertions are preferred.  Intended for
+    security-sensitive patterns that must never appear in production code.
+    """
+    src = Path(source_path).read_text()
+    if pattern in src:
+        raise AssertionError(f"{source_path}: string {pattern!r} should not be present")
+
+
 def _call_name(node: ast.Call) -> str:
     """Extract the qualified name of the called function.
 

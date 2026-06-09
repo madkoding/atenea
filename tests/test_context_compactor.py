@@ -5,7 +5,6 @@ import asyncio
 import sys
 from unittest.mock import MagicMock
 
-import pytest
 
 # Mock heavy dependencies before importing
 for mod in [

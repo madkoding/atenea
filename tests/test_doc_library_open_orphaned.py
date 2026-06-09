@@ -14,7 +14,6 @@ documentLibrary.js pulls in browser-only modules so it can't run under node; thi
 guards the wiring at the source level (red→green via git-stash).
 """
 
-import re
 from pathlib import Path
 
 SRC = Path(__file__).resolve().parent.parent / "static/js/documentLibrary.js"

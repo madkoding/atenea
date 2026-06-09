@@ -3,7 +3,6 @@
 import sys
 import types
 
-import pytest
 
 import src.chat.model_context as model_context
 from src.chat.model_context import _is_local_endpoint, estimate_tokens, _lookup_known

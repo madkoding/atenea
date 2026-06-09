@@ -38,7 +38,6 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock
 
 
 # Point every data-dir-using dependency (core.database, secret_storage,

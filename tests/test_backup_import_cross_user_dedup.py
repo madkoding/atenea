@@ -7,7 +7,6 @@ dedup must be scoped to the caller\'s own memories. The full multi-tenant
 store is still saved back.
 """
 import asyncio
-from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import routes.backup_routes as br

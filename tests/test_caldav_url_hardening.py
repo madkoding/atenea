@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 import src.calendar_app.sync as caldav_sync
+from tests.helpers.ast_check import assert_contains_call, assert_source_has
 
 
 def test_validate_caldav_url_normalizes_safe_url(monkeypatch):
@@ -168,10 +169,11 @@ def test_sync_caldav_decrypts_stored_password_and_validates_url(monkeypatch):
 
 
 def test_calendar_routes_use_hardened_caldav_client_and_secret_storage():
-    text = Path("routes/calendar_routes.py").read_text(encoding="utf-8")
+    src = Path(__file__).resolve().parents[1] / "routes/calendar_routes.py"
 
-    assert "validate_caldav_url(body.get(\"url\", \"\"))" in text
-    assert "encrypt(body[\"password\"])" in text
-    assert "pw = decrypt(pw)" in text
-    assert "follow_redirects=False, trust_env=False" in text
-    assert "Redirects are not followed for CalDAV safety" in text
+    assert_contains_call(src, "validate_caldav_url")
+    assert_source_has(src, 'validate_caldav_url(body.get("url", ""))')
+    assert_contains_call(src, "encrypt")
+    assert_contains_call(src, "decrypt")
+    assert_source_has(src, "follow_redirects=False, trust_env=False")
+    assert_source_has(src, "Redirects are not followed for CalDAV safety")

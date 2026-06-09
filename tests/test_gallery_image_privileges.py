@@ -1,6 +1,7 @@
 import ast
 from pathlib import Path
 
+from tests.helpers.ast_check import assert_contains_call
 
 GATED_IMAGE_FUNCTIONS = {
     "gallery_ai_upscale",
@@ -13,9 +14,7 @@ GATED_IMAGE_FUNCTIONS = {
     "enhance_face",
 }
 
-
-def _gallery_source():
-    return Path("routes/gallery_routes.py").read_text(encoding="utf-8")
+GALLERY_ROUTES = Path(__file__).resolve().parents[1] / "routes" / "gallery_routes.py"
 
 
 def _function_sources(source):
@@ -28,7 +27,7 @@ def _function_sources(source):
 
 
 def test_image_generation_endpoints_require_image_privilege():
-    source = _gallery_source()
+    source = GALLERY_ROUTES.read_text(encoding="utf-8")
     functions = _function_sources(source)
 
     for name in GATED_IMAGE_FUNCTIONS:
@@ -37,6 +36,5 @@ def test_image_generation_endpoints_require_image_privilege():
 
 
 def test_gallery_routes_imports_privilege_helper():
-    source = _gallery_source()
-    assert "get_current_user" in source
-    assert "require_privilege" in source
+    assert_contains_call(GALLERY_ROUTES, "get_current_user")
+    assert_contains_call(GALLERY_ROUTES, "require_privilege")

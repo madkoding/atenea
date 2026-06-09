@@ -18,7 +18,6 @@ import os
 
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 
-import pytest
 
 import src.vector.rag_vector as rag_vector
 import src.personal.docs as personal_docs

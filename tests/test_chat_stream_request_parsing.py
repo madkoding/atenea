@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from tests.helpers.ast_check import assert_contains_call, assert_source_has
+from tests.helpers.ast_check import assert_contains_call, assert_source_does_not_have, assert_source_has
 
 CHAT_ROUTES = Path(__file__).resolve().parents[1] / "routes" / "chat_routes.py"
 
@@ -16,6 +16,5 @@ def test_chat_stream_tool_toggles_use_request_value_not_form_only():
     assert_source_has(CHAT_ROUTES, 'if str(allow_bash).lower() != "true":')
     assert_source_has(CHAT_ROUTES, 'if str(allow_web_search).lower() != "true":')
     # Negative assertions: verify no direct form_data access for tool toggles
-    src = CHAT_ROUTES.read_text(encoding="utf-8")
-    assert 'allow_bash = form_data.get("allow_bash")' not in src
-    assert 'allow_web_search = form_data.get("allow_web_search")' not in src
+    assert_source_does_not_have(CHAT_ROUTES, 'allow_bash = form_data.get("allow_bash")')
+    assert_source_does_not_have(CHAT_ROUTES, 'allow_web_search = form_data.get("allow_web_search")')
