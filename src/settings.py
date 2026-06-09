@@ -6,25 +6,22 @@ All modules should import from here instead of accessing files directly.
 """
 
 import json
-import time
 import logging
 from typing import Any
 
 from src.constants import SETTINGS_FILE, FEATURES_FILE
+from core.cache import settings_region
+from dogpile.cache.api import NO_VALUE
 
 logger = logging.getLogger(__name__)
 
-# Tiny TTL cache for settings/features. get_setting() is called on hot paths
-# (every chat, every preprocess); without this it re-parses the JSON each call.
-# Picks up edits within _CACHE_TTL seconds, which is fine for human-edited config.
-_CACHE_TTL = 2.0
-_settings_cache: tuple[float, dict] | None = None
-_features_cache: tuple[float, dict] | None = None
+_SETTINGS_CACHE_KEY = "settings"
+_FEATURES_CACHE_KEY = "features"
+
 
 def _invalidate_caches():
-    global _settings_cache, _features_cache
-    _settings_cache = None
-    _features_cache = None
+    settings_region.delete(_SETTINGS_CACHE_KEY)
+    settings_region.delete(_FEATURES_CACHE_KEY)
 
 # ── Default values ──
 
@@ -190,10 +187,9 @@ DEFAULT_FEATURES = {
 
 def load_settings() -> dict:
     """Load settings merged with defaults. Always returns a complete dict."""
-    global _settings_cache
-    now = time.monotonic()
-    if _settings_cache and (now - _settings_cache[0]) < _CACHE_TTL:
-        return _settings_cache[1]
+    cached = settings_region.get(_SETTINGS_CACHE_KEY)
+    if cached is not NO_VALUE:
+        return cached
     try:
         with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
             saved = json.load(f)
@@ -202,7 +198,7 @@ def load_settings() -> dict:
         merged = {**DEFAULT_SETTINGS, **saved}
     except (FileNotFoundError, PermissionError, json.JSONDecodeError, ValueError):
         merged = dict(DEFAULT_SETTINGS)
-    _settings_cache = (now, merged)
+    settings_region.set(_SETTINGS_CACHE_KEY, merged)
     return merged
 
 
@@ -273,10 +269,9 @@ def get_user_setting(key: str, owner: str = "", default: Any = None) -> Any:
 
 def load_features() -> dict:
     """Load feature flags merged with defaults."""
-    global _features_cache
-    now = time.monotonic()
-    if _features_cache and (now - _features_cache[0]) < _CACHE_TTL:
-        return _features_cache[1]
+    cached = settings_region.get(_FEATURES_CACHE_KEY)
+    if cached is not NO_VALUE:
+        return cached
     try:
         with open(FEATURES_FILE, "r", encoding="utf-8") as f:
             saved = json.load(f)
@@ -285,7 +280,7 @@ def load_features() -> dict:
         merged = {**DEFAULT_FEATURES, **saved}
     except (FileNotFoundError, json.JSONDecodeError, ValueError):
         merged = dict(DEFAULT_FEATURES)
-    _features_cache = (now, merged)
+    settings_region.set(_FEATURES_CACHE_KEY, merged)
     return merged
 
 

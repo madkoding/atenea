@@ -1,7 +1,6 @@
 """Shared helpers for chat routes — context building, post-response tasks, auth resolution."""
 
 import asyncio
-import functools
 import json
 import logging
 import os
@@ -11,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from core.models import ChatMessage
+from core.cache import db_region
 from core.database import SessionLocal
 from core.database import Session as DBSession, ModelEndpoint
 from src.llm_core import normalize_model_id
@@ -25,9 +25,9 @@ from fastapi import HTTPException
 logger = logging.getLogger(__name__)
 
 
-@functools.lru_cache(maxsize=1)
-def _cached_enabled_endpoints(ttl: float) -> list:
-    """Cached query for enabled endpoints. TTL in seconds to invalidate cache."""
+@db_region.cache_on_arguments(namespace="enabled_endpoints")
+def _cached_enabled_endpoints() -> list:
+    """Cached query for enabled endpoints. Refreshes per region TTL."""
     db = SessionLocal()
     try:
         endpoints = db.query(ModelEndpoint).filter(
@@ -42,8 +42,8 @@ def _cached_enabled_endpoints(ttl: float) -> list:
 
 
 def get_enabled_endpoints_cached(ttl: float = 60.0) -> list:
-    """Get enabled endpoints with in-memory cache that refreshes every `ttl` seconds."""
-    return _cached_enabled_endpoints(time.monotonic() // ttl)
+    """Get enabled endpoints with in-memory cache (ttl param kept for compat)."""
+    return _cached_enabled_endpoints()
 
 
 # ── Data containers ────────────────────────────────────────────────────── #

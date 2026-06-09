@@ -16,8 +16,60 @@ from typing import Dict, Optional
 
 from .database import Session as DbSession, ChatMessage as DbChatMessage, Document as DbDocument, SessionLocal, utcnow_naive
 from .models import Session, ChatMessage
+from core.cache import db_region
+from dogpile.cache.api import NO_VALUE
 
 logger = logging.getLogger(__name__)
+
+
+def _active_sessions_cache_key():
+    """Fixed cache key for the active sessions list query."""
+    return "active_sessions_list"
+
+
+def _query_active_sessions_data() -> list:
+    """Query active sessions from DB and return serializable dicts."""
+    db = SessionLocal()
+    try:
+        db_sessions = db.query(DbSession).filter(
+            DbSession.archived == False,
+            DbSession.message_count > 0,
+        ).order_by(DbSession.last_accessed.desc()).limit(100).all()
+
+        result = []
+        for s in db_sessions:
+            headers = s.headers
+            if isinstance(headers, str):
+                try:
+                    headers = json.loads(headers)
+                except json.JSONDecodeError:
+                    headers = {}
+            result.append({
+                "id": s.id,
+                "name": s.name,
+                "endpoint_url": s.endpoint_url,
+                "model": s.model,
+                "rag": s.rag,
+                "archived": s.archived,
+                "headers": headers,
+                "owner": getattr(s, "owner", None),
+                "is_important": getattr(s, "is_important", False) or False,
+                "message_count": getattr(s, "message_count", 0) or 0,
+            })
+        return result
+    finally:
+        db.close()
+
+
+@db_region.cache_on_arguments(namespace="active_sessions")
+def _get_cached_active_sessions_data() -> list:
+    """Cached version of _query_active_sessions_data()."""
+    return _query_active_sessions_data()
+
+
+def _invalidate_active_sessions_cache():
+    """Invalidate the cached active sessions list."""
+    _get_cached_active_sessions_data.invalidate()
 
 
 def _message_timestamp_iso(value: Optional[datetime]) -> Optional[str]:
@@ -71,22 +123,29 @@ class SessionManager:
         personal-server box could be tens of thousands of rows held forever
         in `self.sessions`.
         """
-        db = SessionLocal()
         try:
-            db_sessions = db.query(DbSession).filter(
-                DbSession.archived == False,
-                DbSession.message_count > 0,
-            ).order_by(DbSession.last_accessed.desc()).limit(100).all()
+            sessions_data = _get_cached_active_sessions_data()
 
             loaded_count = 0
-            for db_session in db_sessions:
+            for data in sessions_data:
                 try:
-                    session = self._db_to_session_meta(db_session)
-                    if session is not None:
-                        self.sessions[db_session.id] = session
-                        loaded_count += 1
+                    session = Session(
+                        id=data["id"],
+                        name=data["name"],
+                        endpoint_url=data["endpoint_url"],
+                        model=data["model"],
+                        rag=data["rag"],
+                        archived=data["archived"],
+                        headers=data["headers"],
+                        history=[],
+                        owner=data["owner"],
+                        is_important=data["is_important"],
+                    )
+                    session.message_count = data["message_count"]
+                    self.sessions[session.id] = session
+                    loaded_count += 1
                 except Exception as e:
-                    logger.error(f"Error loading session {db_session.id}: {e}")
+                    logger.error(f"Error loading session {data.get('id', '?'):s}: {e}")
                     continue
 
             logger.info(f"Loaded {loaded_count} session(s) (metadata only)")
@@ -94,8 +153,6 @@ class SessionManager:
         except Exception as e:
             logger.error(f"Error loading sessions: {e}")
             self.sessions = {}
-        finally:
-            db.close()
 
     def _db_to_session_meta(self, db_session: DbSession) -> Optional[Session]:
         """Build a Session with empty history. `get_session` will hydrate
@@ -283,6 +340,7 @@ class SessionManager:
 
             # Update in-memory
             session.history = session.history[:keep_count]
+            _invalidate_active_sessions_cache()
 
             logger.info(f"Truncated session {session_id} to {keep_count} messages")
             return True
@@ -334,6 +392,7 @@ class SessionManager:
             db.commit()
             session.history = list(messages)
             session.message_count = len(messages)
+            _invalidate_active_sessions_cache()
             logger.info("Replaced session %s history with %d messages", session_id, len(messages))
             return True
         except Exception as e:
@@ -480,6 +539,7 @@ class SessionManager:
             )
 
             self.sessions[session_id] = session
+            _invalidate_active_sessions_cache()
             return session
 
         except Exception as e:
@@ -516,6 +576,7 @@ class SessionManager:
                 # Commit the document-detach / message-delete above (a no-op when
                 # the ghost had no rows) together with the session delete.
                 db.commit()
+                _invalidate_active_sessions_cache()
                 logger.info(f"Deleted session {session_id}")
                 return True
             return False
@@ -544,6 +605,7 @@ class SessionManager:
                 db_session.updated_at = datetime.now(timezone.utc)
                 db.commit()
                 self.sessions[session_id].name = name
+                _invalidate_active_sessions_cache()
         except Exception as e:
             db.rollback()
             logger.error(f"Error updating session name: {e}")
@@ -564,6 +626,7 @@ class SessionManager:
                 db_session.updated_at = datetime.now(timezone.utc)
                 db.commit()
                 self.sessions[session_id].archived = True
+                _invalidate_active_sessions_cache()
         except Exception as e:
             db.rollback()
             logger.error(f"Error archiving session: {e}")
@@ -583,6 +646,7 @@ class SessionManager:
 
                 if session_id in self.sessions:
                     self.sessions[session_id].is_important = important
+                _invalidate_active_sessions_cache()
             else:
                 raise KeyError(f"Session {session_id} not found")
         except Exception as e:
@@ -641,6 +705,7 @@ class SessionManager:
                     stats['archived_old'] += 1
 
             db.commit()
+            _invalidate_active_sessions_cache()
             logger.info(f"Cleanup: {stats['deleted_empty']} deleted, {stats['archived_old']} archived")
 
         except Exception as e:

@@ -185,7 +185,8 @@ class TestLookupKnown:
 
 class TestGetContextLength:
     def setup_method(self):
-        model_context._context_cache.clear()
+        from core.cache import context_region
+        context_region.invalidate()
 
     def test_local_endpoint_requeries_same_model_after_restart(self, monkeypatch):
         calls = []

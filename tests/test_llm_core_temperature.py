@@ -31,7 +31,7 @@ def test_normal_models_allow_temperature(model):
 
 def _capture_openai_payload(monkeypatch, model, temperature):
     """Run a synchronous OpenAI-compatible call and return the posted JSON body."""
-    llm_core._response_cache.clear()
+    llm_core.llm_region.invalidate()
     seen = {}
 
     def fake_post(url, headers=None, json=None, timeout=None):

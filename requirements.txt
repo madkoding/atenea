@@ -43,3 +43,6 @@ qrcode[pil]
 croniter
 pytest
 pytest-asyncio
+# Query-result and response caching (dogpile.cache with memory backend).
+# Wraps hot DB queries, LLM responses, settings, and context lookups.
+dogpile.cache

@@ -14,7 +14,8 @@ def _setup(monkeypatch, windows):
     monkeypatch.setattr(mc, "_is_local_endpoint", lambda url: False)
     monkeypatch.setattr(mc, "_configured_endpoint_kind", lambda url: "api")
     monkeypatch.setattr(mc, "_query_context_length", lambda url, model: windows[url])
-    mc._context_cache.clear()
+    from core.cache import context_region
+    context_region.invalidate()
 
 
 def test_same_model_two_remote_endpoints_get_their_own_window(monkeypatch):

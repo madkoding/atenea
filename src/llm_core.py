@@ -28,6 +28,9 @@ class LLMConfig:
     STREAM_TIMEOUT = 300
 
 
+from core.cache import llm_region
+from dogpile.cache.api import NO_VALUE
+
 # Cache for LLM responses
 def _get_cache_key(url: str, model: str, messages: List[Dict], 
                    temperature: float, max_tokens: int) -> str:
@@ -45,8 +48,6 @@ def _get_cache_key(url: str, model: str, messages: List[Dict],
         'max_tokens': max_tokens
     }, sort_keys=True)
     return hashlib.sha256(content.encode()).hexdigest()
-
-_response_cache = {}
 
 # Dead-host cooldown: maps host (scheme://host:port) -> unix ts when cooldown expires.
 # When a connect to a host fails, we mark it dead for DEAD_HOST_COOLDOWN seconds so
@@ -240,20 +241,7 @@ def _get_http_client() -> httpx.AsyncClient:
         )
     return _http_client
 
-def _get_cached_response(cache_key: str) -> Optional[str]:
-    """Get cached response if it exists."""
-    return _response_cache.get(cache_key)
 
-def _set_cached_response(cache_key: str, response: str) -> None:
-    """Store response in cache."""
-    if len(_response_cache) > 128:
-        keys_to_remove = list(_response_cache.keys())[:64]
-        for key in keys_to_remove:
-            # pop(), not del: another thread (sync llm_call runs in FastAPI's
-            # threadpool) may have already evicted the same snapshotted key,
-            # and del would raise KeyError mid-eviction (issue #659).
-            _response_cache.pop(key, None)
-    _response_cache[cache_key] = response
 
 # ── Anthropic native API adapter ──
 
@@ -1133,8 +1121,8 @@ def llm_call(url: str, model: str, messages: List[Dict], temperature: float = LL
 
     provider = _detect_provider(url)
     cache_key = _get_cache_key(url, model, messages_copy, temperature, max_tokens)
-    cached_response = _get_cached_response(cache_key)
-    if cached_response:
+    cached_response = llm_region.get(cache_key)
+    if cached_response is not NO_VALUE:
         logger.debug(f"Returning cached response for key: {cache_key}")
         return cached_response
 
@@ -1179,7 +1167,7 @@ def llm_call(url: str, model: str, messages: List[Dict], temperature: float = LL
         else:
             msg = data["choices"][0]["message"]
             response = msg.get("content") or msg.get("reasoning_content") or ""
-        _set_cached_response(cache_key, response)
+        llm_region.set(cache_key, response)
         return response
     except Exception:
         raise HTTPException(502, f"Unexpected schema from {target_url}: {str(data)[:400]}")
@@ -1279,8 +1267,8 @@ async def llm_call_async(
         messages_copy = non_sys
 
     cache_key = _get_cache_key(url, model, messages_copy, temperature, max_tokens)
-    cached_response = _get_cached_response(cache_key)
-    if cached_response:
+    cached_response = llm_region.get(cache_key)
+    if cached_response is not NO_VALUE:
         logger.debug(f"Returning cached response for key: {cache_key}")
         return cached_response
 
@@ -1310,7 +1298,7 @@ async def llm_call_async(
                     continue
                 if raw == "[DONE]":
                     response = "".join(parts)
-                    _set_cached_response(cache_key, response)
+                    llm_region.set(cache_key, response)
                     return response
                 try:
                     data = json.loads(raw)
@@ -1324,7 +1312,7 @@ async def llm_call_async(
                 if isinstance(delta, str):
                     parts.append(delta)
         response = "".join(parts)
-        _set_cached_response(cache_key, response)
+        llm_region.set(cache_key, response)
         return response
 
     if provider == "anthropic":
@@ -1391,7 +1379,7 @@ async def llm_call_async(
                 else:
                     msg = data["choices"][0]["message"]
                     response = msg.get("content") or msg.get("reasoning_content") or ""
-                _set_cached_response(cache_key, response)
+                llm_region.set(cache_key, response)
                 return response
             except Exception:
                 raise HTTPException(502, f"Unexpected schema from {target_url}: {str(data)[:400]}")

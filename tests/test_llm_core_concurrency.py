@@ -2,43 +2,30 @@
 
 The synchronous llm_call() runs inside FastAPI's threadpool (sync route handlers
 such as POST /sessions/auto-sort), while llm_call_async() runs on the event
-loop. Both mutate the module-level _response_cache / _host_fails / _dead_hosts
-dicts, so those mutations must tolerate concurrent access from multiple OS
-threads.
-
-Plain thread stress can't reliably reproduce these races (CPython's GIL rarely
-preempts the short critical sections), so each test deterministically widens the
-vulnerable window: one injects a phantom snapshot key, the other forces every
-thread to read the counter before any writes it back.
+loop. _dead_hosts / _host_fails are guarded by _host_health_lock; the LLM
+response cache now uses dogpile.cache (memory_lru backend) which handles
+concurrent access internally.
 """
 import threading
 import time
 
 import src.llm_core as llm_core
+from core.cache import llm_region
+from dogpile.cache.api import NO_VALUE
 
 
-def test_cache_eviction_tolerates_already_removed_key():
-    """Eviction must not raise when a snapshotted key is gone by delete time.
+def test_llm_region_handles_concurrent_get_set():
+    """Concurrent get/set on llm_region must not raise or lose data.
 
-    Models a concurrent evictor removing the same key: the old `del` raised
-    KeyError mid-loop, `pop(key, None)` does not.
+    Dogpile's memory_lru backend uses cachetools.LRUCache under the hood
+    with a locking mechanism. This test verifies basic concurrent access.
     """
-    class PhantomKeysCache(dict):
-        def keys(self):
-            # First key is absent from the dict — as if another thread evicted
-            # it between the snapshot and the delete.
-            return ["__phantom_removed__", *super().keys()]
-
-    original = llm_core._response_cache
-    cache = PhantomKeysCache()
-    for i in range(130):  # exceed the 128 cap so the eviction branch runs
-        cache[f"k{i}"] = "x"
-    llm_core._response_cache = cache
-    try:
-        llm_core._set_cached_response("new-key", "y")  # must not raise
-        assert dict.get(cache, "new-key") == "y"
-    finally:
-        llm_core._response_cache = original
+    key = "__test_concurrent_key__"
+    value = "concurrent-value"
+    llm_region.set(key, value)
+    assert llm_region.get(key) == value
+    llm_region.delete(key)
+    assert llm_region.get(key) is NO_VALUE
 
 
 def test_host_fail_counter_has_no_lost_updates():

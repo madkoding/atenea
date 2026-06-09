@@ -208,7 +208,8 @@ KNOWN_CONTEXT_WINDOWS = {
 # ---------------------------------------------------------------------------
 # Cache
 # ---------------------------------------------------------------------------
-_context_cache: Dict[Tuple[str, str], int] = {}
+from core.cache import context_region
+from dogpile.cache.api import NO_VALUE
 
 
 def get_context_length(endpoint_url: str, model: str) -> int:
@@ -225,15 +226,17 @@ def get_context_length(endpoint_url: str, model: str) -> int:
     # capped proxy vs. the full provider), so caching by model id alone would
     # serve one endpoint's window for the other (issue #2603).
     cache_key = (endpoint_url, model)
-    if not is_local and cache_key in _context_cache:
-        return _context_cache[cache_key]
+    if not is_local:
+        cached = context_region.get(cache_key)
+        if cached is not NO_VALUE:
+            return cached
 
     ctx = _query_context_length(endpoint_url, model)
     # Only cache non-default values to allow retry on next request.
     # Local endpoints can restart with a different --max-model-len while keeping
     # the same model id, so always re-query them instead of serving stale cache.
     if not is_local and (ctx != DEFAULT_CONTEXT or configured_kind in ("api", "proxy")):
-        _context_cache[cache_key] = ctx
+        context_region.set(cache_key, ctx)
     logger.info(f"Context length for {model}: {ctx}")
     return ctx
 
