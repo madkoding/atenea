@@ -8,13 +8,13 @@ enabled tools, timezone, and the three check-in times/prompts/enabled flags.
 """
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
-from core.database import SessionLocal, CrewMember, ScheduledTask
+from core.database import SessionLocal, CrewMember, ScheduledTask, utcnow_naive as _utcnow_naive
 from src.auth.helpers import get_current_user
 from src.scheduling.task_scheduler import compute_next_run
 
@@ -42,11 +42,11 @@ class AssistantSettingsUpdate(BaseModel):
 _EMAIL_TOOLS = {"send_email", "reply_to_email"}
 
 
+
+
+
 def _crew_to_dict(c: CrewMember) -> dict:
-    try:
-        tools = json.loads(c.enabled_tools) if c.enabled_tools else []
-    except Exception:
-        tools = []
+    tools = _decode_tools(c.enabled_tools)
     return {
         "id": c.id,
         "name": c.name,
@@ -61,6 +61,60 @@ def _crew_to_dict(c: CrewMember) -> dict:
         "timezone": c.timezone,
         "allow_autonomous_email": any(t in _EMAIL_TOOLS for t in tools),
     }
+
+
+def _decode_tools(raw_tools) -> list[str]:
+    try:
+        parsed = json.loads(raw_tools) if raw_tools else []
+    except Exception:
+        return []
+    return parsed if isinstance(parsed, list) else []
+
+
+def _with_autonomous_email_toggle(tools: list[str], enabled: bool) -> list[str]:
+    if enabled:
+        for tool_name in _EMAIL_TOOLS:
+            if tool_name not in tools:
+                tools.append(tool_name)
+        return tools
+    return [tool_name for tool_name in tools if tool_name not in _EMAIL_TOOLS]
+
+
+def _apply_checkin_update(task: ScheduledTask, check_in: CheckInUpdate, now_utc: datetime, tz_name: str | None) -> None:
+    if check_in.name is not None:
+        task.name = check_in.name.strip() or task.name
+    time_changed = False
+    if check_in.scheduled_time is not None and check_in.scheduled_time != task.scheduled_time:
+        task.scheduled_time = check_in.scheduled_time
+        time_changed = True
+    if check_in.prompt is not None:
+        task.prompt = check_in.prompt
+    if check_in.enabled is not None:
+        task.status = "active" if check_in.enabled else "paused"
+    if time_changed or check_in.enabled is True:
+        task.next_run = compute_next_run(
+            task.schedule or "daily",
+            task.scheduled_time,
+            task.scheduled_day,
+            task.scheduled_date,
+            after=now_utc,
+            cron_expression=task.cron_expression,
+            tz_name=tz_name,
+        )
+    task.updated_at = _utcnow_naive()
+
+
+def _recompute_task_next_run(task: ScheduledTask, now_utc: datetime, tz_name: str | None) -> None:
+    if task.schedule and task.scheduled_time:
+        task.next_run = compute_next_run(
+            task.schedule,
+            task.scheduled_time,
+            task.scheduled_day,
+            task.scheduled_date,
+            after=now_utc,
+            cron_expression=task.cron_expression,
+            tz_name=tz_name,
+        )
 
 
 def _task_to_checkin_dict(t: ScheduledTask) -> dict:
@@ -184,23 +238,15 @@ def setup_assistant_routes(task_scheduler) -> APIRouter:
             if payload.enabled_tools is not None:
                 crew_db.enabled_tools = json.dumps(payload.enabled_tools)
             if payload.allow_autonomous_email is not None:
-                try:
-                    existing = json.loads(crew_db.enabled_tools) if crew_db.enabled_tools else []
-                except Exception:
-                    existing = []
-                if payload.allow_autonomous_email:
-                    for t in ("send_email", "reply_to_email"):
-                        if t not in existing:
-                            existing.append(t)
-                else:
-                    existing = [t for t in existing if t not in _EMAIL_TOOLS]
+                existing = _decode_tools(crew_db.enabled_tools)
+                existing = _with_autonomous_email_toggle(existing, payload.allow_autonomous_email)
                 crew_db.enabled_tools = json.dumps(existing)
 
-            crew_db.updated_at = datetime.utcnow()
+            crew_db.updated_at = _utcnow_naive()
 
             # Update check-in tasks.
             if payload.check_ins:
-                now_utc = datetime.utcnow()
+                now_utc = _utcnow_naive()
                 tz_name = crew_db.timezone or None
                 for ci in payload.check_ins:
                     task = db.query(ScheduledTask).filter(
@@ -210,43 +256,19 @@ def setup_assistant_routes(task_scheduler) -> APIRouter:
                     ).first()
                     if not task:
                         continue
-                    if ci.name is not None:
-                        task.name = ci.name.strip() or task.name
-                    time_changed = False
-                    if ci.scheduled_time is not None and ci.scheduled_time != task.scheduled_time:
-                        task.scheduled_time = ci.scheduled_time
-                        time_changed = True
-                    if ci.prompt is not None:
-                        task.prompt = ci.prompt
-                    if ci.enabled is not None:
-                        task.status = "active" if ci.enabled else "paused"
-                    if time_changed or ci.enabled is True:
-                        task.next_run = compute_next_run(
-                            task.schedule or "daily",
-                            task.scheduled_time,
-                            task.scheduled_day,
-                            task.scheduled_date,
-                            after=now_utc,
-                            cron_expression=task.cron_expression,
-                            tz_name=tz_name,
-                        )
-                    task.updated_at = datetime.utcnow()
+                    _apply_checkin_update(task, ci, now_utc, tz_name)
 
             # Timezone change also shifts the NEXT run of all check-ins even if
             # the user didn't touch the time fields.
             if payload.timezone is not None:
-                now_utc = datetime.utcnow()
+                now_utc = _utcnow_naive()
                 tz_name = crew_db.timezone or None
                 tasks = db.query(ScheduledTask).filter(
                     ScheduledTask.owner == owner,
                     ScheduledTask.crew_member_id == crew_db.id,
                 ).all()
                 for t in tasks:
-                    if t.schedule and t.scheduled_time:
-                        t.next_run = compute_next_run(
-                            t.schedule, t.scheduled_time, t.scheduled_day, t.scheduled_date,
-                            after=now_utc, cron_expression=t.cron_expression, tz_name=tz_name,
-                        )
+                    _recompute_task_next_run(t, now_utc, tz_name)
 
             db.commit()
 

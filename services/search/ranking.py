@@ -11,10 +11,7 @@ logger = logging.getLogger(__name__)
 _AGE_FORMATS = ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S")
 
 
-def _utcnow_naive() -> datetime:
-    """Naive UTC 'now'. Matches the naive, UTC-style published dates parsed below,
-    and is safe on Python 3.14 where ``datetime.utcnow()`` is removed (#1116)."""
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+from core.database import utcnow_naive as _utcnow_naive
 
 
 def recency_score(age_str: Optional[str], now: Optional[datetime] = None) -> float:

@@ -5,7 +5,7 @@ import json
 import os
 import time
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Dict, Any, AsyncGenerator, List
 
 from fastapi import APIRouter, Request, HTTPException, Form, Query
@@ -26,7 +26,7 @@ from core.exceptions import SessionNotFoundError
 from src.auth.helpers import get_current_user
 from routes.session_routes import _verify_session_owner
 from routes.document_helpers import _owner_session_filter
-from core.database import SessionLocal, get_session_mode, set_session_mode
+from core.database import SessionLocal, get_session_mode, set_session_mode, utcnow_naive as _utcnow_naive
 from core.database import Session as DBSession, ChatMessage as DBChatMessage
 from core.database import Document as DBDocument, ModelEndpoint
 from routes.research_routes import _resolve_research_endpoint
@@ -47,6 +47,9 @@ logger = logging.getLogger(__name__)
 # Track active streams for partial-save safety net
 _active_streams: Dict[str, dict] = {}
 _IMAGE_MODEL_PREFIXES = ("gpt-image", "dall-e", "chatgpt-image")
+
+
+
 
 
 def _stream_set(session_id: str, **fields) -> None:
@@ -93,7 +96,7 @@ def _clear_orphaned_session_endpoint(sess, owner: str | None = None) -> bool:
         if db_session:
             db_session.endpoint_url = ""
             db_session.model = ""
-            db_session.updated_at = datetime.utcnow()
+            db_session.updated_at = _utcnow_naive()
             db.commit()
         sess.endpoint_url = ""
         sess.model = ""
@@ -261,7 +264,7 @@ def _recover_empty_session_model(sess, session_id: str, owner: str | None = None
         db_session = db_session_q.first()
         if db_session:
             db_session.model = model
-            db_session.updated_at = datetime.utcnow()
+            db_session.updated_at = _utcnow_naive()
             db.commit()
         sess.model = model
         logger.info(

@@ -9,13 +9,13 @@ import hashlib
 import time as _time
 import logging
 import httpx
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import List, Dict, Any, Optional
 from urllib.parse import urlparse, urlunparse
 from fastapi import APIRouter, HTTPException, Form, Query, Body, Request, Response
 from pydantic import BaseModel
 from fastapi.responses import StreamingResponse
-from core.database import SessionLocal, ModelEndpoint, Session as DbSession
+from core.database import SessionLocal, ModelEndpoint, Session as DbSession, utcnow_naive as _utcnow_naive
 from core.middleware import require_admin
 from src.llm_core import _detect_provider, _host_match, ANTHROPIC_MODELS
 from src.security.tls_overrides import llm_verify
@@ -29,6 +29,9 @@ from src.runtime.endpoint_resolver import (
 from src.auth.helpers import _auth_disabled, owner_filter
 
 logger = logging.getLogger(__name__)
+
+
+
 
 _SPEECH_ENDPOINT_SETTINGS = (
     ("tts_provider", "tts_model", "tts-1", "Text to Speech"),
@@ -2167,7 +2170,7 @@ def setup_model_routes(model_discovery):
         for row in rows:
             if _session_uses_endpoint_url(row.endpoint_url or "", base_url):
                 row.headers = {}
-                row.updated_at = datetime.utcnow()
+                row.updated_at = _utcnow_naive()
                 cleared += 1
         return cleared
 

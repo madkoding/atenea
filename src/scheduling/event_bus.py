@@ -9,12 +9,15 @@ import asyncio
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional
 
 from src.constants import AUTH_FILE
 
 logger = logging.getLogger(__name__)
+
+from core.database import utcnow_naive as _utcnow_naive
+
 
 _task_scheduler = None
 
@@ -101,7 +104,7 @@ async def _handle_event(event_name: str, owner: Optional[str] = None):
                 # behind a model call, `next_run <= now` makes the trigger
                 # survive reboot instead of losing the event after the counter
                 # has already reset.
-                task.next_run = datetime.utcnow()
+                task.next_run = _utcnow_naive()
                 db.commit()
                 # Fire the task
                 if _task_scheduler:

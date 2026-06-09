@@ -3,13 +3,13 @@
 import json
 import uuid
 import random
-from datetime import datetime
+from datetime import UTC, datetime
 from fastapi import APIRouter, Form, HTTPException, Request
 from typing import List
 from pydantic import BaseModel
 import logging
 
-from core.database import Comparison, SessionLocal
+from core.database import Comparison, SessionLocal, utcnow_naive as _utcnow_naive
 from core.session_manager import SessionManager
 from src.auth.helpers import get_current_user
 from routes.session_routes import _reject_raw_endpoint_url_for_non_admin
@@ -17,6 +17,9 @@ from routes.session_routes import _reject_raw_endpoint_url_for_non_admin
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/compare", tags=["compare"])
+
+
+
 
 
 def _owned_endpoint_by_url(db, base_url, owner):
@@ -265,7 +268,7 @@ def setup_compare_routes(session_manager: SessionManager):
             else:
                 raise HTTPException(400, "winner must be 'left', 'right', or 'tie'")
 
-            comp.voted_at = datetime.utcnow()
+            comp.voted_at = _utcnow_naive()
             db.commit()
 
             return {
@@ -307,7 +310,7 @@ def setup_compare_routes(session_manager: SessionManager):
                 winner=body.winner,
                 is_blind=body.is_blind,
                 blind_mapping=blind_mapping,
-                voted_at=datetime.utcnow(),
+                voted_at=_utcnow_naive(),
                 owner=user,
             )
             db.add(comp)

@@ -38,7 +38,7 @@ load_dotenv(encoding="utf-8-sig")
 import asyncio
 import logging
 import secrets
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Dict
 
 from contextlib import asynccontextmanager
@@ -53,7 +53,7 @@ from core.constants import (
     BASE_DIR, STATIC_DIR, SESSIONS_FILE,
     REQUEST_TIMEOUT, OPENAI_API_KEY, AUTH_FILE,
 )
-from core.database import SessionLocal, ApiToken
+from core.database import SessionLocal, ApiToken, utcnow_naive as _utcnow_naive
 from core.middleware import SecurityHeadersMiddleware, is_cors_preflight
 from core.auth import AuthManager
 from core.exceptions import (
@@ -73,6 +73,9 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 )
 logger = logging.getLogger(__name__)
+
+
+
 
 # ========= APP =========
 # Lifespan is defined below (after all helpers it references are in scope)
@@ -331,7 +334,7 @@ if AUTH_ENABLED:
                                 _db = SessionLocal()
                                 try:
                                     _db.query(ApiToken).filter(ApiToken.id == tid).update(
-                                        {"last_used_at": datetime.utcnow()}
+                                        {"last_used_at": _utcnow_naive()}
                                     )
                                     _db.commit()
                                 finally:
@@ -814,7 +817,7 @@ async def get_version():
 
 @app.get("/api/health")
 async def health_check() -> Dict[str, str]:
-    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+    return {"status": "healthy", "timestamp": _utcnow_naive().isoformat()}
 
 @app.get("/api/ready")
 async def readiness_check() -> JSONResponse:
