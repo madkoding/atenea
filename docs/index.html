@@ -93,6 +93,20 @@
   .nav-links { display: flex; align-items: center; gap: 22px; }
   .nav-links a { color: var(--muted); font-size: 14px; font-weight: 500; }
   .nav-links a:hover { color: var(--fg); }
+  .lang-switch { display: inline-flex; gap: 6px; margin-left: 4px; }
+  .lang-switch button {
+    border: 1px solid var(--border);
+    background: rgba(17,17,17,0.78);
+    color: var(--muted);
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 6px 8px;
+    cursor: pointer;
+  }
+  .lang-switch button:hover { color: var(--fg); border-color: var(--accent); }
+  .lang-switch button.active { color: #fff; border-color: var(--accent); background: linear-gradient(135deg, var(--accent), var(--accent2)); }
   .btn {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 9px 16px; border-radius: 10px; font-weight: 600; font-size: 14px;
@@ -438,11 +452,15 @@
         Odysseus Pro
       </div>
       <div class="nav-links">
-        <a href="#features">Features</a>
-        <a href="#integrations">Integrations</a>
-        <a href="#proof">Why Pro</a>
-        <a href="#how">Vision</a>
-        <a href="#start">Get started</a>
+        <a href="#features" data-i18n="nav.features">Features</a>
+        <a href="#integrations" data-i18n="nav.integrations">Integrations</a>
+        <a href="#proof" data-i18n="nav.why">Why Pro</a>
+        <a href="#how" data-i18n="nav.vision">Vision</a>
+        <a href="#start" data-i18n="nav.start">Get started</a>
+        <div class="lang-switch" aria-label="Language switch">
+          <button id="lang-en" type="button">EN</button>
+          <button id="lang-es" type="button">ES</button>
+        </div>
         <a class="btn" href="https://github.com/madkoding/odysseus-pro" target="_blank">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.2.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .4.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
           GitHub
@@ -456,32 +474,32 @@
     <canvas id="hero-flow" aria-hidden="true"></canvas>
     <div class="wrap">
       <div>
-        <div class="badge"><span class="dot"></span>Fork improved for maintainability and daily usage</div>
+        <div class="badge"><span class="dot"></span><span data-i18n="hero.badge">Fork improved for maintainability and daily usage</span></div>
         <div class="hero-logo">
           <svg viewBox="0 0 32 32" width="48" height="48" aria-hidden="true"><path d="M16 4L16 22L6 22Z" fill="currentColor"/><path d="M16 8L16 22L24 22Z" fill="currentColor" opacity="0.6"/><path d="M4 24Q10 20 16 24Q22 28 28 24" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
           <span class="wordmark">Odysseus Pro</span>
         </div>
-        <p class="slogan">Yours for the voyage.</p>
-        <h1>Build your private <span class="grad">AI command center</span>,<br>not just another chat tab.</h1>
-        <p class="lede">
+        <p class="slogan" data-i18n="hero.slogan">Yours for the voyage.</p>
+        <h1 data-i18n-html="hero.title">Build your private <span class="grad">AI command center</span>,<br>not just another chat tab.</h1>
+        <p class="lede" data-i18n="hero.lede">
           Odysseus Pro is a self-hosted AI workspace with chat, agents, memory,
           research, docs, email, calendar, and image tools. Bilingual (EN/ES), local-first,
           and designed to run on your own infra.
         </p>
         <div class="hero-cta">
-          <a class="btn primary" href="#start">Get started</a>
-          <a class="btn" href="https://github.com/madkoding/odysseus-pro" target="_blank">View on GitHub</a>
+          <a class="btn primary" href="#start" data-i18n="cta.start">Get started</a>
+          <a class="btn" href="https://github.com/madkoding/odysseus-pro" target="_blank" data-i18n="cta.github">View on GitHub</a>
         </div>
         <div class="hero-stat-row">
-          <span class="hero-chip">Bilingual UI + prompts</span>
-          <span class="hero-chip">Domain-based architecture</span>
-          <span class="hero-chip">Local-first + Docker-ready</span>
+          <span class="hero-chip" data-i18n="hero.chip1">Bilingual UI + prompts</span>
+          <span class="hero-chip" data-i18n="hero.chip2">Domain-based architecture</span>
+          <span class="hero-chip" data-i18n="hero.chip3">Local-first + Docker-ready</span>
         </div>
       </div>
 
       <aside class="hero-side" aria-label="Odysseus Pro preview">
         <img src="odysseus.jpg" alt="Odysseus Pro interface preview" loading="eager">
-        <div class="meta">From chat to agents, research, and memory in one workspace.</div>
+        <div class="meta" data-i18n="hero.preview">From chat to agents, research, and memory in one workspace.</div>
       </aside>
     </div>
   </header>
@@ -489,8 +507,8 @@
   <section id="integrations" style="padding-top: 16px;">
     <div class="wrap">
       <div class="center">
-        <div class="eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v6"/><path d="M12 15v6"/><path d="M3 12h6"/><path d="M15 12h6"/><circle cx="12" cy="12" r="3"/></svg>Works with your stack</div>
-        <h2 class="h">Connect models and tools you already use</h2>
+        <div class="eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v6"/><path d="M12 15v6"/><path d="M3 12h6"/><path d="M15 12h6"/><circle cx="12" cy="12" r="3"/></svg><span data-i18n="integrations.eyebrow">Works with your stack</span></div>
+        <h2 class="h" data-i18n="integrations.title">Connect models and tools you already use</h2>
       </div>
       <div class="logo-cloud" aria-label="Integration list">
         <span class="logo-chip">Ollama</span>
@@ -512,9 +530,9 @@
   <section id="features">
     <div class="wrap">
       <div class="center">
-        <div class="eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Everything, self-hosted</div>
-        <h2 class="h">One app, a lot of capabilities</h2>
-        <p class="sub">Started as an AI chat. Became a workspace. Each piece runs locally against
+        <div class="eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg><span data-i18n="features.eyebrow">Everything, self-hosted</span></div>
+        <h2 class="h" data-i18n="features.title">One app, a lot of capabilities</h2>
+        <p class="sub" data-i18n="features.sub">Started as an AI chat. Became a workspace. Each piece runs locally against
           whatever endpoints you point it at.</p>
       </div>
       <div class="grid">
@@ -571,9 +589,9 @@
   <section id="proof" style="padding-top:30px;">
     <div class="wrap">
       <div class="center">
-        <div class="eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h6"/><path d="M15 12h6"/><path d="M12 3v6"/><path d="M12 15v6"/><circle cx="12" cy="12" r="3"/></svg>Why Odysseus Pro</div>
-        <h2 class="h">Built to be useful every day</h2>
-        <p class="sub center">This fork focuses on maintainable architecture, practical workflows, and a product style that feels alive instead of corporate boilerplate.</p>
+        <div class="eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h6"/><path d="M15 12h6"/><path d="M12 3v6"/><path d="M12 15v6"/><circle cx="12" cy="12" r="3"/></svg><span data-i18n="proof.eyebrow">Why Odysseus Pro</span></div>
+        <h2 class="h" data-i18n="proof.title">Built to be useful every day</h2>
+        <p class="sub center" data-i18n="proof.sub">This fork focuses on maintainable architecture, practical workflows, and a product style that feels alive instead of corporate boilerplate.</p>
       </div>
       <div class="proof-grid">
         <article class="proof-card">
@@ -599,7 +617,7 @@
   <!-- The one-shot prompt it started from (gag) -->
   <section style="padding-top:0;">
     <div class="wrap" style="text-align:center;">
-      <p class="term-intro">Odysseus Pro started from one bold prompt and kept evolving with real-world use.</p>
+      <p class="term-intro" data-i18n="term.intro">Odysseus Pro started from one bold prompt and kept evolving with real-world use.</p>
       <div class="term">
         <div class="term-bar">
           <span class="ttl">user@odysseus: ~</span>
@@ -615,9 +633,9 @@
   <section id="previews">
     <div class="wrap">
       <div class="center">
-        <div class="eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>See it in action</div>
-        <h2 class="h">Hover or tap to take a closer look</h2>
-        <p class="sub center">Each panel expands and plays its preview when you hover or tap it. Swipe on mobile to move through them.</p>
+        <div class="eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg><span data-i18n="preview.eyebrow">See it in action</span></div>
+        <h2 class="h" data-i18n="preview.title">Hover or tap to take a closer look</h2>
+        <p class="sub center" data-i18n="preview.sub">Each panel expands and plays its preview when you hover or tap it. Swipe on mobile to move through them.</p>
       </div>
       <div class="previews">
         <div class="preview-panel" tabindex="0">
@@ -668,14 +686,14 @@
     <video class="sec-bg" autoplay muted loop playsinline preload="auto"><source src="bg.webm" type="video/webm"><source src="bg.mp4" type="video/mp4"></video>
     <div class="sec-bg-tint"></div>
     <div class="wrap">
-      <div class="eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.6 8.4-2.1 5.1-5.1 2.1 2.1-5.1z"/></svg>The vision</div>
-      <h2 class="h">Self-hosted AI should feel premium, not compromised.</h2>
-      <p class="sub" style="max-width:760px;">
+      <div class="eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.6 8.4-2.1 5.1-5.1 2.1 2.1-5.1z"/></svg><span data-i18n="vision.eyebrow">The vision</span></div>
+      <h2 class="h" data-i18n="vision.title">Self-hosted AI should feel premium, not compromised.</h2>
+      <p class="sub" style="max-width:760px;" data-i18n="vision.p1">
         Odysseus Pro exists to close the gap between "cool local model" and "daily driver workspace."
         Instead of a single chat box, you get an integrated system for chats, workflows, memory,
         research, and assistant tooling &mdash; without giving up control of your data.
       </p>
-      <p class="sub" style="max-width:760px; margin-top:14px;">
+      <p class="sub" style="max-width:760px; margin-top:14px;" data-i18n="vision.p2">
         This fork pushes further with a cleaner architecture, bilingual UX, and practical improvements
         focused on maintainability, performance, and long-term evolution.
       </p>
@@ -686,12 +704,12 @@
   <section id="start">
     <div class="wrap">
       <div class="start">
-        <div class="eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-5-6-5"/><path d="M12 19h8"/></svg>Get started</div>
-        <h2 class="h" style="margin-bottom:6px;">Odysseus Pro is yours.</h2>
-        <p class="sub center" style="margin:0 auto;">It's open source and free. No sales team, no demo request, no Trojan horse.</p>
+        <div class="eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-5-6-5"/><path d="M12 19h8"/></svg><span data-i18n="start.eyebrow">Get started</span></div>
+        <h2 class="h" style="margin-bottom:6px;" data-i18n="start.title">Odysseus Pro is yours.</h2>
+        <p class="sub center" style="margin:0 auto;" data-i18n="start.sub">It's open source and free. No sales team, no demo request, no Trojan horse.</p>
         <div class="codeblock"><span><span class="prompt">$</span> git clone https://github.com/madkoding/odysseus-pro.git &amp;&amp; cd odysseus-pro</span><button class="copy-btn" data-copy="git clone https://github.com/madkoding/odysseus-pro.git && cd odysseus-pro">Copy</button></div>
         <div>
-          <a class="btn primary" href="https://github.com/madkoding/odysseus-pro" target="_blank" style="margin-top:14px;">View on GitHub</a>
+          <a class="btn primary" href="https://github.com/madkoding/odysseus-pro" target="_blank" style="margin-top:14px;" data-i18n="cta.github">View on GitHub</a>
         </div>
         <div class="pill-row">
           <span class="pill">Self-hosted</span>
@@ -706,17 +724,98 @@
 
   <footer>
     <div class="wrap">
-      <div>&copy; 2026 Odysseus Pro &middot; Self-hosted AI, refined for daily use.</div>
-      <div>Built for builders, not subscriptions.</div>
+      <div data-i18n="footer.left">&copy; 2026 Odysseus Pro &middot; Self-hosted AI, refined for daily use.</div>
+      <div data-i18n="footer.right">Built for builders, not subscriptions.</div>
     </div>
   </footer>
 
   <div class="sticky-cta" role="complementary" aria-label="Quick call to action">
-    <span class="txt">Start your private AI workspace</span>
+    <span class="txt" data-i18n="sticky.text">Start your private AI workspace</span>
     <a class="btn primary" href="https://github.com/madkoding/odysseus-pro" target="_blank">GitHub</a>
   </div>
 
   <script>
+    (function () {
+      var STRINGS = {
+        en: {
+          'nav.features': 'Features', 'nav.integrations': 'Integrations', 'nav.why': 'Why Pro', 'nav.vision': 'Vision', 'nav.start': 'Get started',
+          'hero.badge': 'Fork improved for maintainability and daily usage',
+          'hero.slogan': 'Yours for the voyage.',
+          'hero.title': 'Build your private <span class="grad">AI command center</span>,<br>not just another chat tab.',
+          'hero.lede': 'Odysseus Pro is a self-hosted AI workspace with chat, agents, memory, research, docs, email, calendar, and image tools. Bilingual (EN/ES), local-first, and designed to run on your own infra.',
+          'cta.start': 'Get started', 'cta.github': 'View on GitHub',
+          'hero.chip1': 'Bilingual UI + prompts', 'hero.chip2': 'Domain-based architecture', 'hero.chip3': 'Local-first + Docker-ready',
+          'hero.preview': 'From chat to agents, research, and memory in one workspace.',
+          'integrations.eyebrow': 'Works with your stack', 'integrations.title': 'Connect models and tools you already use',
+          'features.eyebrow': 'Everything, self-hosted', 'features.title': 'One app, a lot of capabilities',
+          'features.sub': 'Started as an AI chat. Became a workspace. Each piece runs locally against whatever endpoints you point it at.',
+          'proof.eyebrow': 'Why Odysseus Pro', 'proof.title': 'Built to be useful every day',
+          'proof.sub': 'This fork focuses on maintainable architecture, practical workflows, and a product style that feels alive instead of corporate boilerplate.',
+          'term.intro': 'Odysseus Pro started from one bold prompt and kept evolving with real-world use.',
+          'preview.eyebrow': 'See it in action', 'preview.title': 'Hover or tap to take a closer look',
+          'preview.sub': 'Each panel expands and plays its preview when you hover or tap it. Swipe on mobile to move through them.',
+          'vision.eyebrow': 'The vision', 'vision.title': 'Self-hosted AI should feel premium, not compromised.',
+          'vision.p1': 'Odysseus Pro exists to close the gap between "cool local model" and "daily driver workspace." Instead of a single chat box, you get an integrated system for chats, workflows, memory, research, and assistant tooling -- without giving up control of your data.',
+          'vision.p2': 'This fork pushes further with a cleaner architecture, bilingual UX, and practical improvements focused on maintainability, performance, and long-term evolution.',
+          'start.eyebrow': 'Get started', 'start.title': 'Odysseus Pro is yours.',
+          'start.sub': "It's open source and free. No sales team, no demo request, no Trojan horse.",
+          'footer.left': '© 2026 Odysseus Pro · Self-hosted AI, refined for daily use.',
+          'footer.right': 'Built for builders, not subscriptions.',
+          'sticky.text': 'Start your private AI workspace'
+        },
+        es: {
+          'nav.features': 'Funciones', 'nav.integrations': 'Integraciones', 'nav.why': 'Por que Pro', 'nav.vision': 'Vision', 'nav.start': 'Empezar',
+          'hero.badge': 'Fork mejorado para mantenibilidad y uso diario',
+          'hero.slogan': 'Tuyo para el viaje.',
+          'hero.title': 'Construye tu <span class="grad">centro privado de IA</span>,<br>no solo otra pestaña de chat.',
+          'hero.lede': 'Odysseus Pro es un workspace de IA self-hosted con chat, agentes, memoria, research, documentos, email, calendario y herramientas de imagen. Bilingue (EN/ES), local-first, y pensado para correr en tu propia infraestructura.',
+          'cta.start': 'Empezar', 'cta.github': 'Ver en GitHub',
+          'hero.chip1': 'UI bilingue + prompts', 'hero.chip2': 'Arquitectura por dominios', 'hero.chip3': 'Local-first + Docker-ready',
+          'hero.preview': 'De chat a agentes, research y memoria en un solo workspace.',
+          'integrations.eyebrow': 'Funciona con tu stack', 'integrations.title': 'Conecta modelos y herramientas que ya usas',
+          'features.eyebrow': 'Todo, self-hosted', 'features.title': 'Una app, muchas capacidades',
+          'features.sub': 'Empezo como un chat de IA. Se convirtio en un workspace. Cada parte corre localmente contra los endpoints que configures.',
+          'proof.eyebrow': 'Por que Odysseus Pro', 'proof.title': 'Disenado para ser util cada dia',
+          'proof.sub': 'Este fork se enfoca en arquitectura mantenible, flujos practicos y un estilo de producto que se siente vivo en lugar de corporativo.',
+          'term.intro': 'Odysseus Pro empezo con un prompt atrevido y fue evolucionando con uso real.',
+          'preview.eyebrow': 'Mira como funciona', 'preview.title': 'Pasa el mouse o toca para ver mas',
+          'preview.sub': 'Cada panel se expande y reproduce su preview cuando pasas el mouse o tocas. En movil puedes deslizar.',
+          'vision.eyebrow': 'La vision', 'vision.title': 'La IA self-hosted debe sentirse premium, no limitada.',
+          'vision.p1': 'Odysseus Pro cierra la brecha entre "modelo local interesante" y "workspace para uso diario". En lugar de una sola caja de chat, tienes un sistema integrado para chats, flujos, memoria, research y tooling del asistente -- sin perder control de tus datos.',
+          'vision.p2': 'Este fork avanza con una arquitectura mas limpia, UX bilingue y mejoras practicas enfocadas en mantenibilidad, performance y evolucion a largo plazo.',
+          'start.eyebrow': 'Empezar', 'start.title': 'Odysseus Pro es tuyo.',
+          'start.sub': 'Es open source y gratis. Sin equipo de ventas, sin pedir demo, sin caballo de troya.',
+          'footer.left': '© 2026 Odysseus Pro · IA self-hosted refinada para uso diario.',
+          'footer.right': 'Construido para builders, no para suscripciones.',
+          'sticky.text': 'Inicia tu workspace privado de IA'
+        }
+      };
+
+      var btnEn = document.getElementById('lang-en');
+      var btnEs = document.getElementById('lang-es');
+
+      function applyLang(lang) {
+        var dict = STRINGS[lang] || STRINGS.en;
+        document.querySelectorAll('[data-i18n]').forEach(function (el) {
+          var key = el.getAttribute('data-i18n');
+          if (dict[key]) el.textContent = dict[key];
+        });
+        document.querySelectorAll('[data-i18n-html]').forEach(function (el) {
+          var key = el.getAttribute('data-i18n-html');
+          if (dict[key]) el.innerHTML = dict[key];
+        });
+        document.documentElement.lang = lang;
+        localStorage.setItem('odysseus-pro-site-lang', lang);
+        btnEn.classList.toggle('active', lang === 'en');
+        btnEs.classList.toggle('active', lang === 'es');
+      }
+
+      btnEn.addEventListener('click', function () { applyLang('en'); });
+      btnEs.addEventListener('click', function () { applyLang('es'); });
+
+      applyLang(localStorage.getItem('odysseus-pro-site-lang') || 'en');
+    })();
+
     // Hero background: Perlin flow field — colored particle streams (ported from
     // the app's own background effect, scoped to the hero and brand-colored).
     (function () {
