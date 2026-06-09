@@ -19,7 +19,14 @@ _SETTINGS_CACHE_KEY = "settings"
 _FEATURES_CACHE_KEY = "features"
 
 
+def _settings_cache_key() -> str:
+    # Include the settings file path so test overrides (patching SETTINGS_FILE)
+    # do not accidentally reuse a cached payload from a different file.
+    return f"{_SETTINGS_CACHE_KEY}:{SETTINGS_FILE}"
+
+
 def _invalidate_caches():
+    settings_region.delete(_settings_cache_key())
     settings_region.delete(_SETTINGS_CACHE_KEY)
     settings_region.delete(_FEATURES_CACHE_KEY)
 
@@ -190,7 +197,8 @@ DEFAULT_FEATURES = {
 
 def load_settings() -> dict:
     """Load settings merged with defaults. Always returns a complete dict."""
-    cached = settings_region.get(_SETTINGS_CACHE_KEY)
+    cache_key = _settings_cache_key()
+    cached = settings_region.get(cache_key)
     if cached is not NO_VALUE:
         return cached
     try:
@@ -201,7 +209,7 @@ def load_settings() -> dict:
         merged = {**DEFAULT_SETTINGS, **saved}
     except (FileNotFoundError, PermissionError, json.JSONDecodeError, ValueError):
         merged = dict(DEFAULT_SETTINGS)
-    settings_region.set(_SETTINGS_CACHE_KEY, merged)
+    settings_region.set(cache_key, merged)
     return merged
 
 

@@ -67,6 +67,10 @@ def _localize(prompt: str, ui_language: Optional[str]) -> str:
     return _ES_RESEARCH_DIRECTIVE + prompt
 
 
+def _ui_lang(instance: object) -> str:
+    return getattr(instance, "ui_language", "en")
+
+
 # ---------------------------------------------------------------------------
 # Prompts
 # ---------------------------------------------------------------------------
@@ -431,7 +435,10 @@ class DeepResearcher:
     # ------------------------------------------------------------------
     async def _create_plan(self, question: str) -> str:
         """LLM analyzes the question and creates a research plan."""
-        prompt = _localize(current_date_context() + RESEARCH_PLAN_PROMPT.format(question=question), self.ui_language)
+        prompt = _localize(
+            current_date_context() + RESEARCH_PLAN_PROMPT.format(question=question),
+            _ui_lang(self),
+        )
         try:
             response = await self._llm(
                 [{"role": "user", "content": prompt}],
@@ -514,7 +521,7 @@ class DeepResearcher:
             round_num=round_num,
             num_queries=num_queries,
             round_instruction=round_instruction,
-        ), self.ui_language)
+        ), _ui_lang(self))
 
         try:
             response = await self._llm(
@@ -664,7 +671,7 @@ class DeepResearcher:
         try:
             response = await self._llm(
                 [
-                    {"role": "user", "content": _localize(EXTRACTOR_SYSTEM.format(goal=question), self.ui_language)},
+                    {"role": "user", "content": _localize(EXTRACTOR_SYSTEM.format(goal=question), _ui_lang(self))},
                     untrusted_context_message("webpage", content),
                 ],
                 temperature=0.2,
@@ -710,7 +717,7 @@ class DeepResearcher:
             question=question,
             report=current_report or "(First round — no report yet.)",
             new_findings=findings_text,
-        ), self.ui_language)
+        ), _ui_lang(self))
 
         try:
             return await self._llm(
@@ -739,7 +746,7 @@ class DeepResearcher:
             report=report,
             round_num=round_num,
             max_rounds=self.max_rounds,
-        ), self.ui_language)
+        ), _ui_lang(self))
 
         try:
             response = await self._llm(
@@ -768,7 +775,7 @@ class DeepResearcher:
         prompt = _localize(FINAL_REPORT_PROMPT.format(
             question=question,
             report=report,
-        ), self.ui_language)
+        ), _ui_lang(self))
         cat_extra = CATEGORY_PROMPTS.get(self.category or "", "")
         if cat_extra:
             prompt += "\n\n" + cat_extra
