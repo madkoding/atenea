@@ -10,7 +10,7 @@ import shutil
 import tempfile
 import threading
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
+from typing import Any
 from fastapi import HTTPException, UploadFile
 
 from src.uploads.limits import format_byte_limit, get_chat_upload_max_bytes
@@ -90,7 +90,7 @@ class UploadHandler:
         self.upload_rate_window = 60  # 60 seconds
         
         # Track upload rates
-        self.upload_rate_log: Dict[str, list] = {}
+        self.upload_rate_log: dict[str, list] = {}
         self._upload_rate_lock = threading.Lock()
         self._upload_rate_counter = 0
         self._upload_rate_max_entries = 1000
@@ -324,7 +324,7 @@ class UploadHandler:
                 pass
             raise
 
-    def _load_upload_index(self) -> Dict[str, Any]:
+    def _load_upload_index(self) -> dict[str, Any]:
         uploads_db_path = os.path.join(self.upload_dir, "uploads.json")
         if not os.path.exists(uploads_db_path):
             return {}
@@ -335,7 +335,7 @@ class UploadHandler:
             if not os.path.exists(candidate):
                 continue
             try:
-                with open(candidate, "r", encoding="utf-8") as f:
+                with open(candidate, encoding="utf-8") as f:
                     data = json.load(f)
                 return data if isinstance(data, dict) else {}
             except Exception as e:
@@ -343,7 +343,7 @@ class UploadHandler:
                 continue
         return {}
 
-    def get_upload_info(self, upload_id: str) -> Optional[Dict[str, Any]]:
+    def get_upload_info(self, upload_id: str) -> dict[str, Any] | None:
         """Return the uploads.json metadata row for an upload ID, if present."""
         if not self.validate_upload_id(upload_id):
             return None
@@ -352,7 +352,7 @@ class UploadHandler:
                 return dict(info)
         return None
 
-    def _find_upload_path(self, upload_id: str) -> Optional[str]:
+    def _find_upload_path(self, upload_id: str) -> str | None:
         """Find an upload file by ID while staying inside upload_dir."""
         if not self.validate_upload_id(upload_id):
             return None
@@ -371,10 +371,10 @@ class UploadHandler:
     def resolve_upload(
         self,
         upload_id: str,
-        owner: Optional[str] = None,
+        owner: str | None = None,
         auth_manager: Any = None,
         allow_admin: bool = True,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Resolve an upload ID to metadata only if the caller may read it.
 
         This is the owner-aware lookup used by internal processors. Public
@@ -456,7 +456,7 @@ class UploadHandler:
         
         logger.info(f"Rate-limit cleanup: removed {removed_ips} IPs, {removed_timestamps} timestamps.")
     
-    def get_upload_stats(self) -> Dict[str, Any]:
+    def get_upload_stats(self) -> dict[str, Any]:
         """Get statistics about uploaded files."""
         try:
             total_files = 0
@@ -465,7 +465,7 @@ class UploadHandler:
             
             uploads_db_path = os.path.join(self.upload_dir, "uploads.json")
             if os.path.exists(uploads_db_path):
-                with open(uploads_db_path, "r", encoding="utf-8") as f:
+                with open(uploads_db_path, encoding="utf-8") as f:
                     files = json.load(f)
                 
                 total_files = len(files)

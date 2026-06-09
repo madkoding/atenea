@@ -8,42 +8,39 @@ import pytest
 
 from tests.helpers.import_state import clear_module, preserve_import_state
 
-# conftest.py stubs src.database; drop the stub so webhook_manager imports the
-# real module. preserve_import_state restores sys.modules and parent-package
-# attributes for both src.database and core.database after the block, preventing
-# stub/engine leakage into siblings.
-#
-# Importing the real core.database runs init_db() -> create_all() against
-# DATABASE_URL (default sqlite:///./data/app.db); in a clean worktree with no
-# ./data directory that raises sqlite3.OperationalError during collection. Pin
-# DATABASE_URL to in-memory SQLite for the import: it needs no filesystem path
-# and leaves no artifact, and these tests never touch the real engine
-# (validate_webhook_url is pure; the delivery test monkeypatches SessionLocal).
-# patch.dict restores the prior DATABASE_URL after the block.
-with patch.dict(os.environ, {"DATABASE_URL": "sqlite:///:memory:"}), \
-        preserve_import_state("src.database", "core.database"):
-    clear_module("src.database")
-    _core_database = sys.modules.get("core.database")
-    _core_database_all = (
-        getattr(_core_database, "__all__", None) if _core_database is not None else None
-    )
-    if _core_database is not None and (
-        not getattr(_core_database, "__file__", None)
-        or (
-            _core_database_all is not None
-            and (
-                not isinstance(_core_database_all, (list, tuple, set))
-                or not all(isinstance(name, str) for name in _core_database_all)
-            )
+
+def _import_webhook_manager():
+    """Import webhook_manager with a clean in-memory DB to avoid init_db I/O."""
+    with patch.dict(os.environ, {"DATABASE_URL": "sqlite:///:memory:"}), \
+            preserve_import_state("src.database", "core.database", "src.clients.webhook_manager"):
+        clear_module("src.database")
+        for _mod_name in ("src.clients.webhook_manager",):
+            sys.modules.pop(_mod_name, None)
+            _pkg_name, _, _attr = _mod_name.rpartition(".")
+            _pkg = sys.modules.get(_pkg_name)
+            if _pkg is not None and hasattr(_pkg, _attr):
+                delattr(_pkg, _attr)
+        _core_database = sys.modules.get("core.database")
+        _core_database_all = (
+            getattr(_core_database, "__all__", None) if _core_database is not None else None
         )
-    ):
-        del sys.modules["core.database"]
-    from src.clients.webhook_manager import validate_webhook_url
+        if _core_database is not None and (
+            not getattr(_core_database, "__file__", None)
+            or (
+                _core_database_all is not None
+                and (
+                    not isinstance(_core_database_all, (list, tuple, set))
+                    or not all(isinstance(name, str) for name in _core_database_all)
+                )
+            )
+        ):
+            del sys.modules["core.database"]
+        import src.clients.webhook_manager as wm
+        return wm
 
 
 def test_webhook_url_ssrf_mitigation():
-    # SSRF bypasses that must be rejected, including IPv6 unspecified and
-    # IPv4-mapped IPv6 (loopback + cloud metadata).
+    wm = _import_webhook_manager()
     private_urls = [
         "http://[::]/",
         "http://[::ffff:127.0.0.1]/",
@@ -53,17 +50,16 @@ def test_webhook_url_ssrf_mitigation():
     ]
     for url in private_urls:
         with pytest.raises(ValueError) as exc:
-            validate_webhook_url(url)
+            wm.validate_webhook_url(url)
         assert "private/internal addresses" in str(exc.value)
 
-    # A clearly public IP literal must still be accepted.
     public_url = "http://93.184.216.34/"
-    assert validate_webhook_url(public_url) == public_url
+    assert wm.validate_webhook_url(public_url) == public_url
 
 
 @pytest.mark.asyncio
 async def test_webhook_delivery_uses_naive_utc_timestamps(monkeypatch):
-    import src.clients.webhook_manager as wm
+    wm = _import_webhook_manager()
 
     class _Query:
         def __init__(self, updates):

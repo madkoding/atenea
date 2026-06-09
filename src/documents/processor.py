@@ -6,7 +6,7 @@ import logging
 import mimetypes
 import base64
 import tempfile
-from typing import List, Dict, Any
+from typing import Any
 
 from src.llm_core import llm_call
 
@@ -349,10 +349,10 @@ def build_user_content(
     upload_dir: str,
     upload_handler,
     session_id: str | None = None,
-    auto_opened_docs: list[Dict[str, Any]] | None = None,
+    auto_opened_docs: list[dict[str, Any]] | None = None,
     owner: str | None = None,
-    resolved_uploads: dict[str, Dict[str, Any]] | None = None,
-) -> str | List[Dict[str, Any]]:
+    resolved_uploads: dict[str, dict[str, Any]] | None = None,
+) -> str | list[dict[str, Any]]:
     """Build user content with attachments (text, images, audio, documents).
 
     If session_id is provided and an attached PDF contains AcroForm fields,

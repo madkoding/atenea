@@ -9,7 +9,6 @@ import ast
 import json
 import logging
 import re
-from typing import List, Optional
 
 from src.tools._common import ToolBlock, TOOL_TAGS
 
@@ -193,7 +192,7 @@ _MISFENCED_WEB_TOOL_NAMES = {
 # Parsing functions
 # ---------------------------------------------------------------------------
 
-def _literal_string(value) -> Optional[str]:
+def _literal_string(value) -> str | None:
     """Return a string from a small literal AST node, or None."""
     try:
         parsed = ast.literal_eval(value)
@@ -208,7 +207,7 @@ def _literal_string(value) -> Optional[str]:
     return None
 
 
-def _parse_misfenced_web_lookup(content: str) -> Optional[ToolBlock]:
+def _parse_misfenced_web_lookup(content: str) -> ToolBlock | None:
     """Recover simple web_search/web_fetch calls wrapped in python/bash fences.
 
     Some local fenced-tool models write:
@@ -279,7 +278,7 @@ def _parse_misfenced_web_lookup(content: str) -> Optional[ToolBlock]:
         return None
     return ToolBlock("web_fetch", url)
 
-def _parse_tool_call_block(raw: str) -> Optional[ToolBlock]:
+def _parse_tool_call_block(raw: str) -> ToolBlock | None:
     """Parse a [TOOL_CALL] block into a ToolBlock.
 
     Handles formats like:
@@ -344,7 +343,7 @@ def _parse_tool_call_block(raw: str) -> Optional[ToolBlock]:
     return None
 
 
-def _parse_xml_invoke(inv_match) -> Optional[ToolBlock]:
+def _parse_xml_invoke(inv_match) -> ToolBlock | None:
     """Parse an <invoke name="tool"><parameter ...>...</parameter></invoke> match.
 
     Delegates content-shaping to function_call_to_tool_block — the SAME
@@ -370,7 +369,7 @@ def _parse_xml_invoke(inv_match) -> Optional[ToolBlock]:
     return function_call_to_tool_block(tool_name, json.dumps(params))
 
 
-def _parse_tool_code_block(raw: str) -> Optional[ToolBlock]:
+def _parse_tool_code_block(raw: str) -> ToolBlock | None:
     """Parse a <tool_code>{tool => 'name', args => '...'}</tool_code> block (MiniMax style)."""
     # Extract tool name
     tool_match = re.search(r"tool\s*=>\s*['\"](\S+?)['\"]", raw)
@@ -427,7 +426,7 @@ def _parse_tool_code_block(raw: str) -> Optional[ToolBlock]:
     return None
 
 
-def parse_tool_blocks(text: str, skip_fenced: bool = False) -> List[ToolBlock]:
+def parse_tool_blocks(text: str, skip_fenced: bool = False) -> list[ToolBlock]:
     """Extract executable tool blocks from LLM response text.
 
     Supports multiple formats:

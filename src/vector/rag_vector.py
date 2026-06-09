@@ -11,7 +11,7 @@ import hashlib
 import re
 import logging
 import numpy as np
-from typing import List, Dict, Any, Optional, Set
+from typing import Any
 
 from src.constants import CHROMA_DIR
 from pathlib import Path
@@ -29,7 +29,7 @@ from src.vector.embedding_lanes import (
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_FILE_EXTENSIONS: Set[str] = {
+DEFAULT_FILE_EXTENSIONS: set[str] = {
     '.txt', '.md', '.py', '.json', '.yaml', '.yml',
     '.csv', '.html', '.css', '.js', '.pdf'
 }
@@ -91,7 +91,7 @@ class VectorRAG:
             self._healthy = False
             return False
 
-    def _embed(self, texts: List[str]) -> List[List[float]]:
+    def _embed(self, texts: list[str]) -> list[list[float]]:
         if not self._lanes:
             return []
         return np.array(self._lanes[0].encode(texts), dtype=np.float32).tolist()
@@ -157,7 +157,7 @@ class VectorRAG:
     # Document operations
     # ------------------------------------------------------------------
 
-    def add_document(self, text: str, metadata: Dict[str, Any]) -> bool:
+    def add_document(self, text: str, metadata: dict[str, Any]) -> bool:
         if not self.healthy:
             logger.error("Collection not initialized")
             return False
@@ -185,7 +185,7 @@ class VectorRAG:
                 logger.warning("add_document failed in %s lane: %s", lane.name, e)
         return wrote
 
-    def add_documents_batch(self, docs: List[tuple]) -> Dict[str, Any]:
+    def add_documents_batch(self, docs: list[tuple]) -> dict[str, Any]:
         if not self.healthy:
             return {"success": False, "message": "Collection not initialized"}
         if not docs:
@@ -254,7 +254,7 @@ class VectorRAG:
     # Search — hybrid: vector similarity + keyword overlap
     # ------------------------------------------------------------------
 
-    def search(self, query: str, k: int = 5, owner: Optional[str] = None) -> List[Dict[str, Any]]:
+    def search(self, query: str, k: int = 5, owner: str | None = None) -> list[dict[str, Any]]:
         if not self.healthy:
             return []
         if not query or not isinstance(query, str):
@@ -311,7 +311,7 @@ class VectorRAG:
             logger.error(f"search failed: {e}")
             return self._keyword_search_fallback(query, k, owner=owner)
 
-    def _keyword_search_fallback(self, query: str, k: int = 5, owner: Optional[str] = None) -> List[Dict[str, Any]]:
+    def _keyword_search_fallback(self, query: str, k: int = 5, owner: str | None = None) -> list[dict[str, Any]]:
         try:
             if not self._active_collections():
                 return []
@@ -381,7 +381,7 @@ class VectorRAG:
             self._healthy = False
             return False
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         if not self.healthy:
             return {"error": "Collection not initialized"}
         try:
@@ -402,8 +402,8 @@ class VectorRAG:
     # ------------------------------------------------------------------
 
     def index_personal_documents(
-        self, directory: str, file_extensions: Optional[set] = None, owner: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, directory: str, file_extensions: set | None = None, owner: str | None = None
+    ) -> dict[str, Any]:
         if file_extensions is None:
             file_extensions = DEFAULT_FILE_EXTENSIONS
 
@@ -423,7 +423,7 @@ class VectorRAG:
                             from src.personal.docs import extract_pdf_text
                             content = extract_pdf_text(fpath)
                         else:
-                            with open(fpath, 'r', encoding='utf-8') as f:
+                            with open(fpath, encoding='utf-8') as f:
                                 content = f.read()
 
                         if not content or not content.strip():
@@ -457,7 +457,7 @@ class VectorRAG:
             logger.error(f"index_personal_documents {directory}: {e}")
             return {'success': False, 'indexed_count': indexed, 'failed_count': failed, 'message': str(e)}
 
-    def remove_directory(self, directory: str) -> Dict[str, Any]:
+    def remove_directory(self, directory: str) -> dict[str, Any]:
         """Remove all chunks under ``directory`` (recursively), and nothing else.
 
         Selection is a Python-side path-boundary match on each chunk's stored
@@ -499,8 +499,8 @@ class VectorRAG:
             return {"success": False, "message": str(e)}
 
     def reindex_directory(
-        self, directory: str, file_extensions: Optional[set] = None
-    ) -> Dict[str, Any]:
+        self, directory: str, file_extensions: set | None = None
+    ) -> dict[str, Any]:
         remove_result = self.remove_directory(directory)
         if not remove_result.get("success"):
             return remove_result
@@ -522,7 +522,7 @@ class VectorRAG:
 
     def _split_into_chunks(
         self, text: str, chunk_size: int = 1000, overlap: int = 200
-    ) -> List[str]:
+    ) -> list[str]:
         if not text:
             return []
         if len(text) <= chunk_size:
@@ -532,8 +532,8 @@ class VectorRAG:
         sentences = re.split(r'(?<=[.!?])\s+|\n{2,}', text)
         sentences = [s.strip() for s in sentences if s.strip()]
 
-        chunks: List[str] = []
-        current_chunk: List[str] = []
+        chunks: list[str] = []
+        current_chunk: list[str] = []
         current_len = 0
 
         for sentence in sentences:
@@ -555,7 +555,7 @@ class VectorRAG:
             if current_len + sent_len + 1 > chunk_size and current_chunk:
                 chunks.append(' '.join(current_chunk))
                 # Keep last few sentences for overlap
-                overlap_sentences: List[str] = []
+                overlap_sentences: list[str] = []
                 overlap_len = 0
                 for s in reversed(current_chunk):
                     if overlap_len + len(s) > overlap:
@@ -603,5 +603,5 @@ class VectorRAG:
     # Convenience
     # ------------------------------------------------------------------
 
-    def retrieve(self, query: str, k: int = 5) -> List[str]:
+    def retrieve(self, query: str, k: int = 5) -> list[str]:
         return [r['document'] for r in self.search(query, k)]

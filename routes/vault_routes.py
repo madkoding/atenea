@@ -8,10 +8,8 @@ Stores the BW_SESSION key in data/vault.json with restrictive permissions.
 import json
 import logging
 import os
-import shutil
 import asyncio
 from pathlib import Path
-from datetime import datetime
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
@@ -22,6 +20,9 @@ from src.constants import VAULT_FILE as _VAULT_FILE
 logger = logging.getLogger(__name__)
 
 VAULT_FILE = Path(_VAULT_FILE)
+
+
+from core.database import utcnow_naive as _utcnow_naive
 
 
 def _find_bw() -> str:
@@ -176,7 +177,7 @@ def setup_vault_routes():
         # bw login --raw prints session key on success (when 2FA disabled)
         if stdout:
             cfg["session"] = stdout
-            cfg["unlocked_at"] = datetime.utcnow().isoformat()
+            cfg["unlocked_at"] = _utcnow_naive().isoformat()
             _save_config(cfg)
         return {"ok": True}
 
@@ -198,7 +199,7 @@ def setup_vault_routes():
             return {"ok": False, "error": "bw returned empty session"}
         cfg = _load_config()
         cfg["session"] = session
-        cfg["unlocked_at"] = datetime.utcnow().isoformat()
+        cfg["unlocked_at"] = _utcnow_naive().isoformat()
         _save_config(cfg)
         return {"ok": True, "message": "Vault unlocked"}
 

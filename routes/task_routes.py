@@ -4,8 +4,8 @@ import json
 import logging
 import secrets
 import uuid
-from datetime import datetime
-from typing import Optional, Dict, Any
+from datetime import datetime, UTC
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
@@ -95,8 +95,8 @@ def _maybe_cascade_calendar_event(task) -> None:
                 return
             cal_href = cookbook_cal.get("href") or cookbook_cal.get("id") or ""
             # List events in a wide window to catch recurring + upcoming.
-            from datetime import datetime as _dt, timedelta as _td, timezone as _tz
-            now = _dt.now(_tz.utc)
+            from datetime import datetime as _dt, timedelta as _td
+            now = _dt.now(UTC)
             start = (now - _td(days=30)).isoformat()
             end = (now + _td(days=365)).isoformat()
             ev_r = client.get(
@@ -134,43 +134,43 @@ def _maybe_cascade_calendar_event(task) -> None:
 
 
 class TaskCreate(BaseModel):
-    name: Optional[str] = None
-    prompt: Optional[str] = None
+    name: str | None = None
+    prompt: str | None = None
     task_type: str = "llm"                        # "llm" | "action" | "research"
-    action: Optional[str] = None                  # builtin action name
-    schedule: Optional[str] = None                # "once" | "daily" | "weekly" | "monthly" | "cron"
+    action: str | None = None                  # builtin action name
+    schedule: str | None = None                # "once" | "daily" | "weekly" | "monthly" | "cron"
     scheduled_time: str = "09:00"                 # HH
-    scheduled_day: Optional[int] = None           # day-of-week (0=Mon) or day-of-month
-    scheduled_date: Optional[str] = None          # ISO datetime for "once"
-    cron_expression: Optional[str] = None         # cron string e.g. "*/5 * * * *"
+    scheduled_day: int | None = None           # day-of-week (0=Mon) or day-of-month
+    scheduled_date: str | None = None          # ISO datetime for "once"
+    cron_expression: str | None = None         # cron string e.g. "*/5 * * * *"
     trigger_type: str = "schedule"                # "schedule" | "event" | "webhook"
-    trigger_event: Optional[str] = None           # e.g. "session_created"
-    trigger_count: Optional[int] = None           # fire every N events
+    trigger_event: str | None = None           # e.g. "session_created"
+    trigger_count: int | None = None           # fire every N events
     output_target: str = "session"
-    model: Optional[str] = None
-    endpoint_url: Optional[str] = None
-    then_task_id: Optional[str] = None            # chain: run this task after success
-    notifications_enabled: Optional[bool] = None  # None lets action-specific defaults apply
+    model: str | None = None
+    endpoint_url: str | None = None
+    then_task_id: str | None = None            # chain: run this task after success
+    notifications_enabled: bool | None = None  # None lets action-specific defaults apply
 
 
 class TaskUpdate(BaseModel):
-    name: Optional[str] = None
-    prompt: Optional[str] = None
-    task_type: Optional[str] = None
-    action: Optional[str] = None
-    schedule: Optional[str] = None
-    scheduled_time: Optional[str] = None
-    scheduled_day: Optional[int] = None
-    scheduled_date: Optional[str] = None
-    cron_expression: Optional[str] = None
-    trigger_type: Optional[str] = None
-    trigger_event: Optional[str] = None
-    trigger_count: Optional[int] = None
-    output_target: Optional[str] = None
-    model: Optional[str] = None
-    endpoint_url: Optional[str] = None
-    then_task_id: Optional[str] = None
-    notifications_enabled: Optional[bool] = None
+    name: str | None = None
+    prompt: str | None = None
+    task_type: str | None = None
+    action: str | None = None
+    schedule: str | None = None
+    scheduled_time: str | None = None
+    scheduled_day: int | None = None
+    scheduled_date: str | None = None
+    cron_expression: str | None = None
+    trigger_type: str | None = None
+    trigger_event: str | None = None
+    trigger_count: int | None = None
+    output_target: str | None = None
+    model: str | None = None
+    endpoint_url: str | None = None
+    then_task_id: str | None = None
+    notifications_enabled: bool | None = None
 
 
 def _display_task_name(t: ScheduledTask) -> str:
@@ -293,7 +293,7 @@ def setup_task_routes(task_scheduler) -> APIRouter:
     def _owner(request: Request):
         return get_current_user(request)
 
-    async def _generate_task_name(prompt: str, owner: Optional[str] = None) -> str:
+    async def _generate_task_name(prompt: str, owner: str | None = None) -> str:
         """Use LLM to generate a short task name from the prompt."""
         try:
             from src.llm_core import llm_call_async
@@ -331,7 +331,7 @@ def setup_task_routes(task_scheduler) -> APIRouter:
             return first[:50] if first else "Untitled Task"
 
     @router.get("")
-    async def list_tasks(request: Request, status: Optional[str] = None,
+    async def list_tasks(request: Request, status: str | None = None,
                          include_last_run: bool = False):
         user = _owner(request)
         if user:
@@ -436,7 +436,7 @@ def setup_task_routes(task_scheduler) -> APIRouter:
         except Exception:
             return False
 
-    def _validate_then_task_id(db, then_task_id: Optional[str], user: Optional[str], current_task_id: Optional[str] = None) -> Optional[str]:
+    def _validate_then_task_id(db, then_task_id: str | None, user: str | None, current_task_id: str | None = None) -> str | None:
         target_id = (then_task_id or "").strip()
         if not target_id:
             return None
@@ -519,6 +519,15 @@ def setup_task_routes(task_scheduler) -> APIRouter:
                 else bool(req.notifications_enabled) if req.notifications_enabled is not None
                 else True
             )
+            # Validate chained task belongs to same owner
+            if req.then_task_id:
+                chain_target = db.query(ScheduledTask).filter(
+                    ScheduledTask.id == req.then_task_id
+                ).first()
+                if not chain_target:
+                    raise HTTPException(400, "Chained task not found")
+                if chain_target.owner != user:
+                    raise HTTPException(403, "Cannot chain to another user's task")
             task = ScheduledTask(
                 id=task_id,
                 owner=user,
@@ -1054,7 +1063,7 @@ def setup_task_routes(task_scheduler) -> APIRouter:
 
     # --- PARSE NATURAL LANGUAGE → TASK DRAFT (AI) ---
     @router.post("/parse")
-    async def parse_task(request: Request) -> Dict[str, Any]:
+    async def parse_task(request: Request) -> dict[str, Any]:
         """Turn a free-form description ("every weekday at 7am research the top
         AI news and summarize it") into a structured task draft the frontend
         can pre-fill the form with. Returns a draft only — the user reviews and
@@ -1118,7 +1127,7 @@ def setup_task_routes(task_scheduler) -> APIRouter:
             if not isinstance(draft, dict):
                 raise ValueError("not an object")
             # Whitelist + light validation so the frontend gets clean fields.
-            out: Dict[str, Any] = {}
+            out: dict[str, Any] = {}
             if draft.get("task_type") in ("llm", "research"):
                 out["task_type"] = draft["task_type"]
             else:

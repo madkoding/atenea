@@ -65,7 +65,7 @@ def find_admin_user() -> str | None:
     falling back to the first user."""
     auth_path = AUTH_FILE
     try:
-        with open(auth_path, "r", encoding="utf-8") as f:
+        with open(auth_path, encoding="utf-8") as f:
             data = json.load(f)
     except (OSError, json.JSONDecodeError):
         return None

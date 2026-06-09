@@ -19,7 +19,14 @@ _SETTINGS_CACHE_KEY = "settings"
 _FEATURES_CACHE_KEY = "features"
 
 
+def _settings_cache_key() -> str:
+    # Include the settings file path so test overrides (patching SETTINGS_FILE)
+    # do not accidentally reuse a cached payload from a different file.
+    return f"{_SETTINGS_CACHE_KEY}:{SETTINGS_FILE}"
+
+
 def _invalidate_caches():
+    settings_region.delete(_settings_cache_key())
     settings_region.delete(_SETTINGS_CACHE_KEY)
     settings_region.delete(_FEATURES_CACHE_KEY)
 
@@ -190,18 +197,19 @@ DEFAULT_FEATURES = {
 
 def load_settings() -> dict:
     """Load settings merged with defaults. Always returns a complete dict."""
-    cached = settings_region.get(_SETTINGS_CACHE_KEY)
+    cache_key = _settings_cache_key()
+    cached = settings_region.get(cache_key)
     if cached is not NO_VALUE:
         return cached
     try:
-        with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+        with open(SETTINGS_FILE, encoding="utf-8") as f:
             saved = json.load(f)
         if not isinstance(saved, dict):
             raise ValueError("settings must be an object")
         merged = {**DEFAULT_SETTINGS, **saved}
     except (FileNotFoundError, PermissionError, json.JSONDecodeError, ValueError):
         merged = dict(DEFAULT_SETTINGS)
-    settings_region.set(_SETTINGS_CACHE_KEY, merged)
+    settings_region.set(cache_key, merged)
     return merged
 
 
@@ -226,7 +234,7 @@ def is_setting_overridden(key: str) -> bool:
     default (e.g. adaptive budgets) use this to read the raw saved file.
     """
     try:
-        with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+        with open(SETTINGS_FILE, encoding="utf-8") as f:
             saved = json.load(f)
         return isinstance(saved, dict) and key in saved
     except (FileNotFoundError, json.JSONDecodeError):
@@ -277,7 +285,7 @@ def load_features() -> dict:
     if cached is not NO_VALUE:
         return cached
     try:
-        with open(FEATURES_FILE, "r", encoding="utf-8") as f:
+        with open(FEATURES_FILE, encoding="utf-8") as f:
             saved = json.load(f)
         if not isinstance(saved, dict):
             raise ValueError("features must be an object")

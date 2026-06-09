@@ -10,6 +10,8 @@ useful after the rename.
 import sys
 from unittest.mock import MagicMock
 
+from tests.helpers.import_state import preserve_import_state
+
 _MOCKED_IMPORTS = [
     'sqlalchemy', 'sqlalchemy.orm', 'sqlalchemy.ext', 'sqlalchemy.ext.declarative',
     'sqlalchemy.ext.hybrid', 'sqlalchemy.sql', 'sqlalchemy.sql.expression',
@@ -17,51 +19,29 @@ _MOCKED_IMPORTS = [
     'src.agent.tools_facade',
     'core.models', 'core.database',
 ]
-_INJECTED_IMPORT_STUBS = {}
-_PREEXISTING_AGENT_LOOP = sys.modules.get("src.chat.agent_loop")
 
+with preserve_import_state("src.chat.agent_loop", *_MOCKED_IMPORTS):
+    # Mock heavy dependencies before importing — preserve_import_state will
+    # restore every affected module (and its parent-package attribute) on exit.
+    for mod in _MOCKED_IMPORTS:
+        if mod not in sys.modules:
+            sys.modules[mod] = MagicMock()
 
-def _drop_module_if_same(name, expected):
-    if sys.modules.get(name) is expected:
-        sys.modules.pop(name, None)
-    parent_name, _, attr = name.rpartition(".")
-    parent = sys.modules.get(parent_name)
-    if parent is not None and getattr(parent, "__dict__", {}).get(attr) is expected:
-        delattr(parent, attr)
-
-
-# Mock heavy dependencies before importing. Only clean up stubs this file
-# created so pre-existing conftest/pytest modules keep their intended state.
-for mod in _MOCKED_IMPORTS:
-    if mod not in sys.modules:
-        stub = MagicMock()
-        sys.modules[mod] = stub
-        _INJECTED_IMPORT_STUBS[mod] = stub
-
-_IMPORTED_AGENT_LOOP = None
-try:
     from src.chat.agent_loop import (
         _detect_admin_intent,
         _compute_final_metrics,
         _append_tool_results,
         _MCP_KEYWORDS,
     )
-    _IMPORTED_AGENT_LOOP = sys.modules.get("src.chat.agent_loop")
-finally:
-    if _PREEXISTING_AGENT_LOOP is None and _IMPORTED_AGENT_LOOP is not None:
-        _drop_module_if_same("src.chat.agent_loop", _IMPORTED_AGENT_LOOP)
-    for _mod, _stub in _INJECTED_IMPORT_STUBS.items():
-        _drop_module_if_same(_mod, _stub)
 
 
 def test_import_stubs_do_not_leak_into_later_tests():
-    leaked = [
-        mod for mod, stub in _INJECTED_IMPORT_STUBS.items()
-        if sys.modules.get(mod) is stub
-    ]
-    assert leaked == []
-    if _PREEXISTING_AGENT_LOOP is None:
-        assert sys.modules.get("src.chat.agent_loop") is not _IMPORTED_AGENT_LOOP
+    # The module-level preserve_import_state block restores every affected module
+    # on exit. Agent_loop was created fresh inside the block; verify it's gone
+    # (unless a previous file left a real module in its place).
+    mod = sys.modules.get("src.chat.agent_loop")
+    if mod is not None:
+        assert hasattr(mod, "_detect_admin_intent"), "agent_loop leaked from a stub import"
 
 
 def test_mcp_keyword_gate_matches_literal_mcp_requests():

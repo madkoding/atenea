@@ -10,8 +10,11 @@ import logging
 from core.session_manager import SessionManager
 from core.models import ChatMessage
 from src.runtime.request_models import SessionResponse
-from core.database import Session as DbSession, SessionLocal, Document, GalleryImage
+from core.database import Session as DbSession, SessionLocal, Document, GalleryImage, utcnow_naive as _utcnow_naive
 from src.auth.helpers import get_current_user, effective_user, _auth_disabled
+
+
+
 
 
 def _sanitize_export_filename(name: str) -> str:
@@ -86,7 +89,8 @@ def _message_metadata(message) -> dict:
 
 
 def _reject_compact_during_active_run(session_id: str) -> None:
-    from src.agent.runs import agent_runs
+    import src.agent.runs as agent_runs
+
     if agent_runs.is_active(session_id):
         raise HTTPException(409, "Session has an active run; try compacting after it finishes")
 
@@ -161,7 +165,7 @@ def _persist_session_headers(session_id: str, headers: dict | None) -> None:
         db_session = db.query(DbSession).filter(DbSession.id == session_id).first()
         if db_session:
             db_session.headers = headers or {}
-            db_session.updated_at = datetime.utcnow()
+            db_session.updated_at = _utcnow_naive()
             db.commit()
     except Exception:
         db.rollback()
@@ -222,8 +226,8 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
         # purge exists only to catch ghosts the frontend missed (tab close,
         # crash). Only clean up rows old enough to be definitely orphaned.
         try:
-            from datetime import datetime as _dt, timedelta as _td
-            _cutoff = _dt.utcnow() - _td(minutes=10)
+            from datetime import timedelta as _td
+            _cutoff = _utcnow_naive() - _td(minutes=10)
             _purge_db = SessionLocal()
             try:
                 from core.database import ChatMessage as _DbMsg
@@ -274,7 +278,7 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
                 mode_map[row.id] = row.mode
                 msg_count_map[row.id] = row.message_count or 0
             # Sessions with active documents that have content
-            from sqlalchemy import func, select
+            from sqlalchemy import func
             doc_session_ids = set(
                 r[0] for r in db.query(Document.session_id)
                 .filter(Document.is_active == True,
@@ -465,7 +469,7 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
                 db_session = db.query(DbSession).filter(DbSession.id == sid).first()
                 if db_session:
                     db_session.folder = folder if folder else None
-                    db_session.updated_at = datetime.utcnow()
+                    db_session.updated_at = _utcnow_naive()
                     db.commit()
                     result["folder"] = folder if folder else None
             finally:
@@ -512,7 +516,7 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
                     db_session.model = model
                     db_session.endpoint_url = endpoint_url
                     db_session.headers = session.headers or {}
-                    db_session.updated_at = datetime.utcnow()
+                    db_session.updated_at = _utcnow_naive()
                     db.commit()
             finally:
                 db.close()
@@ -544,7 +548,6 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
     @router.post("/sessions/bulk-delete")
     async def bulk_delete_sessions(request: Request):
         """Delete multiple sessions (for compare cleanup via sendBeacon)."""
-        from core.database import ChatMessage as _CM
         try:
             body = await request.json()
             ids = body.get("ids", [])
@@ -641,7 +644,7 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
                 db_session = db.query(DbSession).filter(DbSession.id == sid).first()
                 if db_session:
                     db_session.archived = True
-                    db_session.updated_at = datetime.utcnow()
+                    db_session.updated_at = _utcnow_naive()
                     db.commit()
                     
                     # Update in memory if it exists
@@ -675,7 +678,7 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
             if not db_session:
                 raise HTTPException(404, f"Session {sid} not found")
             db_session.archived = False
-            db_session.updated_at = datetime.utcnow()
+            db_session.updated_at = _utcnow_naive()
             db.commit()
             # Reload into session manager so it appears in the active list
             try:
@@ -885,7 +888,7 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
                 db_session = db.query(DbSession).filter(DbSession.id == session_id).first()
                 if db_session:
                     db_session.is_important = important
-                    db_session.updated_at = datetime.utcnow()
+                    db_session.updated_at = _utcnow_naive()
                     db.commit()
 
                     # Update in memory if it exists
@@ -974,7 +977,7 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
             metadata={
                 "compacted": True,
                 "summarized_count": len(older),
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": _utcnow_naive().isoformat(),
             },
         )
         new_history = [summary_msg] + recent
@@ -1237,7 +1240,7 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
                 db_session = db.query(DbSession).filter(DbSession.id == sid, DbSession.owner == user).first()
                 if db_session:
                     db_session.folder = folder_name
-                    db_session.updated_at = datetime.utcnow()
+                    db_session.updated_at = _utcnow_naive()
                     updated += 1
             db.commit()
         except Exception as e:

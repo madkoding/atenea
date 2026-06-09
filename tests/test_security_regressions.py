@@ -19,6 +19,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.helpers.import_state import preserve_import_state
+
 
 # ── prompt-injection context wrapper ────────────────────────────
 
@@ -44,12 +46,13 @@ def test_untrusted_context_policy_marks_sources_as_data():
 
 def _import_secret_storage(tmp_path, monkeypatch):
     """Import src.security.secret_storage with the key file redirected to tmp."""
-    # Make sure a previous test's cached module doesn't reuse its key.
-    sys.modules.pop("src.security.secret_storage", None)
-    import src.security.secret_storage as secret_storage  # noqa: WPS433
-    monkeypatch.setattr(secret_storage, "_KEY_PATH", tmp_path / ".app_key")
-    monkeypatch.setattr(secret_storage, "_fernet", None)
-    return secret_storage
+    with preserve_import_state("src.security.secret_storage"):
+        # Make sure a previous test's cached module doesn't reuse its key.
+        sys.modules.pop("src.security.secret_storage", None)
+        import src.security.secret_storage as secret_storage  # noqa: WPS433
+        monkeypatch.setattr(secret_storage, "_KEY_PATH", tmp_path / ".app_key")
+        monkeypatch.setattr(secret_storage, "_fernet", None)
+        return secret_storage
 
 
 def test_secret_storage_roundtrip(tmp_path, monkeypatch):
@@ -141,10 +144,11 @@ def test_ollama_cookbook_runner_does_not_force_public_bind():
 def _import_integrations(tmp_path, monkeypatch):
     """Import src.integrations.registry with data + encryption key redirected to tmp."""
     _import_secret_storage(tmp_path, monkeypatch)
-    sys.modules.pop("src.integrations.registry", None)
-    import src.integrations.registry as integrations  # noqa: WPS433
-    monkeypatch.setattr(integrations, "DATA_FILE", str(tmp_path / "integrations.json"))
-    return integrations
+    with preserve_import_state("src.integrations.registry"):
+        sys.modules.pop("src.integrations.registry", None)
+        import src.integrations.registry as integrations  # noqa: WPS433
+        monkeypatch.setattr(integrations, "DATA_FILE", str(tmp_path / "integrations.json"))
+        return integrations
 
 
 def test_integrations_api_keys_are_encrypted_at_rest(tmp_path, monkeypatch):
@@ -198,9 +202,10 @@ def test_integrations_plaintext_keys_migrate_on_load(tmp_path, monkeypatch):
 # ── _q IMAP mailbox quoter ─────────────────────────────────────
 
 def _import_q():
-    sys.modules.pop("routes.email_helpers", None)
-    from routes.email_helpers import _q  # noqa: WPS433
-    return _q
+    with preserve_import_state("routes.email_helpers"):
+        sys.modules.pop("routes.email_helpers", None)
+        from routes.email_helpers import _q  # noqa: WPS433
+        return _q
 
 
 def test_q_plain_name():
@@ -231,6 +236,44 @@ def test_q_empty_input():
     _q = _import_q()
     assert _q("") == '""'
     assert _q(None) == '""'
+
+
+# ── provider auth error normalization ──────────────────────────
+
+def _import_friendly_email_auth_error():
+    with preserve_import_state("routes.email_helpers"):
+        sys.modules.pop("routes.email_helpers", None)
+        from routes.email_helpers import _friendly_email_auth_error  # noqa: WPS433
+        return _friendly_email_auth_error
+
+
+def test_outlook_smtp_basic_auth_error_is_actionable():
+    normalize = _import_friendly_email_auth_error()
+    msg = normalize(
+        "SMTP",
+        "smtp.office365.com",
+        "(535, b'5.7.139 Authentication unsuccessful, basic authentication is disabled.')",
+    )
+
+    assert "Microsoft no longer accepts normal mailbox passwords" in msg
+    assert "OAuth/Graph" in msg
+    assert "535" not in msg
+
+
+def test_outlook_imap_authenticate_failed_is_actionable():
+    normalize = _import_friendly_email_auth_error()
+    msg = normalize("IMAP", "outlook.office365.com", "b'AUTHENTICATE failed.'")
+
+    assert "Microsoft no longer accepts normal mailbox passwords" in msg
+    assert "Outlook/Office 365" in msg
+
+
+def test_generic_auth_error_still_passes_through_truncated():
+    normalize = _import_friendly_email_auth_error()
+    msg = normalize("IMAP", "imap.example.com", "bad credentials " + ("x" * 300))
+
+    assert msg.startswith("bad credentials")
+    assert len(msg) == 200
 
 
 # ── compose-upload path traversal block ─────────────────────────
@@ -307,6 +350,7 @@ def _stub_core_database_for_route_imports(monkeypatch):
         "DocumentVersion",
         "GalleryImage",
         "ModelEndpoint",
+        "utcnow_naive",
     ):
         setattr(db, name, MagicMock())
     monkeypatch.setitem(sys.modules, "core", core_pkg)
@@ -346,52 +390,51 @@ def test_build_user_content_skips_cross_owner_attachments(tmp_path):
 def test_chat_preprocess_does_not_surface_cross_owner_attachment(tmp_path, monkeypatch):
     import asyncio
     from types import SimpleNamespace
-    for mod_name in ("src.chat.handler", "routes.chat_helpers"):
-        sys.modules.pop(mod_name, None)
-    _stub_core_database_for_route_imports(monkeypatch)
-    from src.chat.handler import ChatHandler
-    from src.uploads.handler import UploadHandler
-    from src.settings import settings
+    with preserve_import_state("src.chat.handler", "routes.chat_helpers"):
+        for mod_name in ("src.chat.handler", "routes.chat_helpers"):
+            sys.modules.pop(mod_name, None)
+        _stub_core_database_for_route_imports(monkeypatch)
+        from src.chat.handler import ChatHandler
+        from src.uploads.handler import UploadHandler
+        import src.settings as settings
 
-    upload_dir, _alice_id, bob_id = _make_upload_store(tmp_path)
-    handler = UploadHandler(str(tmp_path), str(upload_dir))
-    monkeypatch.setattr("src.chat.handler.UPLOAD_DIR", str(upload_dir))
-    monkeypatch.setattr(
-        settings,
-        "get_setting",
-        lambda key, default=None: False if key == "vision_enabled" else default,
-    )
-
-    chat_handler = ChatHandler(None, None, None, None, None, handler)
-    sess = SimpleNamespace(id="s1", owner="alice", model="text-model")
-
-    _enhanced, user_content, _text_ctx, _yt, attachment_meta = asyncio.run(
-        chat_handler.preprocess_message(
-            "hello",
-            [bob_id],
-            sess,
+        upload_dir, _alice_id, bob_id = _make_upload_store(tmp_path)
+        handler = UploadHandler(str(tmp_path), str(upload_dir))
+        monkeypatch.setattr("src.chat.handler.UPLOAD_DIR", str(upload_dir))
+        monkeypatch.setattr(
+            settings,
+            "get_setting",
+            lambda key, default=None: False if key == "vision_enabled" else default,
         )
-    )
 
-    assert attachment_meta == []
-    assert user_content == "hello"
-    for mod_name in ("src.chat.handler", "routes.chat_helpers"):
-        sys.modules.pop(mod_name, None)
+        chat_handler = ChatHandler(None, None, None, None, None, handler)
+        sess = SimpleNamespace(id="s1", owner="alice", model="text-model")
+
+        _enhanced, user_content, _text_ctx, _yt, attachment_meta = asyncio.run(
+            chat_handler.preprocess_message(
+                "hello",
+                [bob_id],
+                sess,
+            )
+        )
+
+        assert attachment_meta == []
+        assert user_content == "hello"
 
 
 def test_document_upload_lookup_rejects_cross_owner_marker(tmp_path, monkeypatch):
     from src.uploads.handler import UploadHandler
 
-    sys.modules.pop("routes.document_helpers", None)
-    _stub_core_database_for_route_imports(monkeypatch)
-    from routes.document_helpers import _locate_upload
+    with preserve_import_state("routes.document_helpers"):
+        sys.modules.pop("routes.document_helpers", None)
+        _stub_core_database_for_route_imports(monkeypatch)
+        from routes.document_helpers import _locate_upload
 
-    upload_dir, _alice_id, bob_id = _make_upload_store(tmp_path)
-    handler = UploadHandler(str(tmp_path), str(upload_dir))
+        upload_dir, _alice_id, bob_id = _make_upload_store(tmp_path)
+        handler = UploadHandler(str(tmp_path), str(upload_dir))
 
-    assert _locate_upload(str(upload_dir), bob_id, owner="alice", upload_handler=handler) is None
-    assert _locate_upload(str(upload_dir), bob_id, owner="bob", upload_handler=handler).endswith(bob_id)
-    sys.modules.pop("routes.document_helpers", None)
+        assert _locate_upload(str(upload_dir), bob_id, owner="alice", upload_handler=handler) is None
+        assert _locate_upload(str(upload_dir), bob_id, owner="bob", upload_handler=handler).endswith(bob_id)
 
 
 def test_find_source_upload_id_rejects_path_traversal_marker():
@@ -405,40 +448,39 @@ def test_pdf_marker_write_rejects_cross_owner_upload(tmp_path, monkeypatch):
     """Saving a doc whose front-matter points at another user's upload must 400."""
     from src.uploads.handler import UploadHandler
 
-    sys.modules.pop("routes.document_helpers", None)
-    _stub_core_database_for_route_imports(monkeypatch)
-    from fastapi import HTTPException
-    from routes.document_helpers import _assert_pdf_marker_upload_owned
+    with preserve_import_state("routes.document_helpers"):
+        sys.modules.pop("routes.document_helpers", None)
+        _stub_core_database_for_route_imports(monkeypatch)
+        from fastapi import HTTPException
+        from routes.document_helpers import _assert_pdf_marker_upload_owned
 
-    upload_dir, _alice_id, bob_id = _make_upload_store(tmp_path)
-    handler = UploadHandler(str(tmp_path), str(upload_dir))
+        upload_dir, _alice_id, bob_id = _make_upload_store(tmp_path)
+        handler = UploadHandler(str(tmp_path), str(upload_dir))
 
-    class _AuthMgr:
-        is_configured = True
+        class _AuthMgr:
+            is_configured = True
 
-        @staticmethod
-        def is_admin(_user):
-            return False
+            @staticmethod
+            def is_admin(_user):
+                return False
 
-    class _AppState:
-        auth_manager = _AuthMgr()
+        class _AppState:
+            auth_manager = _AuthMgr()
 
-    class _App:
-        state = _AppState()
+        class _App:
+            state = _AppState()
 
-    class _Req:
-        app = _App()
+        class _Req:
+            app = _App()
 
-    marker = f'<!-- pdf_source upload_id="{bob_id}" -->\n\n# Notes\n'
-    with pytest.raises(HTTPException) as exc:
-        _assert_pdf_marker_upload_owned(_Req(), marker, "alice", handler)
-    assert exc.value.status_code == 400
+        marker = f'<!-- pdf_source upload_id="{bob_id}" -->\n\n# Notes\n'
+        with pytest.raises(HTTPException) as exc:
+            _assert_pdf_marker_upload_owned(_Req(), marker, "alice", handler)
+        assert exc.value.status_code == 400
 
-    # Own upload is allowed
-    own_marker = f'<!-- pdf_source upload_id="{_alice_id}" -->\n\n# Notes\n'
-    _assert_pdf_marker_upload_owned(_Req(), own_marker, "alice", handler)
-
-    sys.modules.pop("routes.document_helpers", None)
+        # Own upload is allowed
+        own_marker = f'<!-- pdf_source upload_id="{_alice_id}" -->\n\n# Notes\n'
+        _assert_pdf_marker_upload_owned(_Req(), own_marker, "alice", handler)
 
 
 def test_pdf_marker_render_lookup_denies_cross_owner_without_doc_leak(tmp_path):
@@ -468,33 +510,34 @@ def test_require_user_rejects_unauthenticated(monkeypatch):
     didn't attach a user AND auth is configured. Mirrors the
     defense-in-depth check on /api/contacts/*, /api/personal/*,
     /api/email/*."""
-    sys.modules.pop("src.auth.helpers", None)
-    from fastapi import HTTPException
+    with preserve_import_state("src.auth.helpers"):
+        sys.modules.pop("src.auth.helpers", None)
+        from fastapi import HTTPException
 
-    import src.auth.helpers as auth_helpers  # noqa: WPS433
+        import src.auth.helpers as auth_helpers  # noqa: WPS433
 
-    class _State:
-        current_user = None  # middleware didn't set anyone
+        class _State:
+            current_user = None  # middleware didn't set anyone
 
-    class _AppState:
-        class _Mgr:
-            is_configured = True
-        auth_manager = _Mgr()
+        class _AppState:
+            class _Mgr:
+                is_configured = True
+            auth_manager = _Mgr()
 
-    class _App:
-        state = _AppState()
+        class _App:
+            state = _AppState()
 
-    class _Client:
-        host = "203.0.113.1"  # not loopback
+        class _Client:
+            host = "203.0.113.1"  # not loopback
 
-    class _Req:
-        state = _State()
-        app = _App()
-        client = _Client()
+        class _Req:
+            state = _State()
+            app = _App()
+            client = _Client()
 
-    with pytest.raises(HTTPException) as exc:
-        auth_helpers.require_user(_Req())
-    assert exc.value.status_code == 401
+        with pytest.raises(HTTPException) as exc:
+            auth_helpers.require_user(_Req())
+        assert exc.value.status_code == 401
 
 
 def test_inprocess_pollers_gate(monkeypatch):
@@ -502,52 +545,54 @@ def test_inprocess_pollers_gate(monkeypatch):
     the asyncio pollers when cron / systemd is driving the one-shot
     `atenea-mail poll-*` CLI subcommands instead. Two pollers racing
     on the same SQLite would mark scheduled rows as 'sent' twice."""
-    import sys as _sys
-    _sys.modules.pop("routes.email_pollers", None)
-    from routes.email_pollers import _inprocess_pollers_enabled  # noqa: WPS433
+    with preserve_import_state("routes.email_pollers"):
+        import sys as _sys
+        _sys.modules.pop("routes.email_pollers", None)
+        from routes.email_pollers import _inprocess_pollers_enabled  # noqa: WPS433
 
-    # Defaults to enabled (preserves single-process deployments).
-    monkeypatch.delenv("ATENEA_INPROCESS_POLLERS", raising=False)
-    assert _inprocess_pollers_enabled() is True
+        # Defaults to enabled (preserves single-process deployments).
+        monkeypatch.delenv("ATENEA_INPROCESS_POLLERS", raising=False)
+        assert _inprocess_pollers_enabled() is True
 
-    # Any of the off-values disables.
-    for off in ("0", "false", "no", "off", "FALSE", "Off"):
-        monkeypatch.setenv("ATENEA_INPROCESS_POLLERS", off)
-        assert _inprocess_pollers_enabled() is False, f"{off!r} should disable"
+        # Any of the off-values disables.
+        for off in ("0", "false", "no", "off", "FALSE", "Off"):
+            monkeypatch.setenv("ATENEA_INPROCESS_POLLERS", off)
+            assert _inprocess_pollers_enabled() is False, f"{off!r} should disable"
 
-    # Explicit on-values stay enabled.
-    for on in ("1", "true", "yes", "anything-truthy"):
-        monkeypatch.setenv("ATENEA_INPROCESS_POLLERS", on)
-        assert _inprocess_pollers_enabled() is True, f"{on!r} should enable"
+        # Explicit on-values stay enabled.
+        for on in ("1", "true", "yes", "anything-truthy"):
+            monkeypatch.setenv("ATENEA_INPROCESS_POLLERS", on)
+            assert _inprocess_pollers_enabled() is True, f"{on!r} should enable"
 
 
 def test_require_user_accepts_loopback_when_unconfigured(monkeypatch):
     """First-run mode (no users set up yet) must still let loopback
     callers through — otherwise the install can't bootstrap. Public
     callers in the same mode are rejected."""
-    sys.modules.pop("src.auth.helpers", None)
-    import src.auth.helpers as auth_helpers  # noqa: WPS433
+    with preserve_import_state("src.auth.helpers"):
+        sys.modules.pop("src.auth.helpers", None)
+        import src.auth.helpers as auth_helpers  # noqa: WPS433
 
-    class _State:
-        current_user = None
+        class _State:
+            current_user = None
 
-    class _AppState:
-        class _Mgr:
-            is_configured = False
-        auth_manager = _Mgr()
+        class _AppState:
+            class _Mgr:
+                is_configured = False
+            auth_manager = _Mgr()
 
-    class _App:
-        state = _AppState()
+        class _App:
+            state = _AppState()
 
-    class _LoopClient:
-        host = "127.0.0.1"
+        class _LoopClient:
+            host = "127.0.0.1"
 
-    class _LoopReq:
-        state = _State()
-        app = _App()
-        client = _LoopClient()
+        class _LoopReq:
+            state = _State()
+            app = _App()
+            client = _LoopClient()
 
-    assert auth_helpers.require_user(_LoopReq()) == ""
+        assert auth_helpers.require_user(_LoopReq()) == ""
 
 
 def test_require_user_accepts_anyone_when_auth_disabled(monkeypatch):
@@ -555,32 +600,33 @@ def test_require_user_accepts_anyone_when_auth_disabled(monkeypatch):
     any host — including the docker bridge / reverse proxy / LAN — so
     the frontend's global 401 redirect doesn't bounce the user to /login
     despite the operator turning auth off (issue #622)."""
-    monkeypatch.setenv("AUTH_ENABLED", "false")
-    sys.modules.pop("src.auth.helpers", None)
-    import src.auth.helpers as auth_helpers  # noqa: WPS433
+    with preserve_import_state("src.auth.helpers"):
+        monkeypatch.setenv("AUTH_ENABLED", "false")
+        sys.modules.pop("src.auth.helpers", None)
+        import src.auth.helpers as auth_helpers  # noqa: WPS433
 
-    class _State:
-        current_user = None
+        class _State:
+            current_user = None
 
-    class _AppState:
-        class _Mgr:
-            # Even with a prior admin account on disk, AUTH_ENABLED=false
-            # must take precedence over is_configured=True.
-            is_configured = True
-        auth_manager = _Mgr()
+        class _AppState:
+            class _Mgr:
+                # Even with a prior admin account on disk, AUTH_ENABLED=false
+                # must take precedence over is_configured=True.
+                is_configured = True
+            auth_manager = _Mgr()
 
-    class _App:
-        state = _AppState()
+        class _App:
+            state = _AppState()
 
-    class _DockerClient:
-        host = "172.18.0.1"  # docker bridge gateway, not loopback
+        class _DockerClient:
+            host = "172.18.0.1"  # docker bridge gateway, not loopback
 
-    class _Req:
-        state = _State()
-        app = _App()
-        client = _DockerClient()
+        class _Req:
+            state = _State()
+            app = _App()
+            client = _DockerClient()
 
-    assert auth_helpers.require_user(_Req()) == ""
+        assert auth_helpers.require_user(_Req()) == ""
 
 
 def test_require_user_localhost_bypass_admits_loopback(monkeypatch):
@@ -588,64 +634,66 @@ def test_require_user_localhost_bypass_admits_loopback(monkeypatch):
     callers without an auth cookie. require_user must mirror the auth
     middleware so routes don't 401 a caller the middleware already let
     through."""
-    monkeypatch.setenv("AUTH_ENABLED", "true")
-    monkeypatch.setenv("LOCALHOST_BYPASS", "true")
-    sys.modules.pop("src.auth.helpers", None)
-    import src.auth.helpers as auth_helpers  # noqa: WPS433
+    with preserve_import_state("src.auth.helpers"):
+        monkeypatch.setenv("AUTH_ENABLED", "true")
+        monkeypatch.setenv("LOCALHOST_BYPASS", "true")
+        sys.modules.pop("src.auth.helpers", None)
+        import src.auth.helpers as auth_helpers  # noqa: WPS433
 
-    class _State:
-        current_user = None
+        class _State:
+            current_user = None
 
-    class _AppState:
-        class _Mgr:
-            is_configured = True
-        auth_manager = _Mgr()
+        class _AppState:
+            class _Mgr:
+                is_configured = True
+            auth_manager = _Mgr()
 
-    class _App:
-        state = _AppState()
+        class _App:
+            state = _AppState()
 
-    class _LoopClient:
-        host = "127.0.0.1"
+        class _LoopClient:
+            host = "127.0.0.1"
 
-    class _LoopReq:
-        state = _State()
-        app = _App()
-        client = _LoopClient()
+        class _LoopReq:
+            state = _State()
+            app = _App()
+            client = _LoopClient()
 
-    assert auth_helpers.require_user(_LoopReq()) == ""
+        assert auth_helpers.require_user(_LoopReq()) == ""
 
 
 def test_require_user_localhost_bypass_still_rejects_lan(monkeypatch):
     """LOCALHOST_BYPASS=true must not extend to non-loopback callers —
     a LAN visitor still needs to authenticate."""
-    from fastapi import HTTPException
-    monkeypatch.setenv("AUTH_ENABLED", "true")
-    monkeypatch.setenv("LOCALHOST_BYPASS", "true")
-    sys.modules.pop("src.auth.helpers", None)
-    import src.auth.helpers as auth_helpers  # noqa: WPS433
+    with preserve_import_state("src.auth.helpers"):
+        from fastapi import HTTPException
+        monkeypatch.setenv("AUTH_ENABLED", "true")
+        monkeypatch.setenv("LOCALHOST_BYPASS", "true")
+        sys.modules.pop("src.auth.helpers", None)
+        import src.auth.helpers as auth_helpers  # noqa: WPS433
 
-    class _State:
-        current_user = None
+        class _State:
+            current_user = None
 
-    class _AppState:
-        class _Mgr:
-            is_configured = True
-        auth_manager = _Mgr()
+        class _AppState:
+            class _Mgr:
+                is_configured = True
+            auth_manager = _Mgr()
 
-    class _App:
-        state = _AppState()
+        class _App:
+            state = _AppState()
 
-    class _LanClient:
-        host = "192.168.1.42"
+        class _LanClient:
+            host = "192.168.1.42"
 
-    class _LanReq:
-        state = _State()
-        app = _App()
-        client = _LanClient()
+        class _LanReq:
+            state = _State()
+            app = _App()
+            client = _LanClient()
 
-    with pytest.raises(HTTPException) as exc:
-        auth_helpers.require_user(_LanReq())
-    assert exc.value.status_code == 401
+        with pytest.raises(HTTPException) as exc:
+            auth_helpers.require_user(_LanReq())
+        assert exc.value.status_code == 401
 
 
 def test_require_admin_rejects_unconfigured_public_api(monkeypatch):
@@ -718,26 +766,27 @@ def test_internal_tool_owner_header_logic_requires_known_user():
 
 def test_auth_manager_migrates_legacy_admin_role(tmp_path):
     """Old setup.py wrote role='admin'; startup must turn that into is_admin."""
-    sys.modules.pop("core.auth", None)
-    if "core" in sys.modules and hasattr(sys.modules["core"], "auth"):
-        delattr(sys.modules["core"], "auth")
-    from core.auth import AuthManager
+    with preserve_import_state("core.auth"):
+        sys.modules.pop("core.auth", None)
+        if "core" in sys.modules and hasattr(sys.modules["core"], "auth"):
+            delattr(sys.modules["core"], "auth")
+        from core.auth import AuthManager
 
-    auth_path = tmp_path / "auth.json"
-    auth_path.write_text(json.dumps({
-        "users": {
-            "admin": {
-                "password_hash": "unused",
-                "role": "admin",
+        auth_path = tmp_path / "auth.json"
+        auth_path.write_text(json.dumps({
+            "users": {
+                "admin": {
+                    "password_hash": "unused",
+                    "role": "admin",
+                }
             }
-        }
-    }))
+        }))
 
-    mgr = AuthManager(str(auth_path))
+        mgr = AuthManager(str(auth_path))
 
-    assert mgr.is_admin("admin") is True
-    data = json.loads(auth_path.read_text())
-    assert data["users"]["admin"]["is_admin"] is True
+        assert mgr.is_admin("admin") is True
+        data = json.loads(auth_path.read_text())
+        assert data["users"]["admin"]["is_admin"] is True
 
 
 def _load_search_content_for_test(monkeypatch, name="services.search.content_under_test"):
@@ -874,9 +923,10 @@ def test_web_fetch_guard_blocks_redirect_into_private(monkeypatch):
 # ── audit fixes (2026-06-01): email XSS, attachment traversal, authz ──
 
 def _import_attachment_extract_dir():
-    sys.modules.pop("routes.email_helpers", None)
-    from routes.email_helpers import attachment_extract_dir, ATTACHMENTS_DIR
-    return attachment_extract_dir, ATTACHMENTS_DIR
+    with preserve_import_state("routes.email_helpers"):
+        sys.modules.pop("routes.email_helpers", None)
+        from routes.email_helpers import attachment_extract_dir, ATTACHMENTS_DIR
+        return attachment_extract_dir, ATTACHMENTS_DIR
 
 
 @pytest.mark.parametrize("folder,uid", [
@@ -940,8 +990,9 @@ def test_mcp_oauth_page_escapes_reflected_values():
 
 
 def _import_mcp_routes():
-    sys.modules.pop("routes.mcp_routes", None)
-    return importlib.import_module("routes.mcp_routes")
+    with preserve_import_state("routes.mcp_routes"):
+        sys.modules.pop("routes.mcp_routes", None)
+        return importlib.import_module("routes.mcp_routes")
 
 
 def test_mcp_oauth_paths_resolve_under_data_dir(tmp_path, monkeypatch):
@@ -1032,16 +1083,18 @@ def _import_session_routes_for_filename():
     # against the REAL core.database. Importing under a stub Session class would
     # leak a stub-bound DbSession into the cached module and break later tests
     # that reuse routes.session_routes (e.g. the archived-sessions filter).
-    _drop_route_module_cache("routes.session_routes")
-    return importlib.import_module("routes.session_routes")
+    with preserve_import_state("routes.session_routes"):
+        _drop_route_module_cache("routes.session_routes")
+        return importlib.import_module("routes.session_routes")
 
 
 def _import_gallery_routes_for_filename():
     # Same rationale as the session route helper: import _sanitize_gallery_filename
     # against the real core.database and leave a clean, real module cached.
-    _drop_route_module_cache("routes.gallery_routes")
-    _drop_route_module_cache("routes.gallery_helpers")
-    return importlib.import_module("routes.gallery_routes")
+    with preserve_import_state("routes.gallery_routes", "routes.gallery_helpers"):
+        _drop_route_module_cache("routes.gallery_routes")
+        _drop_route_module_cache("routes.gallery_helpers")
+        return importlib.import_module("routes.gallery_routes")
 
 
 def test_export_filename_sanitizer_blocks_header_and_path_chars():

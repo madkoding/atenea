@@ -21,7 +21,10 @@ import sys
 import os
 import os.path
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
@@ -248,6 +251,7 @@ def _imap_connect(account: str | None = None):
             try:
                 conn.starttls()
             except Exception:
+                # Don't leak the open plain socket on a rejected STARTTLS. (#3174)
                 try:
                     conn.shutdown()
                 except Exception:
@@ -258,6 +262,8 @@ def _imap_connect(account: str | None = None):
     try:
         conn.login(cfg["imap_user"], cfg["imap_password"])
     except Exception:
+        # A failed login otherwise orphans the connected socket; close it
+        # before propagating (shutdown() is the pre-auth low-level close). (#3174)
         try:
             conn.shutdown()
         except Exception:
@@ -502,7 +508,8 @@ def _list_emails(folder="INBOX", max_results=20, unresponded_only=False,
     finally:
         if conn:
             try: conn.logout()
-            except Exception: pass
+            except Exception:
+                logger.exception("email_server: failed to logout IMAP connection")
 
 
 def _result_sort_time(result: dict) -> datetime:
@@ -606,7 +613,8 @@ def _search_emails(query, folders=None, max_results=20, account=None):
                 continue
     finally:
         try: conn.logout()
-        except Exception: pass
+        except Exception:
+            logger.exception("email_server: failed to logout IMAP connection")
     # Cap total across folders.
     return out[: max_results * len(folders)]
 
@@ -723,7 +731,8 @@ def _read_email(uid=None, message_id=None, folder="INBOX", account=None):
     finally:
         if conn:
             try: conn.logout()
-            except Exception: pass
+            except Exception:
+                logger.exception("email_server: failed to logout IMAP connection")
 
 
 def _read_email_across_accounts(uid=None, message_id=None, folder="INBOX"):
@@ -795,6 +804,8 @@ def _smtp_connect(account=None, cfg=None):
         try:
             conn.starttls()
         except Exception:
+            # Don't leak the open plain socket on a rejected STARTTLS. SMTP has
+            # no shutdown(); close() is the low-level socket close (no QUIT). (#3174)
             try:
                 conn.close()
             except Exception:
@@ -816,6 +827,8 @@ def _smtp_connect(account=None, cfg=None):
         try:
             conn.login(cfg["smtp_user"], cfg["smtp_password"])
         except Exception:
+            # A failed login otherwise orphans the connected socket; close it
+            # before propagating (SMTP has no shutdown(); close() = socket close). (#3174)
             try:
                 conn.close()
             except Exception:
@@ -899,7 +912,8 @@ def _reply_to_email(uid, body, folder="INBOX", reply_all=False, account=None):
     finally:
         if conn:
             try: conn.logout()
-            except Exception: pass
+            except Exception:
+                logger.exception("email_server: failed to logout IMAP connection")
     if status != "OK" or not msg_data or not msg_data[0]:
         return {"error": f"Failed to fetch email UID {uid}"}
     raw = msg_data[0][1]
@@ -1084,7 +1098,8 @@ def _download_attachment(uid, index, folder="INBOX", account=None):
     finally:
         if conn:
             try: conn.logout()
-            except Exception: pass
+            except Exception:
+                logger.exception("email_server: failed to logout IMAP connection")
     if status != "OK":
         return {"error": f"Failed to fetch email UID {uid}"}
     raw = msg_data[0][1]

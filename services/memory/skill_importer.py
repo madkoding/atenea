@@ -2,10 +2,8 @@
 from __future__ import annotations
 
 import logging
-import os
 import re
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
 from urllib.parse import quote, urlparse
 
 import httpx
@@ -186,7 +184,7 @@ def _fetch_text(url: str) -> str:
         raise SkillImportError(f"non-text file: {url}") from e
 
 
-def _list_github_dir(src: ResolvedSource, rel_dir: str, out: Dict[str, str], *, depth: int = 0) -> None:
+def _list_github_dir(src: ResolvedSource, rel_dir: str, out: dict[str, str], *, depth: int = 0) -> None:
     if depth > 4 or len(out) >= MAX_FILES:
         return
     url = _api_contents_url(src, rel_dir)
@@ -227,10 +225,10 @@ def _list_github_dir(src: ResolvedSource, rel_dir: str, out: Dict[str, str], *, 
         out[rel] = text
 
 
-def fetch_skill_bundle(url: str) -> Tuple[Dict[str, str], ResolvedSource]:
+def fetch_skill_bundle(url: str) -> tuple[dict[str, str], ResolvedSource]:
     """Download SKILL.md and sibling text assets. Returns relative_path → content."""
     src = parse_skill_source(url)
-    files: Dict[str, str] = {}
+    files: dict[str, str] = {}
 
     path = _safe_relpath(src.path) if src.path else ""
     if path.lower().endswith("skill.md"):
@@ -272,7 +270,7 @@ def fetch_skill_bundle(url: str) -> Tuple[Dict[str, str], ResolvedSource]:
     return files, src
 
 
-def pick_skill_md(files: Dict[str, str]) -> Tuple[str, str]:
+def pick_skill_md(files: dict[str, str]) -> tuple[str, str]:
     for rel, content in files.items():
         if rel.lower().endswith("skill.md"):
             return rel, content

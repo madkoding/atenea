@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+from tests.helpers.import_state import preserve_import_state
+
 import pytest
 
 from routes.shell_routes import (
@@ -37,24 +39,22 @@ def test_shell_routes_import_without_posix_pty_modules(monkeypatch):
         return real_import(name, globals, locals, fromlist, level)
 
     monkeypatch.setattr(builtins, "__import__", fake_import)
-    cached_modules = {name: sys.modules.pop(name, None) for name in ("fcntl", "pty")}
+    with preserve_import_state("fcntl", "pty"):
+        cached_modules = {name: sys.modules.pop(name, None) for name in ("fcntl", "pty")}
 
-    module_path = Path(__file__).resolve().parents[1] / "routes" / "shell_routes.py"
-    spec = importlib.util.spec_from_file_location(
-        "_shell_routes_without_pty", module_path
-    )
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    try:
-        spec.loader.exec_module(module)
-    finally:
-        sys.modules.pop(spec.name, None)
-        for name, cached_module in cached_modules.items():
-            if cached_module is not None:
-                sys.modules[name] = cached_module
+        module_path = Path(__file__).resolve().parents[1] / "routes" / "shell_routes.py"
+        spec = importlib.util.spec_from_file_location(
+            "_shell_routes_without_pty", module_path
+        )
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        try:
+            spec.loader.exec_module(module)
+        finally:
+            sys.modules.pop(spec.name, None)
 
-    assert module.PTY_SUPPORTED is False
-    assert module._find_line_break(b"ok\n") == (2, 1)
+        assert module.PTY_SUPPORTED is False
+        assert module._find_line_break(b"ok\n") == (2, 1)
 
 
 async def test_generate_pty_reports_explicit_unsupported_error(monkeypatch):

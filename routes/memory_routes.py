@@ -1,6 +1,6 @@
 # routes/memory_routes.py
 from fastapi import APIRouter, Form, HTTPException, Request, UploadFile, File
-from typing import Dict, Any, Optional, List
+from typing import Any
 import json
 import os
 import re
@@ -39,7 +39,7 @@ def setup_memory_routes(memory_manager: MemoryManager, session_manager: SessionM
     """Set up memory-related routes."""
     router = APIRouter(prefix="/api/memory", tags=["memory"])
 
-    def _owner(request: Request) -> Optional[str]:
+    def _owner(request: Request) -> str | None:
         return get_current_user(request)
 
     def _assert_session_owner(session_obj, user):
@@ -54,7 +54,7 @@ def setup_memory_routes(memory_manager: MemoryManager, session_manager: SessionM
         if user is not None and getattr(session_obj, "owner", None) != user:
             raise HTTPException(404, "Session not found")
 
-    def _verify_memory_owner(memory: dict, user: Optional[str]):
+    def _verify_memory_owner(memory: dict, user: str | None):
         """Raise 404 if user doesn't own this memory.
 
         SECURITY: strict ownership — previously `mem_owner and mem_owner != user`
@@ -81,10 +81,10 @@ def setup_memory_routes(memory_manager: MemoryManager, session_manager: SessionM
                                  for m in relevant]
         }
 
-    @router.post("/add", response_model=Dict[str, Any])
+    @router.post("/add", response_model=dict[str, Any])
     async def api_add_memory(
         request: Request,
-        memory_data: Optional[MemoryAddRequest] = None
+        memory_data: MemoryAddRequest | None = None
     ):
         """Add a new memory entry with optional category, source, and session reference."""
         from src.auth.helpers import require_privilege
@@ -204,7 +204,7 @@ def setup_memory_routes(memory_manager: MemoryManager, session_manager: SessionM
         }
 
     @router.post("/extract")
-    async def extract_memory(request: Request, session: str = Form(...)) -> Dict[str, List[str]]:
+    async def extract_memory(request: Request, session: str = Form(...)) -> dict[str, list[str]]:
         """Analyze a session's chat history and return memory suggestions."""
         require_user(request)
         try:

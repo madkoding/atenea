@@ -4,15 +4,13 @@
 
 import logging
 import os
-import re
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastapi import HTTPException, Request
 from pydantic import BaseModel
 
 from core.database import Document, DocumentVersion
 from core.database import Session as DbSession
-from src.uploads.handler import UploadHandler
 
 logger = logging.getLogger(__name__)
 
@@ -20,24 +18,24 @@ logger = logging.getLogger(__name__)
 # ---- Request schemas ----
 
 class DocumentCreate(BaseModel):
-    session_id: Optional[str] = None
+    session_id: str | None = None
     title: str = "Untitled"
-    language: Optional[str] = None
+    language: str | None = None
     content: str = ""
 
 class DocumentUpdate(BaseModel):
     content: str
-    summary: Optional[str] = None
+    summary: str | None = None
 
 class DocumentPatch(BaseModel):
-    title: Optional[str] = None
-    language: Optional[str] = None
-    session_id: Optional[str] = None  # link/unlink document to a session
+    title: str | None = None
+    language: str | None = None
+    session_id: str | None = None  # link/unlink document to a session
 
 
 # ---- Helpers ----
 
-def _doc_to_dict(doc: Document) -> Dict[str, Any]:
+def _doc_to_dict(doc: Document) -> dict[str, Any]:
     return {
         "id": doc.id,
         "session_id": doc.session_id,
@@ -57,7 +55,7 @@ def _doc_to_dict(doc: Document) -> Dict[str, Any]:
         "source_email_message_id": getattr(doc, "source_email_message_id", None),
     }
 
-def _version_to_dict(v: DocumentVersion) -> Dict[str, Any]:
+def _version_to_dict(v: DocumentVersion) -> dict[str, Any]:
     return {
         "id": v.id,
         "document_id": v.document_id,
@@ -141,9 +139,9 @@ def _upload_path_inside(upload_dir: str, path: str) -> bool:
 def _resolve_user_upload_path(
     upload_handler: Any,
     upload_id: str,
-    owner: Optional[str],
+    owner: str | None,
     auth_manager=None,
-) -> Optional[str]:
+) -> str | None:
     """Resolve an upload id to a filesystem path the caller may read."""
     if upload_handler is None:
         return None
@@ -165,7 +163,7 @@ def _resolve_user_upload_path(
 def _locate_upload(
     upload_dir: str,
     file_id: str,
-    owner: Optional[str] = None,
+    owner: str | None = None,
     auth_manager=None,
     upload_handler: Any = None,
 ):
@@ -181,7 +179,7 @@ def _locate_upload(
 def _assert_pdf_marker_upload_owned(
     request: Request,
     content: str,
-    user: Optional[str],
+    user: str | None,
     upload_handler: Any,
 ) -> None:
     """Reject document content whose pdf_source marker points at another user's upload."""

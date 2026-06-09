@@ -86,7 +86,7 @@ def test_default_settings_registers_hard_max_key():
 def test_alias_map_registers_friendly_names():
     """`manage_settings` should accept 'hard max' and friends."""
     from pathlib import Path
-    src = Path("src/tool_implementations.py").read_text()
+    src = Path("src/tools/implementations.py").read_text(encoding="utf-8")
     assert '"hard max": "agent_input_token_hard_max"' in src
     assert '"token budget cap": "agent_input_token_hard_max"' in src
     assert '"input budget cap": "agent_input_token_hard_max"' in src
@@ -100,14 +100,14 @@ def test_agent_loop_reads_hard_max_setting(tmp_path, monkeypatch):
     f = tmp_path / "settings.json"
     f.write_text(json.dumps({"agent_input_token_hard_max": 750_000}), encoding="utf-8")
     monkeypatch.setattr(settings, "SETTINGS_FILE", str(f))
-    monkeypatch.setattr(settings, "_settings_cache", None)
+    settings._invalidate_caches()
     # Read via the same import path the agent loop uses.
     assert settings.get_setting("agent_input_token_hard_max", DEFAULT_HARD_MAX) == 750_000
 
     # Malformed value falls back to DEFAULT_HARD_MAX (defensive, matches the
     # try/except in src/agent_loop.py).
     f.write_text(json.dumps({"agent_input_token_hard_max": "huge"}), encoding="utf-8")
-    monkeypatch.setattr(settings, "_settings_cache", None)
+    settings._invalidate_caches()
     raw = settings.get_setting("agent_input_token_hard_max", DEFAULT_HARD_MAX)
     try:
         parsed = int(raw)

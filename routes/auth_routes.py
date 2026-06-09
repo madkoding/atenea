@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, Request, Response, HTTPException
 from pydantic import BaseModel
-from typing import Optional
 import asyncio
 import logging
 import os
@@ -36,7 +35,7 @@ class LoginRequest(BaseModel):
     username: str
     password: str
     remember: bool = True
-    totp_code: Optional[str] = None
+    totp_code: str | None = None
 
 
 class SetupRequest(BaseModel):
@@ -68,7 +67,7 @@ class RenameUserRequest(BaseModel):
     username: str
 
 class UpdateAvatarRequest(BaseModel):
-    avatar: Optional[str] = None
+    avatar: str | None = None
 
 class SetOpenRegistrationRequest(BaseModel):
     enabled: bool
@@ -83,7 +82,7 @@ def setup_auth_routes(auth_manager: AuthManager) -> APIRouter:
     _signup_limiter = RateLimiter(max_requests=3, window_seconds=300)
     _setup_limiter = RateLimiter(max_requests=3, window_seconds=300)
 
-    def _get_current_user(request: Request) -> Optional[str]:
+    def _get_current_user(request: Request) -> str | None:
         token = request.cookies.get(SESSION_COOKIE)
         return auth_manager.get_username_for_token(token)
 

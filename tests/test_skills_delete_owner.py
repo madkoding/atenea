@@ -1,8 +1,7 @@
-import os
 import pytest
 import textwrap
 from pathlib import Path
-from fastapi import Request, HTTPException
+from fastapi import Request
 from fastapi.datastructures import State
 from services.memory.skills import SkillsManager
 from services.memory.skill_format import slugify

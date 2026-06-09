@@ -1,0 +1,1 @@
+"""Atenea application package root."""

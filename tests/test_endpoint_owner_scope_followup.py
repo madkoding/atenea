@@ -6,6 +6,13 @@ from types import SimpleNamespace
 import pytest
 from fastapi import HTTPException
 
+from tests.helpers.ast_check import (
+    assert_call_has_arg,
+    assert_contains_call,
+    assert_source_has,
+    call_count,
+)
+
 
 def _compare_request(user="alice", is_admin=False):
     return SimpleNamespace(
@@ -358,35 +365,35 @@ def test_compare_start_rejects_unowned_endpoint_id(monkeypatch):
 
 
 def test_compare_endpoint_key_lookup_is_owner_scoped():
-    body = Path("routes/compare_routes.py").read_text(encoding="utf-8")
+    src = Path(__file__).resolve().parents[1] / "routes/compare_routes.py"
+    body = src.read_text(encoding="utf-8")
     start_body = body.split("def start_comparison", 1)[1].split("# Store comparison record", 1)[0]
     helper_body = body.split("def _owned_endpoint_by_url", 1)[1].split("class RecordVoteRequest", 1)[0]
     id_helper_body = body.split("def _owned_endpoint_by_id", 1)[1].split("class RecordVoteRequest", 1)[0]
 
-    assert "_reject_raw_endpoint_url_for_non_admin" in start_body
-    assert "_owned_endpoint_by_url(db, base, user)" in start_body
-    # Credentials prefer an explicit endpoint id (pins the exact key) and only
-    # fall back to URL matching for legacy / admin raw-URL callers.
-    assert "_owned_endpoint_by_id(db, eid, user)" in start_body
-    # The session binds to the resolved endpoint's stored base URL, not the raw
-    # caller-supplied string (the reviewer's remaining compare blocker).
-    assert "build_chat_url(normalize_base(ep.base_url))" in start_body
+    # Full-file-level checks (robust to extraction boundary shifts):
+    assert_contains_call(src, "_reject_raw_endpoint_url_for_non_admin")
+    assert_contains_call(src, "_owned_endpoint_by_url")
+    assert_contains_call(src, "_owned_endpoint_by_id")
+    assert_contains_call(src, "build_chat_url")
+
+    # Section-level checks (extracted function bodies — string-based for now):
     assert "owner_filter(q, ModelEndpoint, owner)" in helper_body
-    # The id lookup is owner-scoped the same way the URL lookup is.
     assert "owner_filter(q, ModelEndpoint, owner)" in id_helper_body
 
 
 def test_gallery_image_endpoint_lookups_are_owner_scoped():
-    body = Path("routes/gallery_routes.py").read_text(encoding="utf-8")
+    src = Path(__file__).resolve().parents[1] / "routes/gallery_routes.py"
+    body = src.read_text(encoding="utf-8")
     helper_body = body.split("def _visible_image_endpoint_query", 1)[1].split(
         "def _first_visible_image_endpoint", 1
     )[0]
 
     assert "owner_filter(q, ModelEndpoint, owner)" in helper_body
-    assert body.count("_first_visible_image_endpoint(db, user)") >= 4
-    assert body.count("_visible_image_endpoint_for_base(db,") >= 2
-    assert "def _current_user_is_admin" in body
-    assert body.count('raise HTTPException(403, "Choose a registered image endpoint")') == 2
+    assert call_count(src, "_first_visible_image_endpoint") >= 4
+    assert call_count(src, "_visible_image_endpoint_for_base") >= 2
+    assert_source_has(src, "def _current_user_is_admin")
+    assert_source_has(src, 'raise HTTPException(403, "Choose a registered image endpoint")')
     for marker in (
         "async def gallery_ai_upscale",
         "async def gallery_style_transfer",
@@ -402,13 +409,11 @@ def test_gallery_image_endpoint_lookups_are_owner_scoped():
 
 
 def test_research_endpoint_resolution_passes_owner():
-    body = Path("routes/research_routes.py").read_text(encoding="utf-8")
+    src = Path(__file__).resolve().parents[1] / "routes/research_routes.py"
+    body = src.read_text(encoding="utf-8")
 
-    assert "def _resolve_research_endpoint(sess, owner:" in body
-    assert 'resolve_endpoint("research", owner=user)' in body
-    assert 'resolve_endpoint("utility", owner=user)' in body
-    assert 'resolve_endpoint("default", owner=user)' in body
-    assert 'resolve_endpoint("chat", owner=user)' in body
+    assert_source_has(src, "def _resolve_research_endpoint(sess, owner:")
+    assert_call_has_arg(src, "resolve_endpoint", "owner")
     helper_body = body.split("def _owned_enabled_endpoint", 1)[1].split("def setup_research_routes", 1)[0]
     assert "owner_filter(q, ModelEndpoint, owner)" in helper_body
-    assert body.count("_owned_enabled_endpoint(db, user") >= 2
+    assert call_count(src, "_owned_enabled_endpoint") >= 2

@@ -1,12 +1,12 @@
 import os
 import logging
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from sqlalchemy import event, create_engine, Column, String, Text, Boolean, DateTime, Integer, ForeignKey, JSON, Index, func, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.types import TypeDecorator
-from sqlalchemy.ext.declarative import declarative_base, declared_attr
-from sqlalchemy.orm import relationship, sessionmaker, backref
+from sqlalchemy.orm import declarative_base, declared_attr
+from sqlalchemy.orm import relationship, sessionmaker
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ Base = declarative_base()
 
 def utcnow_naive() -> datetime:
     """Return naive UTC for existing DateTime columns."""
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 class TimestampMixin:
@@ -132,6 +132,13 @@ class Session(TimestampMixin, Base):
 
     # Relationship to chat messages
     messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
+
+    documents = relationship("Document", back_populates="session", cascade="save-update, merge")
+    gallery_images = relationship("GalleryImage", back_populates="session")
+    user_tools = relationship("UserTool", back_populates="session", cascade="all, delete-orphan")
+    crew_member = relationship("CrewMember", back_populates="session", uselist=False)
+    scheduled_tasks = relationship("ScheduledTask", back_populates="session", cascade="save-update, merge")
+    memories = relationship("Memory", back_populates="session")
     
     @property
     def is_active(self):
@@ -216,7 +223,7 @@ class Document(TimestampMixin, Base):
     source_email_account_id  = Column(String, nullable=True)
     source_email_message_id  = Column(String, nullable=True, index=True)
 
-    session  = relationship("Session", backref=backref("documents", cascade="save-update, merge"))
+    session  = relationship("Session", back_populates="documents")
     versions = relationship("DocumentVersion", back_populates="document",
                            cascade="all, delete-orphan", order_by="DocumentVersion.version_number")
 
@@ -280,7 +287,7 @@ class GalleryImage(TimestampMixin, Base):
     height         = Column(Integer, nullable=True)
     file_size      = Column(Integer, nullable=True)  # bytes
 
-    session = relationship("Session", backref=backref("gallery_images"))
+    session = relationship("Session", back_populates="gallery_images")
     album   = relationship("GalleryAlbum", back_populates="images")
 
     __table_args__ = (
@@ -490,7 +497,8 @@ class UserTool(TimestampMixin, Base):
     version       = Column(Integer, default=1)
     author        = Column(String, nullable=True, default="ai")
 
-    session = relationship("Session", backref=backref("user_tools", cascade="all, delete-orphan"))
+    session = relationship("Session", back_populates="user_tools")
+    data_entries = relationship("UserToolData", back_populates="tool", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index('ix_user_tools_scope', 'scope'),
@@ -509,7 +517,7 @@ class UserToolData(Base):
     created_at = Column(DateTime, default=utcnow_naive)
     updated_at = Column(DateTime, default=utcnow_naive, onupdate=utcnow_naive)
 
-    tool = relationship("UserTool", backref=backref("data_entries", cascade="all, delete-orphan"))
+    tool = relationship("UserTool", back_populates="data_entries")
 
     __table_args__ = (
         Index('ix_user_tool_data_tool_key', 'tool_id', 'key', unique=True),
@@ -537,7 +545,7 @@ class CrewMember(TimestampMixin, Base):
     timezone      = Column(String, nullable=True)           # IANA tz name (e.g. "America/New_York") for scheduled check-ins
 
     session = relationship("Session", foreign_keys=[session_id],
-                           backref=backref("crew_member", uselist=False))
+                           back_populates="crew_member")
 
 
 class ScheduledTask(TimestampMixin, Base):
@@ -579,8 +587,10 @@ class ScheduledTask(TimestampMixin, Base):
     email_results  = Column(Boolean, default=True)        # email results to character.email_to
     notifications_enabled = Column(Boolean, default=True) # per-task on/off for completion notifications
 
-    session = relationship("Session", backref=backref("scheduled_tasks", cascade="save-update, merge"))
+    session = relationship("Session", back_populates="scheduled_tasks")
     then_task = relationship("ScheduledTask", remote_side=[id], foreign_keys=[then_task_id])
+    runs = relationship("TaskRun", back_populates="task", cascade="all, delete-orphan",
+                        order_by="TaskRun.started_at.desc()")
 
     __table_args__ = (
         Index('ix_scheduled_tasks_due', 'status', 'next_run'),
@@ -635,8 +645,7 @@ class TaskRun(Base):
     steps       = Column(Text, nullable=True)             # JSON log of agent tool calls
     model       = Column(String, nullable=True)           # model that actually ran (resolved at execution)
 
-    task = relationship("ScheduledTask", backref=backref("runs", cascade="all, delete-orphan",
-                        order_by="TaskRun.started_at.desc()"))
+    task = relationship("ScheduledTask", back_populates="runs")
 
     __table_args__ = (
         Index('ix_task_runs_task', 'task_id', 'started_at'),
@@ -670,7 +679,7 @@ class Memory(Base):
     timestamp = Column(Integer, default=lambda: int(utcnow_naive().timestamp()))
 
     # Relationship to Session
-    session = relationship("Session", backref="memories")
+    session = relationship("Session", back_populates="memories")
 
     # Indexes - optimized composites
     __table_args__ = (
@@ -1107,7 +1116,7 @@ def _migrate_assign_legacy_owner():
         auth_path = AUTH_FILE
     admin_user = None
     try:
-        with open(auth_path, "r", encoding="utf-8") as f:
+        with open(auth_path, encoding="utf-8") as f:
             auth_data = _json.load(f)
         users = auth_data.get("users", {})
         if users:
@@ -1160,7 +1169,7 @@ def _migrate_assign_legacy_owner():
     mem_path = MEMORY_FILE
     try:
         if os.path.exists(mem_path):
-            with open(mem_path, "r", encoding="utf-8") as f:
+            with open(mem_path, encoding="utf-8") as f:
                 memories = _json.load(f)
             changed = False
             for m in memories:
@@ -1178,7 +1187,7 @@ def _migrate_assign_legacy_owner():
     prefs_path = USER_PREFS_FILE
     try:
         if os.path.exists(prefs_path):
-            with open(prefs_path, "r", encoding="utf-8") as f:
+            with open(prefs_path, encoding="utf-8") as f:
                 prefs = _json.load(f)
             if "_users" not in prefs and prefs:
                 # Flat format → nest under admin user
@@ -1980,7 +1989,7 @@ def get_db():
         db.close()
 
 from contextlib import contextmanager
-from typing import Generator
+from collections.abc import Generator
 
 @contextmanager
 def get_db_session() -> Generator:

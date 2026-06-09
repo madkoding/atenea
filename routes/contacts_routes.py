@@ -14,16 +14,17 @@ import io
 import os
 import httpx
 from pathlib import Path
-from datetime import datetime
 from urllib.parse import urljoin, urlparse, urlunparse
 
 from fastapi import APIRouter, Query, Depends, Response, HTTPException
-from typing import List, Dict, Optional
 
 from core.middleware import require_admin
 from src.security.url_safety import check_outbound_url
 
 logger = logging.getLogger(__name__)
+
+
+from core.database import utcnow_naive as _utcnow_naive
 
 from src.constants import DATA_DIR as _DATA_DIR, SETTINGS_FILE as _SETTINGS_FILE, CONTACTS_FILE as _CONTACTS_FILE
 DATA_DIR = Path(_DATA_DIR)
@@ -52,7 +53,7 @@ def _get_carddav_config():
     }
 
 
-def _carddav_configured(cfg: Optional[Dict] = None) -> bool:
+def _carddav_configured(cfg: dict | None = None) -> bool:
     cfg = cfg or _get_carddav_config()
     return bool((cfg.get("url") or "").strip())
 
@@ -68,11 +69,11 @@ def _validate_carddav_url(url: str) -> str:
     return cleaned
 
 
-def _carddav_base_url(cfg: Dict) -> str:
+def _carddav_base_url(cfg: dict) -> str:
     return _validate_carddav_url(cfg.get("url") or "")
 
 
-def _normalize_contact(contact: Dict) -> Dict:
+def _normalize_contact(contact: dict) -> dict:
     emails = []
     for e in contact.get("emails") or ([] if not contact.get("email") else [contact.get("email")]):
         e = str(e or "").strip()
@@ -94,7 +95,7 @@ def _normalize_contact(contact: Dict) -> Dict:
     }
 
 
-def _load_local_contacts() -> List[Dict]:
+def _load_local_contacts() -> list[dict]:
     try:
         if not LOCAL_CONTACTS_FILE.exists():
             return []
@@ -106,12 +107,12 @@ def _load_local_contacts() -> List[Dict]:
         return []
 
 
-def _save_local_contacts(contacts: List[Dict]) -> None:
+def _save_local_contacts(contacts: list[dict]) -> None:
     from core.atomic_io import atomic_write_json
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     atomic_write_json(str(LOCAL_CONTACTS_FILE), {"contacts": [_normalize_contact(c) for c in contacts]}, indent=2)
     _contact_cache["contacts"] = [_normalize_contact(c) for c in contacts]
-    _contact_cache["fetched_at"] = datetime.utcnow()
+    _contact_cache["fetched_at"] = _utcnow_naive()
 
 
 # ── vCard parsing ──
@@ -140,7 +141,7 @@ def _vunesc(value: str) -> str:
     return "".join(out)
 
 
-def _parse_vcards(text: str) -> List[Dict]:
+def _parse_vcards(text: str) -> list[dict]:
     """Parse a stream of vCards into dicts with name, email, phone."""
     contacts = []
     for block in re.split(r"BEGIN:VCARD", text):
@@ -191,9 +192,9 @@ def _vesc(value: str) -> str:
     )
 
 
-def _build_vcard(name: str, email: str, uid: Optional[str] = None,
-                 emails: Optional[List[str]] = None,
-                 phones: Optional[List[str]] = None) -> str:
+def _build_vcard(name: str, email: str, uid: str | None = None,
+                 emails: list[str] | None = None,
+                 phones: list[str] | None = None) -> str:
     """Build a vCard. Accepts either a single `email` (legacy callers) or
     full `emails`/`phones` lists (edit path). The first email is marked
     PREF=1. All values are RFC-6350-escaped."""
@@ -308,7 +309,7 @@ def _fetch_via_report(cfg, auth):
 def _fetch_contacts(force=False):
     """Fetch all contacts. Uses CardDAV when configured, otherwise local JSON."""
     if not force and _contact_cache["fetched_at"]:
-        age = (datetime.utcnow() - _contact_cache["fetched_at"]).total_seconds()
+        age = (_utcnow_naive() - _contact_cache["fetched_at"]).total_seconds()
         if age < 60:
             return _contact_cache["contacts"]
 
@@ -316,7 +317,7 @@ def _fetch_contacts(force=False):
     if not _carddav_configured(cfg):
         contacts = _load_local_contacts()
         _contact_cache["contacts"] = contacts
-        _contact_cache["fetched_at"] = datetime.utcnow()
+        _contact_cache["fetched_at"] = _utcnow_naive()
         return contacts
 
     try:
@@ -334,7 +335,7 @@ def _fetch_contacts(force=False):
                 return _contact_cache["contacts"]
             contacts = _parse_vcards(r.text)
         _contact_cache["contacts"] = contacts
-        _contact_cache["fetched_at"] = datetime.utcnow()
+        _contact_cache["fetched_at"] = _utcnow_naive()
         return contacts
     except Exception as e:
         logger.error(f"Failed to fetch contacts: {e}")
@@ -409,7 +410,7 @@ def _vcard_url(uid: str) -> str:
     return _carddav_base_url(cfg) + "/" + quote(uid, safe="") + ".vcf"
 
 
-def _import_vcards(text: str) -> Dict:
+def _import_vcards(text: str) -> dict:
     """Import a (possibly multi-card) .vcf blob. Each card is PUT to the
     CardDAV server PRESERVING its full original content (ADR/ORG/photo/
     etc.) — we don't rebuild it, just ensure it has VERSION + UID and
@@ -490,7 +491,7 @@ def _import_vcards(text: str) -> Dict:
     return {"imported": imported, "failed": failed, "total": len(blocks)}
 
 
-def _import_csv_contacts(text: str) -> Dict:
+def _import_csv_contacts(text: str) -> dict:
     """Import contacts from CSV. Supports common headers:
     name/full_name/display_name, email/email_address/e-mail, phone/tel.
     Falls back to first columns as name,email,phone when no headers exist."""
@@ -579,7 +580,7 @@ def _import_csv_contacts(text: str) -> Dict:
     return {"imported": imported, "failed": failed, "total": total}
 
 
-def _contacts_to_vcf(contacts: List[Dict]) -> str:
+def _contacts_to_vcf(contacts: list[dict]) -> str:
     return "".join(
         _build_vcard(
             c.get("name") or ((c.get("emails") or [""])[0].split("@")[0] if c.get("emails") else "Contact"),
@@ -592,7 +593,7 @@ def _contacts_to_vcf(contacts: List[Dict]) -> str:
     )
 
 
-def _contacts_to_csv(contacts: List[Dict]) -> str:
+def _contacts_to_csv(contacts: list[dict]) -> str:
     out = io.StringIO()
     writer = csv.writer(out)
     writer.writerow(["name", "email", "phone"])
@@ -609,7 +610,7 @@ def _contacts_to_csv(contacts: List[Dict]) -> str:
     return out.getvalue()
 
 
-def _update_contact(uid: str, name: str, emails: List[str], phones: List[str]) -> bool:
+def _update_contact(uid: str, name: str, emails: list[str], phones: list[str]) -> bool:
     """Rewrite an existing contact via CardDAV or local contacts."""
     cfg = _get_carddav_config()
     if not _carddav_configured(cfg):

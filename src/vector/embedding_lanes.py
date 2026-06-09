@@ -12,7 +12,8 @@ from dataclasses import dataclass
 import hashlib
 import logging
 import os
-from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence
+from typing import Any
+from collections.abc import Callable, Iterable, Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class EmbeddingLane:
     def healthy(self) -> bool:
         return self.collection is not None and self.client is not None
 
-    def encode(self, texts: Sequence[str]) -> List[List[float]]:
+    def encode(self, texts: Sequence[str]) -> list[list[float]]:
         vecs = self.client.encode(list(texts), normalize_embeddings=True)
         return vecs.tolist() if hasattr(vecs, "tolist") else [list(v) for v in vecs]
 
@@ -45,7 +46,7 @@ class EmbeddingLane:
         except Exception:
             return 0
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "collection": self.collection_name,
@@ -76,7 +77,7 @@ def _fingerprint(lane_name: str, url: str, model: str, dimension: int) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
 
-def _metadata(lane_name: str, url: str, model: str, dimension: int, fingerprint: str) -> Dict[str, Any]:
+def _metadata(lane_name: str, url: str, model: str, dimension: int, fingerprint: str) -> dict[str, Any]:
     return {
         "hnsw:space": "cosine",
         "embedding_lane": lane_name,
@@ -87,7 +88,7 @@ def _metadata(lane_name: str, url: str, model: str, dimension: int, fingerprint:
     }
 
 
-def _load_custom_endpoint() -> Dict[str, str]:
+def _load_custom_endpoint() -> dict[str, str]:
     try:
         from src.vector.embeddings import _load_persisted_endpoint
         persisted = _load_persisted_endpoint()
@@ -128,12 +129,12 @@ def _build_custom_client():
     raise RuntimeError("HTTP embedding lane unavailable")
 
 
-def _encode_with_client(client: Any, texts: Sequence[str]) -> List[List[float]]:
+def _encode_with_client(client: Any, texts: Sequence[str]) -> list[list[float]]:
     vecs = client.encode(list(texts), normalize_embeddings=True)
     return vecs.tolist() if hasattr(vecs, "tolist") else [list(v) for v in vecs]
 
 
-def _get_or_reset_collection(chroma_client, name: str, metadata: Dict[str, Any], client: Any):
+def _get_or_reset_collection(chroma_client, name: str, metadata: dict[str, Any], client: Any):
     try:
         collection = chroma_client.get_collection(name)
     except Exception:
@@ -240,12 +241,12 @@ def _create_lane(chroma_client, base_name: str, lane_name: str, client: Any) -> 
     )
 
 
-def build_embedding_lanes(base_name: str) -> List[EmbeddingLane]:
+def build_embedding_lanes(base_name: str) -> list[EmbeddingLane]:
     """Return healthy lanes in retrieval preference order: custom, fastembed."""
     from src.vector.chroma_client import get_chroma_client
 
     chroma_client = get_chroma_client()
-    lanes: List[EmbeddingLane] = []
+    lanes: list[EmbeddingLane] = []
 
     try:
         custom = _build_custom_client()
@@ -331,9 +332,9 @@ def lane_count(lanes: Sequence[EmbeddingLane]) -> int:
     return max((lane.count() for lane in lanes), default=0)
 
 
-def dedupe_results(results: Iterable[Dict[str, Any]], id_key: str = "id", limit: Optional[int] = None) -> List[Dict[str, Any]]:
+def dedupe_results(results: Iterable[dict[str, Any]], id_key: str = "id", limit: int | None = None) -> list[dict[str, Any]]:
     seen = set()
-    out: List[Dict[str, Any]] = []
+    out: list[dict[str, Any]] = []
     for row in results:
         row_id = row.get(id_key)
         if not row_id or row_id in seen:
@@ -350,12 +351,12 @@ def query_lanes(
     query: str,
     n_results: Callable[[EmbeddingLane], int],
     include: Sequence[str],
-    where: Optional[Dict[str, Any]] = None,
+    where: dict[str, Any] | None = None,
     raise_if_all_failed: bool = False,
-) -> List[tuple[EmbeddingLane, Dict[str, Any]]]:
-    out: List[tuple[EmbeddingLane, Dict[str, Any]]] = []
+) -> list[tuple[EmbeddingLane, dict[str, Any]]]:
+    out: list[tuple[EmbeddingLane, dict[str, Any]]] = []
     attempted = 0
-    failures: List[str] = []
+    failures: list[str] = []
     for lane in lanes:
         try:
             count = lane.count()

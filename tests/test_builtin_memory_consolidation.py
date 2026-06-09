@@ -3,16 +3,19 @@ import sys
 
 import pytest
 
+from tests.helpers.import_state import preserve_import_state
+
 
 def _import_consolidate_action():
-    mod = sys.modules.get("src.actions.builtin")
-    if mod is not None and not hasattr(mod, "action_consolidate_memory"):
-        sys.modules.pop("src.actions.builtin", None)
-        if "src" in sys.modules and hasattr(sys.modules["src"], "builtin_actions"):
-            delattr(sys.modules["src"], "builtin_actions")
-    from src.actions.builtin import action_consolidate_memory
+    with preserve_import_state("src.actions.builtin"):
+        mod = sys.modules.get("src.actions.builtin")
+        if mod is not None and not hasattr(mod, "action_consolidate_memory"):
+            sys.modules.pop("src.actions.builtin", None)
+            if "src" in sys.modules and hasattr(sys.modules["src"], "builtin_actions"):
+                delattr(sys.modules["src"], "builtin_actions")
+        from src.actions.builtin import action_consolidate_memory
 
-    return action_consolidate_memory
+        return action_consolidate_memory
 
 
 def _write_memories(tmp_path, memories):
@@ -30,7 +33,7 @@ def _read_memories(data_dir):
 async def test_consolidate_memory_empty_owner_treats_each_owner_separately(monkeypatch, tmp_path):
     import src.constants as constants
     import src.runtime.endpoint_resolver as endpoint_resolver
-    from src.llm_core import llm_core
+    import src.llm_core as llm_core
     action_consolidate_memory = _import_consolidate_action()
 
     long_alice_text = "Alice private project context. " + ("A" * 2200)

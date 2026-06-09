@@ -7,8 +7,6 @@ set of characters and keeps eating leading body characters (so a page that
 begins "Page 1 text]: to the board" lost its "P"/"to"). The other call sites
 were switched to `strip_pdf_content_marker` (str.removeprefix); this one wasn't.
 """
-import os
-import tempfile
 
 import src.documents.processor as dp
 import src.documents.pdf_forms as pdf_forms

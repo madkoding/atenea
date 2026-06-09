@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 
 UNTRUSTED_CONTEXT_POLICY = (
@@ -57,7 +57,7 @@ def _sanitize_label(label: str) -> str:
     return label
 
 
-def untrusted_context_message(label: str, content: Any) -> Dict[str, Any]:
+def untrusted_context_message(label: str, content: Any) -> dict[str, Any]:
     """Return an LLM message that keeps retrieved/source text out of system role.
 
     The template is structured so that *only* the hardcoded

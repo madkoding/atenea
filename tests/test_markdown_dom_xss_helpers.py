@@ -2,24 +2,25 @@
 
 from pathlib import Path
 
+from tests.helpers.ast_check import assert_source_has
 
-_REPO = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_markdown_raw_html_sanitizer_checks_url_attr_edge_cases():
-    src = (_REPO / "static" / "js" / "markdown.js").read_text(encoding="utf-8")
+    path = ROOT / "static" / "js" / "markdown.js"
 
-    assert "function _compactUrlSchemeValue(value)" in src
-    assert "function _isDangerousUrl(value)" in src
-    assert "function _isDangerousSrcset(value)" in src
-    assert "'srcset'" in src
-    assert "candidate => _isDangerousUrl(candidate)" in src
-    assert "name === 'srcset' ? _isDangerousSrcset(attr.value) : _isDangerousUrl(attr.value)" in src
+    assert_source_has(path, "function _compactUrlSchemeValue(value)")
+    assert_source_has(path, "function _isDangerousUrl(value)")
+    assert_source_has(path, "function _isDangerousSrcset(value)")
+    assert_source_has(path, "'srcset'")
+    assert_source_has(path, "candidate => _isDangerousUrl(candidate)")
+    assert_source_has(path, "name === 'srcset' ? _isDangerousSrcset(attr.value) : _isDangerousUrl(attr.value)")
 
 
 def test_markdown_raw_html_sanitizer_strips_scriptable_css():
-    src = (_REPO / "static" / "js" / "markdown.js").read_text(encoding="utf-8")
+    path = ROOT / "static" / "js" / "markdown.js"
 
-    assert "if (name === 'style')" in src
-    assert r"javascript:|vbscript:|data:|expression\(" in src
-    assert "el.removeAttribute(attr.name);" in src
+    assert_source_has(path, "if (name === 'style')")
+    assert_source_has(path, r"javascript:|vbscript:|data:|expression\(")
+    assert_source_has(path, "el.removeAttribute(attr.name);")

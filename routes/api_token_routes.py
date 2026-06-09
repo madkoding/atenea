@@ -161,15 +161,24 @@ def setup_api_token_routes() -> APIRouter:
                 raise HTTPException(404, "Token not found")
             if isinstance(payload.get("name"), str) and payload["name"].strip():
                 token.name = payload["name"].strip()[:MAX_NAME_LEN]
+            # Only touch scopes when the caller actually sent them. A partial
+            # update such as a rename ({"name": ...} with no "scopes" key) must
+            # not silently reset the token to the default scope — that dropped
+            # every previously granted scope.
             if "scopes" in payload:
-                token.scopes = ",".join(_normalize_scopes(payload["scopes"]))
+                token.scopes = ",".join(_normalize_scopes(payload.get("scopes")))
             db.add(token)
+            current_scopes = [
+                s.strip()
+                for s in (getattr(token, "scopes", "") or DEFAULT_SCOPES).split(",")
+                if s.strip()
+            ]
             response = {
                 "id": token_id,
                 "name": getattr(token, "name", ""),
                 "owner": getattr(token, "owner", None),
                 "token_prefix": getattr(token, "token_prefix", ""),
-                "scopes": [s.strip() for s in (token.scopes or "").split(",") if s.strip()],
+                "scopes": current_scopes,
             }
         _invalidate_cache(request)
         return response

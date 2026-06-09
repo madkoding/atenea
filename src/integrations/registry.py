@@ -3,15 +3,14 @@ import os
 import uuid
 import logging
 import re
-from typing import Dict, List, Optional, Any
+from typing import Any
 
 import httpx
 
 from core.atomic_io import atomic_write_json
-from core.constants import DATA_DIR
 from core.platform_compat import safe_chmod
 from src.security.secret_storage import decrypt, encrypt, is_encrypted
-from src.constants import DATA_DIR, INTEGRATIONS_FILE, SETTINGS_FILE
+from src.constants import INTEGRATIONS_FILE, SETTINGS_FILE
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +19,7 @@ DATA_FILE = INTEGRATIONS_FILE
 # Presets
 # ---------------------------------------------------------------------------
 
-INTEGRATION_PRESETS: Dict[str, Dict[str, Any]] = {
+INTEGRATION_PRESETS: dict[str, dict[str, Any]] = {
     "miniflux": {
         "name": "Miniflux",
         "auth_type": "header",
@@ -161,9 +160,9 @@ def _ensure_data_dir() -> None:
     os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
 
 
-def _encrypt_integration_secrets(integrations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _encrypt_integration_secrets(integrations: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Return storage-safe copies with API keys encrypted at rest."""
-    safe: List[Dict[str, Any]] = []
+    safe: list[dict[str, Any]] = []
     for item in integrations:
         copy = dict(item)
         api_key = copy.get("api_key", "")
@@ -173,9 +172,9 @@ def _encrypt_integration_secrets(integrations: List[Dict[str, Any]]) -> List[Dic
     return safe
 
 
-def _decrypt_integration_secrets(integrations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _decrypt_integration_secrets(integrations: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Return runtime copies with API keys decrypted for callers."""
-    decoded: List[Dict[str, Any]] = []
+    decoded: list[dict[str, Any]] = []
     for item in integrations:
         copy = dict(item)
         api_key = copy.get("api_key", "")
@@ -185,14 +184,14 @@ def _decrypt_integration_secrets(integrations: List[Dict[str, Any]]) -> List[Dic
     return decoded
 
 
-def _has_plaintext_api_key(integrations: List[Dict[str, Any]]) -> bool:
+def _has_plaintext_api_key(integrations: list[dict[str, Any]]) -> bool:
     return any(
         bool(item.get("api_key")) and not is_encrypted(str(item.get("api_key")))
         for item in integrations
     )
 
 
-def mask_integration_secret(integration: Dict[str, Any]) -> Dict[str, Any]:
+def mask_integration_secret(integration: dict[str, Any]) -> dict[str, Any]:
     """Return a copy safe for API responses."""
     safe = dict(integration)
     api_key = safe.get("api_key", "")
@@ -201,12 +200,12 @@ def mask_integration_secret(integration: Dict[str, Any]) -> Dict[str, Any]:
     return safe
 
 
-def load_integrations() -> List[Dict[str, Any]]:
+def load_integrations() -> list[dict[str, Any]]:
     """Load all integrations from disk with secrets decrypted for runtime use."""
     if not os.path.exists(DATA_FILE):
         return []
     try:
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
+        with open(DATA_FILE, encoding="utf-8") as f:
             integrations = json.load(f)
         if not isinstance(integrations, list):
             log.error("Invalid integrations file shape: expected a list")
@@ -218,19 +217,19 @@ def load_integrations() -> List[Dict[str, Any]]:
         if _has_plaintext_api_key(integrations):
             save_integrations(_decrypt_integration_secrets(integrations))
         return _decrypt_integration_secrets(integrations)
-    except (json.JSONDecodeError, IOError) as exc:
+    except (OSError, json.JSONDecodeError) as exc:
         log.error("Failed to load integrations: %s", exc)
         return []
 
 
-def save_integrations(integrations: List[Dict[str, Any]]) -> None:
+def save_integrations(integrations: list[dict[str, Any]]) -> None:
     """Persist integrations list to disk with API keys encrypted at rest."""
     _ensure_data_dir()
     atomic_write_json(DATA_FILE, _encrypt_integration_secrets(integrations), indent=2)
     safe_chmod(DATA_FILE, 0o600)
 
 
-def get_integration(integration_id: str) -> Optional[Dict[str, Any]]:
+def get_integration(integration_id: str) -> dict[str, Any] | None:
     """Get a single integration by id."""
     for item in load_integrations():
         if item.get("id") == integration_id:
@@ -238,9 +237,9 @@ def get_integration(integration_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def add_integration(data: Dict[str, Any]) -> Dict[str, Any]:
+def add_integration(data: dict[str, Any]) -> dict[str, Any]:
     """Add a new integration. If 'preset' is given, merge preset defaults first."""
-    integration: Dict[str, Any] = {}
+    integration: dict[str, Any] = {}
 
     preset_key = data.get("preset")
     if preset_key and preset_key in INTEGRATION_PRESETS:
@@ -264,7 +263,7 @@ def add_integration(data: Dict[str, Any]) -> Dict[str, Any]:
     return integration
 
 
-def update_integration(integration_id: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def update_integration(integration_id: str, data: dict[str, Any]) -> dict[str, Any] | None:
     """Update fields on an existing integration. Returns updated integration or None."""
     integrations = load_integrations()
     for item in integrations:
@@ -298,7 +297,7 @@ def _strip_html_tags(html: str) -> str:
     return text
 
 
-def _find_integration(identifier: str) -> Optional[Dict[str, Any]]:
+def _find_integration(identifier: str) -> dict[str, Any] | None:
     """Find integration by id or name (case-insensitive)."""
     integrations = load_integrations()
     # try id first
@@ -317,10 +316,10 @@ async def execute_api_call(
     integration_id: str,
     method: str,
     path: str,
-    params: Optional[Dict[str, Any]] = None,
-    body: Optional[Any] = None,
-    extra_headers: Optional[Dict[str, str]] = None,
-) -> Dict[str, Any]:
+    params: dict[str, Any] | None = None,
+    body: Any | None = None,
+    extra_headers: dict[str, str] | None = None,
+) -> dict[str, Any]:
     """Execute an HTTP request against a registered integration."""
 
     integration = _find_integration(integration_id)
@@ -359,7 +358,7 @@ async def execute_api_call(
     method = method.upper()
 
     # Build headers
-    headers: Dict[str, str] = {}
+    headers: dict[str, str] = {}
     if extra_headers:
         headers.update(extra_headers)
 
@@ -477,9 +476,9 @@ def migrate_from_settings() -> None:
         return
 
     try:
-        with open(settings_path, "r", encoding="utf-8") as f:
+        with open(settings_path, encoding="utf-8") as f:
             settings = json.load(f)
-    except (json.JSONDecodeError, IOError):
+    except (OSError, json.JSONDecodeError):
         return
 
     miniflux_url = settings.get("miniflux_url", "")

@@ -10,9 +10,28 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class TTSRequest(BaseModel):
     text: str
     format: str = "audio"  # "audio" or "base64"
+
+
+def _audio_response(audio_data: bytes) -> Response:
+    is_mp3 = audio_data[:3] == b"ID3" or (
+        len(audio_data) >= 2 and audio_data[0] == 0xFF and (audio_data[1] & 0xE0) == 0xE0
+    )
+    mime = "audio/mpeg" if is_mp3 else "audio/wav"
+    filename = "speech.mp3" if "mpeg" in mime else "speech.wav"
+    return Response(
+        content=audio_data,
+        media_type=mime,
+        headers={"Content-Disposition": f"inline; filename={filename}"},
+    )
+
+
+def _synthesis_failed() -> HTTPException:
+    return HTTPException(status_code=500, detail={"message": "Synthesis failed"})
+
 
 def setup_tts_routes(tts_service):
     """Setup TTS routes with the provided TTS service"""
@@ -24,8 +43,8 @@ def setup_tts_routes(tts_service):
         try:
             return tts_service.get_stats()
         except Exception as e:
-            logger.error(f"Failed to get TTS stats: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"Failed to get TTS stats: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Failed to get TTS stats")
 
     @router.post("/synthesize")
     async def synthesize_speech(request: TTSRequest):
@@ -40,39 +59,20 @@ def setup_tts_routes(tts_service):
             if request.format == "base64":
                 audio_b64 = tts_service.synthesize_to_base64(request.text)
                 if not audio_b64:
-                    raise HTTPException(
-                        status_code=500,
-                        detail={"message": "Synthesis failed"}
-                    )
+                    raise _synthesis_failed()
                 return {"audio": audio_b64}
             
             else:  # audio format
                 audio_data = tts_service.synthesize(request.text)
                 if not audio_data:
-                    raise HTTPException(
-                        status_code=500,
-                        detail={"message": "Synthesis failed"}
-                    )
-                
-                # Detect format from magic bytes (MP3: ID3 tag or sync word ff e0+)
-                is_mp3 = audio_data[:3] == b'ID3' or (len(audio_data) >= 2 and audio_data[0] == 0xff and (audio_data[1] & 0xe0) == 0xe0)
-                mime = "audio/mpeg" if is_mp3 else "audio/wav"
-                return Response(
-                    content=audio_data,
-                    media_type=mime,
-                    headers={
-                        "Content-Disposition": "inline; filename=speech.mp3" if "mpeg" in mime else "inline; filename=speech.wav"
-                    }
-                )
+                    raise _synthesis_failed()
+                return _audio_response(audio_data)
         
         except HTTPException:
             raise
         except Exception as e:
             logger.error(f"Synthesis error: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=500,
-                detail={"message": f"Synthesis failed: {str(e)}"}
-            )
+            raise _synthesis_failed()
 
     @router.post("/clear-cache")
     async def clear_tts_cache():
@@ -81,7 +81,7 @@ def setup_tts_routes(tts_service):
             tts_service.clear_cache()
             return {"success": True, "message": "Cache cleared"}
         except Exception as e:
-            logger.error(f"Failed to clear cache: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"Failed to clear cache: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Failed to clear TTS cache")
 
     return router

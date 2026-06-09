@@ -26,7 +26,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
@@ -89,9 +89,9 @@ _REPLY_GIVE_UP_PATTERNS = [
 
 
 def evaluate_turn_regex(
-    tool_results: List[Dict[str, Any]],
+    tool_results: list[dict[str, Any]],
     agent_reply: str,
-) -> Tuple[str, Optional[str]]:
+) -> tuple[str, str | None]:
     """Cheap regex check on a finished turn.
 
     Returns ("failure", reason) on a detected problem, ("ok", None)
@@ -230,7 +230,7 @@ portable across users / hosts.
 
 
 async def _call_teacher(teacher_model_spec: str, prompt: str,
-                        owner: Optional[str] = None) -> Optional[str]:
+                        owner: str | None = None) -> str | None:
     """Call the configured teacher endpoint with the escalation prompt."""
     from src.llm_core import llm_call_async
     from src.agent.ai_interaction import _resolve_model, _TEACHER_SYSTEM_PROMPT
@@ -321,7 +321,7 @@ procedure can fix), output the single token NO_SKILL and nothing else.
 """
 
 
-def _extract_skill_json(teacher_response: str) -> Optional[Dict[str, Any]]:
+def _extract_skill_json(teacher_response: str) -> dict[str, Any] | None:
     """Find the first ```json {...}``` block and parse it.
 
     Returns None if no block found or JSON is malformed — both
@@ -343,7 +343,7 @@ def _extract_skill_json(teacher_response: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def _format_trace(tool_results: List[Dict[str, Any]], agent_reply: str) -> str:
+def _format_trace(tool_results: list[dict[str, Any]], agent_reply: str) -> str:
     """Render the turn's tool calls + final reply for the teacher prompt."""
     lines = []
     for i, r in enumerate(tool_results or []):
@@ -368,11 +368,11 @@ def _format_trace(tool_results: List[Dict[str, Any]], agent_reply: str) -> str:
 
 async def escalate_and_learn(
     user_request: str,
-    tool_results: List[Dict[str, Any]],
+    tool_results: list[dict[str, Any]],
     agent_reply: str,
     failure_reason: str,
-    owner: Optional[str] = None,
-) -> Optional[str]:
+    owner: str | None = None,
+) -> str | None:
     """Call the teacher, evaluate ITS attempt, save a skill on success.
 
     Returns the saved skill name (or None if the teacher couldn't
@@ -431,10 +431,10 @@ def maybe_escalate(
     student_endpoint_url: str,
     mode: str,
     user_request: str,
-    tool_results: List[Dict[str, Any]],
+    tool_results: list[dict[str, Any]],
     agent_reply: str,
-    owner: Optional[str] = None,
-) -> Optional[asyncio.Task]:
+    owner: str | None = None,
+) -> asyncio.Task | None:
     """Fire-and-forget entrypoint called by the agent loop end-of-turn.
 
     Returns the created asyncio.Task (so tests can await it) or None
@@ -474,10 +474,10 @@ def maybe_escalate(
 async def run_teacher_inline(
     *,
     student_endpoint_url: str,
-    student_messages: List[Dict[str, Any]],
-    student_tool_events: List[Dict[str, Any]],
+    student_messages: list[dict[str, Any]],
+    student_tool_events: list[dict[str, Any]],
     student_reply: str,
-    owner: Optional[str] = None,
+    owner: str | None = None,
 ):
     """Async generator. Yields SSE event strings.
 
@@ -563,8 +563,8 @@ async def run_teacher_inline(
     # The _is_teacher_run flag prevents infinite recursion (the teacher
     # run will skip its own escalation hook).
     from src.chat.agent_loop import stream_agent_loop
-    captured_tool_events: List[Dict[str, Any]] = []
-    captured_text_parts: List[str] = []
+    captured_tool_events: list[dict[str, Any]] = []
+    captured_text_parts: list[str] = []
 
     async for evt_str in stream_agent_loop(
         endpoint_url=teacher_url,

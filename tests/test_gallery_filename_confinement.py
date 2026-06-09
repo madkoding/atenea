@@ -4,6 +4,12 @@ from pathlib import Path
 import pytest
 from fastapi import HTTPException
 
+from tests.helpers.ast_check import (
+    assert_source_does_not_have,
+    assert_source_has,
+    call_count,
+)
+
 
 def _gallery_module():
     import routes.gallery_routes as gallery_routes
@@ -54,10 +60,10 @@ def test_gallery_image_path_rejects_symlink_escape(tmp_path, monkeypatch):
 
 
 def test_gallery_file_operations_use_confining_resolver():
-    source = Path("routes/gallery_routes.py").read_text(encoding="utf-8")
+    source = Path(__file__).resolve().parents[1] / "routes/gallery_routes.py"
 
-    assert 'Path("data/generated_images") / img.filename' not in source
-    assert 'os.path.join("data", "generated_images", img.filename)' not in source
-    assert 'os.path.join("data", "generated_images", img_filename)' not in source
-    assert source.count("_gallery_image_path(img.filename)") >= 3
-    assert "_gallery_image_path(img_filename)" in source
+    assert_source_does_not_have(source, 'Path("data/generated_images") / img.filename')
+    assert_source_does_not_have(source, 'os.path.join("data", "generated_images", img.filename)')
+    assert_source_does_not_have(source, 'os.path.join("data", "generated_images", img_filename)')
+    assert call_count(source, "_gallery_image_path") >= 3
+    assert_source_has(source, "_gallery_image_path(img_filename)")

@@ -6,13 +6,13 @@ import logging
 import re
 import uuid
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from core.database import SessionLocal, GalleryImage, GalleryAlbum, ModelEndpoint
 from core.database import Session as DbSession
-from src.auth.helpers import get_current_user, owner_filter, require_privilege
+from src.auth.helpers import get_current_user, require_privilege
 from src.uploads.limits import read_upload_limited
 from src.constants import GENERATED_IMAGES_DIR
 
@@ -268,7 +268,6 @@ def setup_gallery_routes() -> APIRouter:
     async def gallery_rotate(request: Request, image_id: str):
         """Rotate an image by ±90° or 180°. Updates the file on disk and the
         width/height in the DB. Body: {angle: 90 | -90 | 180}."""
-        from pathlib import Path
         from PIL import Image
         from io import BytesIO
 
@@ -411,7 +410,7 @@ def setup_gallery_routes() -> APIRouter:
 
     # ---- GET /api/gallery/tags ----
     @router.get("/api/gallery/tags")
-    async def gallery_tags(request: Request) -> Dict[str, Any]:
+    async def gallery_tags(request: Request) -> dict[str, Any]:
         """Return distinct tags across all active gallery images."""
         user = get_current_user(request)
         db = SessionLocal()
@@ -435,16 +434,16 @@ def setup_gallery_routes() -> APIRouter:
     @router.get("/api/gallery/library")
     async def gallery_library(
         request: Request,
-        search: Optional[str] = Query(None),
-        tag: Optional[str] = Query(None),
-        model: Optional[str] = Query(None),
-        album: Optional[str] = Query(None),
+        search: str | None = Query(None),
+        tag: str | None = Query(None),
+        model: str | None = Query(None),
+        album: str | None = Query(None),
         favorites: bool = Query(False),
         sort: str = Query("recent"),
-        seed: Optional[int] = Query(None),
+        seed: int | None = Query(None),
         offset: int = Query(0, ge=0),
         limit: int = Query(24, ge=1, le=100),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         user = get_current_user(request)
         db = SessionLocal()
         try:
@@ -663,7 +662,7 @@ def setup_gallery_routes() -> APIRouter:
     @router.post("/api/gallery/ai-tag-batch")
     async def ai_tag_batch(
         request: Request,
-        album_id: Optional[str] = Query(None),
+        album_id: str | None = Query(None),
         limit: int = Query(200),
     ):
         user = get_current_user(request)
@@ -685,7 +684,7 @@ def setup_gallery_routes() -> APIRouter:
 
     # ---- GET /api/gallery/{image_id} ----
     @router.get("/api/gallery/{image_id}")
-    async def get_gallery_image(request: Request, image_id: str) -> Dict[str, Any]:
+    async def get_gallery_image(request: Request, image_id: str) -> dict[str, Any]:
         user = get_current_user(request)
         db = SessionLocal()
         try:
@@ -706,7 +705,7 @@ def setup_gallery_routes() -> APIRouter:
 
     # ---- PATCH /api/gallery/{image_id} ----
     @router.patch("/api/gallery/{image_id}")
-    async def patch_gallery_image(request: Request, image_id: str, req: GalleryPatch) -> Dict[str, Any]:
+    async def patch_gallery_image(request: Request, image_id: str, req: GalleryPatch) -> dict[str, Any]:
         user = get_current_user(request)
         db = SessionLocal()
         try:
@@ -812,7 +811,7 @@ def setup_gallery_routes() -> APIRouter:
     # Leaves `ai_tags` intact. Use after a bug populated user-tags with
     # AI-suggested values you never added.
     @router.post("/api/gallery/clear-user-tags")
-    async def clear_gallery_user_tags(request: Request) -> Dict[str, Any]:
+    async def clear_gallery_user_tags(request: Request) -> dict[str, Any]:
         user = get_current_user(request)
         db = SessionLocal()
         try:
@@ -836,7 +835,7 @@ def setup_gallery_routes() -> APIRouter:
     # Leaves user `tags` intact. Use when AI-suggested tags like "dog" /
     # "woman" have leaked into the gallery and you want them gone.
     @router.post("/api/gallery/clear-ai-tags")
-    async def clear_gallery_ai_tags(request: Request, image_id: Optional[str] = Query(None)) -> Dict[str, Any]:
+    async def clear_gallery_ai_tags(request: Request, image_id: str | None = Query(None)) -> dict[str, Any]:
         user = get_current_user(request)
         db = SessionLocal()
         try:
@@ -862,7 +861,7 @@ def setup_gallery_routes() -> APIRouter:
     # tag from `tags` that also appears in `ai_tags` (case-insensitive).
     # Returns how many rows were touched + how many tags removed.
     @router.post("/api/gallery/dedupe-tags")
-    async def dedupe_gallery_tags(request: Request) -> Dict[str, Any]:
+    async def dedupe_gallery_tags(request: Request) -> dict[str, Any]:
         user = get_current_user(request)
         db = SessionLocal()
         try:
@@ -897,7 +896,7 @@ def setup_gallery_routes() -> APIRouter:
 
     # ---- DELETE /api/gallery/{image_id} ----
     @router.delete("/api/gallery/{image_id}")
-    async def delete_gallery_image(request: Request, image_id: str) -> Dict[str, str]:
+    async def delete_gallery_image(request: Request, image_id: str) -> dict[str, str]:
         user = get_current_user(request)
         db = SessionLocal()
         try:
@@ -1792,7 +1791,6 @@ def setup_gallery_routes() -> APIRouter:
     async def ai_tag_image(request: Request, image_id: str):
         """Send image to vision model for auto-tagging."""
         import base64, httpx
-        from pathlib import Path
 
         user = get_current_user(request)
         db = SessionLocal()

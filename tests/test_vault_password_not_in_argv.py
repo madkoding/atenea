@@ -28,7 +28,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # imports the module needs so we can reach the self-contained _run_bw helper.
 if "core.database" not in sys.modules:
     _db = types.ModuleType("core.database")
-    for _n in ("SessionLocal", "ChatMessage", "Session", "Document"):
+    for _n in ("SessionLocal", "ChatMessage", "Session", "Document", "utcnow_naive"):
         setattr(_db, _n, MagicMock())
     sys.modules["core.database"] = _db
 if "core.middleware" not in sys.modules:
@@ -102,7 +102,7 @@ def test_unlock_handler_feeds_password_on_stdin_not_argv():
 
 
 def test_tool_vault_unlock_feeds_password_on_stdin_not_argv():
-    text = open("src/tool_implementations.py", encoding="utf-8").read()
+    text = open("src/tools/implementations.py", encoding="utf-8").read()
 
     assert '["unlock", master_password, "--raw"]' not in text
     assert '_run_bw(["unlock", master_password' not in text

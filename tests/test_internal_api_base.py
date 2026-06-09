@@ -1,8 +1,6 @@
 """internal_api_base() resolution + a guard that loopback call sites use it."""
-import importlib
 import pathlib
 
-import pytest
 
 import core.constants as cc
 
@@ -38,9 +36,9 @@ def test_no_hardcoded_loopback_left_in_call_sites():
     # Regression guard: the converted files must not reintroduce the literal.
     root = pathlib.Path(__file__).resolve().parent.parent
     for rel in (
-        "src/tool_implementations.py",
-        "src/cookbook_serve_lifecycle.py",
-        "src/builtin_actions.py",
+        "src/tools/implementations.py",
+        "src/scheduling/cookbook_serve_lifecycle.py",
+        "src/actions/builtin.py",
         "routes/task_routes.py",
     ):
         text = (root / rel).read_text(encoding="utf-8")

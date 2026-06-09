@@ -1,9 +1,7 @@
 """Tests for ICS export correctness — calendar name escaping and UTC flag."""
 import types
 from datetime import datetime
-from unittest.mock import MagicMock, patch
 
-import pytest
 
 
 def _make_ev(summary, dtstart, dtend, all_day=False, is_utc=False, uid="test-uid",

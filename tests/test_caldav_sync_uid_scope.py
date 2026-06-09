@@ -7,10 +7,8 @@ reassigned its calendar_id to B's calendar — stealing A's event. The lookup
 must be scoped to the calendar being synced.
 """
 import tempfile
-import uuid
 from datetime import datetime
 
-import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool

@@ -31,13 +31,9 @@ This test pins the data flow by:
 If the test FAILS, the bug is REAL. If the test PASSES, the claim
 is a FALSE POSITIVE.
 """
-import os
-import sys
-import types
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-import pytest
 
 
 # ---------------------------------------------------------------------------
@@ -175,7 +171,6 @@ def _build_app_with_loopback_bypass(session_manager):
 
     # Stub BaseHTTPMiddleware that mirrors the loopback-bypass branch.
     from starlette.middleware.base import BaseHTTPMiddleware
-    from starlette.requests import Request as _Req
 
     class LoopbackBypassMiddleware(BaseHTTPMiddleware):
         async def dispatch(self, request, call_next):

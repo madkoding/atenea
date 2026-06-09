@@ -4,7 +4,7 @@
 import json
 import uuid
 import logging
-from typing import Dict, Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
@@ -13,6 +13,7 @@ from core.database import SessionLocal, Note
 from src.auth.helpers import get_current_user
 from src.constants import DATA_DIR
 from sqlalchemy.orm.attributes import flag_modified
+from datetime import UTC
 
 logger = logging.getLogger(__name__)
 
@@ -23,41 +24,41 @@ logger = logging.getLogger(__name__)
 
 class NoteCreate(BaseModel):
     title: str = ""
-    content: Optional[str] = None
-    items: Optional[list] = None
+    content: str | None = None
+    items: list | None = None
     note_type: str = "note"
-    color: Optional[str] = None
-    label: Optional[str] = None
+    color: str | None = None
+    label: str | None = None
     pinned: bool = False
-    due_date: Optional[str] = None
+    due_date: str | None = None
     source: str = "user"
-    session_id: Optional[str] = None
-    image_url: Optional[str] = None
-    repeat: Optional[str] = "none"
-    sort_order: Optional[int] = None
+    session_id: str | None = None
+    image_url: str | None = None
+    repeat: str | None = "none"
+    sort_order: int | None = None
 
 
 class NoteUpdate(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
-    items: Optional[list] = None
-    note_type: Optional[str] = None
-    color: Optional[str] = None
-    label: Optional[str] = None
-    pinned: Optional[bool] = None
-    archived: Optional[bool] = None
-    due_date: Optional[str] = None
-    image_url: Optional[str] = None
-    repeat: Optional[str] = None
-    sort_order: Optional[int] = None
-    agent_session_id: Optional[str] = None
+    title: str | None = None
+    content: str | None = None
+    items: list | None = None
+    note_type: str | None = None
+    color: str | None = None
+    label: str | None = None
+    pinned: bool | None = None
+    archived: bool | None = None
+    due_date: str | None = None
+    image_url: str | None = None
+    repeat: str | None = None
+    sort_order: int | None = None
+    agent_session_id: str | None = None
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _note_to_dict(note: Note) -> Dict[str, Any]:
+def _note_to_dict(note: Note) -> dict[str, Any]:
     items = None
     if note.items:
         try:
@@ -168,7 +169,7 @@ async def dispatch_reminder(
     if cache_key:
         try:
             import json as _json
-            from datetime import datetime as _dt, timezone as _tz, timedelta as _td
+            from datetime import datetime as _dt, timedelta as _td
             from pathlib import Path as _P
             _slug = "".join(c if (c.isalnum() or c in "-_.@") else "_" for c in (owner or "default"))
             cache_path = _P(DATA_DIR) / f"note_pings_{_slug}.json"
@@ -182,12 +183,12 @@ async def dispatch_reminder(
                     last = last.get("at")
                 last_dt = _dt.fromisoformat(str(last))
                 if last_dt.tzinfo is None:
-                    last_dt = last_dt.replace(tzinfo=_tz.utc)
+                    last_dt = last_dt.replace(tzinfo=UTC)
                 # Legacy cache values were plain timestamps and could be
                 # written by the frontend even when the email/ntfy send failed.
                 # Treat those as browser-only dedupe so email reminders can be
                 # retried by the backend scanner after a failed frontend path.
-                should_skip = last_dt >= _dt.now(_tz.utc) - _td(minutes=25)
+                should_skip = last_dt >= _dt.now(UTC) - _td(minutes=25)
                 if should_skip and channel in ("email", "ntfy", "webhook"):
                     should_skip = last_channel == channel
                 if should_skip:
@@ -299,7 +300,7 @@ async def dispatch_reminder(
             from routes.email_routes import _get_email_config
             from email.mime.text import MIMEText
             from email.mime.multipart import MIMEMultipart
-            from datetime import datetime as _dt
+            from datetime import UTC as _UTC, datetime as _dt
             # `reminder_email_account_id` lets the user pick WHICH email
             # account to send reminders from (when they have several
             # configured in Integrations). Falls back to the default
@@ -360,7 +361,7 @@ async def dispatch_reminder(
                 _t = title or 'Note'
                 _t = _t[len('Reminder:'):].strip() if _t.lower().startswith('reminder:') else _t
                 msg["Subject"] = f"Reminder (Atenea): {_t}"
-                msg["Date"] = _dt.utcnow().strftime("%a, %d %b %Y %H:%M:%S +0000")
+                msg["Date"] = _dt.now(_UTC).replace(tzinfo=None).strftime("%a, %d %b %Y %H:%M:%S +0000")
                 msg["X-Atenea-Origin"] = "atenea-ui"
                 msg["X-Atenea-Kind"] = "reminder"
                 msg["X-Atenea-Ref"] = str(note_id)
@@ -517,7 +518,7 @@ async def dispatch_reminder(
     if (email_sent or ntfy_sent or webhook_sent or browser_sent or local_browser_sent) and note_id:
         try:
             import json as _json
-            from datetime import datetime as _dt, timezone as _tz
+            from datetime import datetime as _dt
             from pathlib import Path as _P
             # Per-owner cache so the scanner's prune step on user A's run
             # doesn't drop user B's just-fired entry (review C4).
@@ -532,7 +533,7 @@ async def dispatch_reminder(
                 _cache = {}
             sent_channel = "email" if email_sent else "ntfy" if ntfy_sent else "webhook" if webhook_sent else "browser"
             _cache[cache_key or str(note_id)] = {
-                "at": _dt.now(_tz.utc).isoformat(),
+                "at": _dt.now(_UTC).isoformat(),
                 "channel": sent_channel,
             }
             _STATE.write_text(_json.dumps(_cache), encoding="utf-8")
@@ -566,7 +567,7 @@ def setup_note_routes(task_scheduler=None):
 
     router = APIRouter(prefix="/api/notes", tags=["notes"])
 
-    def _owner(request: Request) -> Optional[str]:
+    def _owner(request: Request) -> str | None:
         return get_current_user(request)
 
     def _is_admin_or_single_user(request: Request, user: str | None) -> bool:
@@ -590,8 +591,8 @@ def setup_note_routes(task_scheduler=None):
     @router.get("")
     def list_notes(
         request: Request,
-        archived: Optional[bool] = None,
-        label: Optional[str] = None,
+        archived: bool | None = None,
+        label: str | None = None,
     ):
         user = _owner(request)
         db = SessionLocal()

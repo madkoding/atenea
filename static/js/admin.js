@@ -97,10 +97,6 @@ async function loadUsers() {
         const allowedSet = new Set(allowedModels);
         const modelsRestricted = !!(u.privileges && u.privileges.allowed_models_restricted);
         const blockAllModels = !!(u.privileges && u.privileges.block_all_models);
-        let statusText = 'All models allowed (no restrictions)';
-        if (blockAllModels) statusText = 'All models blocked by administrator';
-        else if (modelsRestricted && allowedSet.size > 0) statusText = allowedSet.size + ' model(s) allowed';
-        else if (modelsRestricted) statusText = 'No models allowed';
         html += `<div style="padding:4px 0;">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <span style="font-size:12px;">Allowed models</span>
@@ -109,7 +105,7 @@ async function loadUsers() {
               <a href="#" class="priv-models-none" data-user="${esc(u.username)}" style="font-size:10px;opacity:0.5;">None</a>
             </div>
           </div>
-          <div style="font-size:10px;opacity:0.4;margin-bottom:4px;">${statusText}</div>
+          <div style="font-size:10px;opacity:0.4;margin-bottom:4px;">${blockAllModels ? 'No models allowed' : (!modelsRestricted ? 'All models allowed (no restrictions)' : (allowedSet.size === 0 ? 'No models allowed' : allowedSet.size + ' model(s) allowed'))}</div>
           <div class="priv-models-list" data-user="${esc(u.username)}">
             <span style="opacity:0.4;font-size:11px;">Loading models...</span>
           </div>
@@ -215,27 +211,29 @@ async function _loadModelsForUser(username, allowedSet, modelsRestricted, blockA
   const listEl = privPanel.querySelector(`.priv-models-list[data-user="${username}"]`);
   if (!listEl) return;
   try {
+    // Use /api/model-endpoints rather than /api/models — the latter is
+    // backed by `cached_models`, so endpoints that haven't been probed yet
+    // (e.g. a freshly-added cloud API like DeepSeek) simply don't show up
+    // until some other endpoint happens to trigger a cache refresh. The
+    // endpoints listing always reflects every configured endpoint.
     const res = await fetch('/api/model-endpoints', { credentials: 'same-origin' });
     const data = await res.json();
     const allModels = [];
-    if (Array.isArray(data)) {
-      data.forEach(ep => {
-        if (!ep.online) return;
-        (ep.models || []).forEach(m => {
-          const mid = m.id || m;
-          allModels.push({ mid, epName: ep.name || '', display: String(mid).split('/').pop() });
-        });
+    (Array.isArray(data) ? data : []).forEach(ep => {
+      if (!ep.online) return;
+      (ep.models || []).forEach(m => {
+        const mid = m.id || m;
+        allModels.push({ mid, epName: ep.name || '', display: mid.split('/').pop() });
       });
-    }
+    });
     if (!allModels.length) {
       listEl.innerHTML = '<span style="opacity:0.4;font-size:11px;">No models available</span>';
       return;
     }
-    let restricted = modelsRestricted && !blockAllModels;
+    let restricted = modelsRestricted;
+    let blockAll = blockAllModels;
     listEl.innerHTML = sortModelObjects(allModels).map(m => {
-      let checked = true;
-      if (blockAllModels) checked = false;
-      else if (restricted) checked = allowedSet.has(m.mid);
+      const checked = !blockAll && (!restricted || allowedSet.has(m.mid)) ? 'checked' : '';
       return `<label>
         <input type="checkbox" class="priv-model-cb" data-mid="${esc(m.mid)}" ${checked ? 'checked' : ''}>
         <span>${esc(m.display)}</span>
@@ -249,25 +247,33 @@ async function _loadModelsForUser(username, allowedSet, modelsRestricted, blockA
       listEl.querySelectorAll('.priv-model-cb').forEach(cb => {
         if (cb.checked) checked.push(cb.dataset.mid);
       });
-      const allChecked = checked.length === allModels.length;
-      const noneChecked = checked.length === 0;
-      const hintEl = privPanel.querySelector('.priv-models-list[data-user]')?.previousElementSibling;
-      const hint = hintEl ? hintEl.querySelector('div[style*="opacity"]') : null;
-      let payload;
-      if (noneChecked) {
-        payload = { block_all_models: true, allowed_models: [], allowed_models_restricted: true };
-        if (hint) hint.textContent = 'All models blocked by administrator';
-      } else if (allChecked) {
-        payload = { allowed_models: [], allowed_models_restricted: false };
-        if (hint) hint.textContent = 'All models allowed (no restrictions)';
+      // Three distinct states the backend must be able to tell apart:
+      //  - all checked   -> no restriction (allowed_models: [], block_all_models: false)
+      //  - none checked  -> block everything (allowed_models: [], block_all_models: true)
+      //  - some checked  -> allowlist (allowed_models: checked, block_all_models: false)
+      let value, hintText;
+      if (checked.length === allModels.length) {
+        restricted = false;
+        blockAll = false;
+        value = [];
+        hintText = 'All models allowed (no restrictions)';
+      } else if (checked.length === 0) {
+        restricted = true;
+        blockAll = true;
+        value = [];
+        hintText = 'No models allowed';
       } else {
-        payload = { allowed_models: checked, allowed_models_restricted: true };
-        if (hint) hint.textContent = checked.length + ' model(s) allowed';
+        restricted = true;
+        blockAll = false;
+        value = checked;
+        hintText = value.length + ' model(s) allowed';
       }
+      const hint = privPanel.querySelector('.priv-models-list[data-user]')?.previousElementSibling?.querySelector('div[style*="opacity"]');
+      if (hint) hint.textContent = hintText;
       fetch(`/api/auth/users/${encodeURIComponent(username)}/privileges`, {
         method: 'PUT', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ allowed_models: value, allowed_models_restricted: restricted, block_all_models: blockAll }),
       }).catch(() => {});
     }
     listEl.querySelectorAll('.priv-model-cb').forEach(cb => cb.addEventListener('change', _saveModels));

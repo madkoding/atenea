@@ -6,6 +6,7 @@ import pytest
 from fastapi import HTTPException
 
 import src.auth.helpers as auth_helpers
+from tests.helpers.ast_check import assert_contains_call, call_count
 
 
 def _request(*, current_user="api", api_token=True, api_token_owner="alice"):
@@ -56,7 +57,7 @@ def test_codex_as_owner_can_call_nested_user_routes(monkeypatch):
 
 
 def test_codex_plugin_downloads_use_general_authenticated_gate():
-    source = Path("routes/codex_routes.py").read_text(encoding="utf-8")
+    source = Path(__file__).resolve().parents[1] / "routes/codex_routes.py"
 
-    assert "require_authenticated_request" in source
-    assert source.count("require_authenticated_request(request)") == 2
+    assert_contains_call(source, "require_authenticated_request")
+    assert call_count(source, "require_authenticated_request") == 2

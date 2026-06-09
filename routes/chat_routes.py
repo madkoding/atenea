@@ -5,8 +5,8 @@ import json
 import os
 import time
 import logging
-from datetime import datetime
-from typing import Dict, Any, AsyncGenerator, List
+from typing import Any
+from collections.abc import AsyncGenerator
 
 from fastapi import APIRouter, Request, HTTPException, Form, Query
 from fastapi.responses import StreamingResponse
@@ -26,7 +26,7 @@ from core.exceptions import SessionNotFoundError
 from src.auth.helpers import get_current_user
 from routes.session_routes import _verify_session_owner
 from routes.document_helpers import _owner_session_filter
-from core.database import SessionLocal, get_session_mode, set_session_mode
+from core.database import SessionLocal, get_session_mode, set_session_mode, utcnow_naive as _utcnow_naive
 from core.database import Session as DBSession, ChatMessage as DBChatMessage
 from core.database import Document as DBDocument, ModelEndpoint
 from routes.research_routes import _resolve_research_endpoint
@@ -45,8 +45,11 @@ from src.tools.policy import build_effective_tool_policy
 logger = logging.getLogger(__name__)
 
 # Track active streams for partial-save safety net
-_active_streams: Dict[str, dict] = {}
+_active_streams: dict[str, dict] = {}
 _IMAGE_MODEL_PREFIXES = ("gpt-image", "dall-e", "chatgpt-image")
+
+
+
 
 
 def _stream_set(session_id: str, **fields) -> None:
@@ -93,7 +96,7 @@ def _clear_orphaned_session_endpoint(sess, owner: str | None = None) -> bool:
         if db_session:
             db_session.endpoint_url = ""
             db_session.model = ""
-            db_session.updated_at = datetime.utcnow()
+            db_session.updated_at = _utcnow_naive()
             db.commit()
         sess.endpoint_url = ""
         sess.model = ""
@@ -261,7 +264,7 @@ def _recover_empty_session_model(sess, session_id: str, owner: str | None = None
         db_session = db_session_q.first()
         if db_session:
             db_session.model = model
-            db_session.updated_at = datetime.utcnow()
+            db_session.updated_at = _utcnow_naive()
             db.commit()
         sess.model = model
         logger.info(
@@ -313,8 +316,8 @@ def setup_chat_routes(
     # ------------------------------------------------------------------ #
     # POST /api/chat (non-streaming)
     # ------------------------------------------------------------------ #
-    @router.post("/api/chat", response_model=Dict[str, str])
-    async def chat_endpoint(request: Request, chat_request: ChatRequest) -> Dict[str, str]:
+    @router.post("/api/chat", response_model=dict[str, str])
+    async def chat_endpoint(request: Request, chat_request: ChatRequest) -> dict[str, str]:
         _set_user_time_from_request(request)
 
         message = chat_request.message
@@ -440,24 +443,34 @@ def setup_chat_routes(
         _set_user_time_from_request(request)
 
         form_data = await request.form()
-        message = form_data.get("message")
-        session = form_data.get("session")
-        attachments = form_data.get("attachments")
-        use_web = form_data.get("use_web")
-        use_research = form_data.get("use_research")
-        time_filter = form_data.get("time_filter")
-        preset_id = form_data.get("preset_id")
-        allow_bash = form_data.get("allow_bash")
-        allow_web_search = form_data.get("allow_web_search")
-        use_rag = form_data.get("use_rag")
-        search_context = form_data.get("search_context")  # pre-fetched web search results (compare mode)
-        compare_mode = str(form_data.get("compare_mode", "")).lower() == "true"
-        incognito = str(form_data.get("incognito", "")).lower() == "true"
-        plan_mode = str(form_data.get("plan_mode", "")).lower() == "true"
-        chat_mode = str(form_data.get("mode", "")).lower()  # 'chat' or 'agent'
+
+        # chat_stream accepts multipart/form-data and JSON payloads.
+        # Prefer form values when present, then fall back to parsed JSON body.
+        def _request_value(key: str, default: Any = None) -> Any:
+            if key in form_data:
+                return form_data.get(key)
+            if isinstance(body, dict):
+                return body.get(key, default)
+            return default
+
+        message = _request_value("message")
+        session = _request_value("session")
+        attachments = _request_value("attachments")
+        use_web = _request_value("use_web")
+        use_research = _request_value("use_research")
+        time_filter = _request_value("time_filter")
+        preset_id = _request_value("preset_id")
+        allow_bash = _request_value("allow_bash")
+        allow_web_search = _request_value("allow_web_search")
+        use_rag = _request_value("use_rag")
+        search_context = _request_value("search_context")  # pre-fetched web search results (compare mode)
+        compare_mode = str(_request_value("compare_mode", "")).lower() == "true"
+        incognito = str(_request_value("incognito", "")).lower() == "true"
+        plan_mode = str(_request_value("plan_mode", "")).lower() == "true"
+        chat_mode = str(_request_value("mode", "")).lower()  # 'chat' or 'agent'
         # Workspace: confine the agent's file/shell tools to this folder. Validate
         # it's a real directory; ignore (no confinement) otherwise.
-        workspace = (form_data.get("workspace") or "").strip()
+        workspace = (_request_value("workspace") or "").strip()
         if workspace:
             _ws_real = os.path.realpath(os.path.expanduser(workspace))
             workspace = _ws_real if os.path.isdir(_ws_real) else ""
@@ -471,7 +484,7 @@ def setup_chat_routes(
         # huge plan can't blow the prompt.
         approved_plan = ""
         if not plan_mode:
-            approved_plan = (form_data.get("approved_plan") or "").strip()[:8192]
+            approved_plan = (_request_value("approved_plan") or "").strip()[:8192]
         # Did the USER explicitly pick agent mode? (vs. us auto-escalating
         # below). Skill extraction should only learn from real agent sessions,
         # not chats we quietly promoted for a notes/calendar intent.
@@ -493,7 +506,7 @@ def setup_chat_routes(
                 _tool_intent.category,
                 _tool_intent.reason,
             )
-        active_doc_id = form_data.get("active_doc_id", "").strip()
+        active_doc_id = str(_request_value("active_doc_id", "")).strip()
         logger.info(f"[doc-inject] chat_mode={chat_mode}, active_doc_id={active_doc_id!r}")
 
         try:
@@ -559,7 +572,7 @@ def setup_chat_routes(
             except Exception:
                 pass
 
-        no_memory = str(form_data.get("no_memory", "")).lower() == "true"
+        no_memory = str(_request_value("no_memory", "")).lower() == "true"
         pre_context_tool_policy = build_effective_tool_policy(
             last_user_message=message,
         )
@@ -1300,7 +1313,7 @@ def setup_chat_routes(
     # no longer stops it (it's detached), so the Stop button must call this.
     # ------------------------------------------------------------------ #
     @router.post("/api/chat/stop/{session_id}")
-    async def chat_stop(request: Request, session_id: str) -> Dict[str, Any]:
+    async def chat_stop(request: Request, session_id: str) -> dict[str, Any]:
         _verify_session_owner(request, session_id)
         stopped = agent_runs.stop(session_id)
         return {"stopped": stopped}
@@ -1309,7 +1322,7 @@ def setup_chat_routes(
     # GET /api/chat/stream_status — check if a stream is active for a session
     # ------------------------------------------------------------------ #
     @router.get("/api/chat/stream_status/{session_id}")
-    async def chat_stream_status(request: Request, session_id: str) -> Dict[str, Any]:
+    async def chat_stream_status(request: Request, session_id: str) -> dict[str, Any]:
         _verify_session_owner(request, session_id)
         # A detached run can still be going even if _active_streams was popped;
         # report it as active so the client knows to reconnect via /resume.
@@ -1327,7 +1340,7 @@ def setup_chat_routes(
     # POST /api/inject_context
     # ------------------------------------------------------------------ #
     @router.post("/api/inject_context/{session_id}")
-    async def inject_context(request: Request, session_id: str, context: str = Form(...)) -> Dict[str, str]:
+    async def inject_context(request: Request, session_id: str, context: str = Form(...)) -> dict[str, str]:
         _verify_session_owner(request, session_id)
         try:
             sess = session_manager.get_session(session_id)
@@ -1346,7 +1359,7 @@ def setup_chat_routes(
         request: Request,
         q: str = Query("", min_length=0),
         limit: int = Query(20, ge=1, le=100),
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         if not q or not q.strip():
             return []
 

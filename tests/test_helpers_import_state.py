@@ -28,6 +28,12 @@ _RESOLVER_NAMES = (
 )
 
 
+def _attach_fake_runtime(src_module: types.ModuleType, resolver_module: types.ModuleType) -> None:
+    runtime = types.ModuleType("src.runtime")
+    runtime.endpoint_resolver = resolver_module
+    src_module.runtime = runtime
+
+
 def test_absent_module_is_removed_after_block():
     assert _SENTINEL not in sys.modules
     with preserve_import_state(_SENTINEL):
@@ -267,7 +273,7 @@ def test_clear_fake_resolver_removes_stub_endpoint_resolver():
     with preserve_import_state(*_RESOLVER_NAMES):
         fake_src = types.ModuleType("src")
         fake_resolver = types.ModuleType("src.runtime.endpoint_resolver")  # no __file__ => stub
-        fake_src.runtime.endpoint_resolver = fake_resolver
+        _attach_fake_runtime(fake_src, fake_resolver)
         sys.modules["src"] = fake_src
         sys.modules["src.runtime.endpoint_resolver"] = fake_resolver
 
@@ -282,7 +288,7 @@ def test_clear_fake_resolver_preserves_real_endpoint_resolver():
         fake_src = types.ModuleType("src")
         real_resolver = types.ModuleType("src.runtime.endpoint_resolver")
         real_resolver.__file__ = "/somewhere/src/endpoint_resolver.py"  # looks on-disk
-        fake_src.runtime.endpoint_resolver = real_resolver
+        _attach_fake_runtime(fake_src, real_resolver)
         sys.modules["src"] = fake_src
         sys.modules["src.runtime.endpoint_resolver"] = real_resolver
 
@@ -299,7 +305,7 @@ def test_clear_fake_resolver_evicts_empty_file_resolver():
         fake_src = types.ModuleType("src")
         empty_resolver = types.ModuleType("src.runtime.endpoint_resolver")
         empty_resolver.__file__ = ""  # falsy => stub
-        fake_src.runtime.endpoint_resolver = empty_resolver
+        _attach_fake_runtime(fake_src, empty_resolver)
         sys.modules["src"] = fake_src
         sys.modules["src.runtime.endpoint_resolver"] = empty_resolver
         model_routes = types.ModuleType("routes.model_routes")
@@ -318,7 +324,7 @@ def test_clear_fake_resolver_removes_model_routes_when_resolver_fake():
     with preserve_import_state(*_RESOLVER_NAMES):
         fake_src = types.ModuleType("src")
         fake_resolver = types.ModuleType("src.runtime.endpoint_resolver")
-        fake_src.runtime.endpoint_resolver = fake_resolver
+        _attach_fake_runtime(fake_src, fake_resolver)
         sys.modules["src"] = fake_src
         sys.modules["src.runtime.endpoint_resolver"] = fake_resolver
 
@@ -338,7 +344,7 @@ def test_clear_fake_resolver_removes_extra_modules_when_resolver_fake():
     with preserve_import_state(*_RESOLVER_NAMES):
         fake_src = types.ModuleType("src")
         fake_resolver = types.ModuleType("src.runtime.endpoint_resolver")
-        fake_src.runtime.endpoint_resolver = fake_resolver
+        _attach_fake_runtime(fake_src, fake_resolver)
         sys.modules["src"] = fake_src
         sys.modules["src.runtime.endpoint_resolver"] = fake_resolver
 
@@ -359,7 +365,7 @@ def test_clear_fake_resolver_keeps_dependents_when_resolver_real():
         fake_src = types.ModuleType("src")
         real_resolver = types.ModuleType("src.runtime.endpoint_resolver")
         real_resolver.__file__ = "/somewhere/src/endpoint_resolver.py"
-        fake_src.runtime.endpoint_resolver = real_resolver
+        _attach_fake_runtime(fake_src, real_resolver)
         sys.modules["src"] = fake_src
         sys.modules["src.runtime.endpoint_resolver"] = real_resolver
 
@@ -397,7 +403,7 @@ def test_clear_fake_resolver_keeps_parent_attr_pointing_elsewhere():
         fake_src = types.ModuleType("src")
         cached_fake = types.ModuleType("src.runtime.endpoint_resolver")  # the stub in sys.modules
         other = types.ModuleType("src.runtime.endpoint_resolver")  # parent attr points here
-        fake_src.runtime.endpoint_resolver = other
+        _attach_fake_runtime(fake_src, other)
         sys.modules["src"] = fake_src
         sys.modules["src.runtime.endpoint_resolver"] = cached_fake
 
@@ -415,7 +421,7 @@ def test_clear_fake_resolver_uses_parent_attr_when_not_in_sys_modules():
         sys.modules.pop("src.runtime.endpoint_resolver", None)
         fake_src = types.ModuleType("src")
         fake_resolver = types.ModuleType("src.runtime.endpoint_resolver")
-        fake_src.runtime.endpoint_resolver = fake_resolver
+        _attach_fake_runtime(fake_src, fake_resolver)
         sys.modules["src"] = fake_src
         model_routes = types.ModuleType("routes.model_routes")
         sys.modules["routes.model_routes"] = model_routes

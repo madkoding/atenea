@@ -1,17 +1,37 @@
 """Custom background image upload — user-supplied background images stored under DATA_DIR/uploads/backgrounds/."""
 import os
 import re
+import unicodedata
 from fastapi import APIRouter, Request, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 
-BACKGROUNDS_DIR = os.path.join("data", "uploads", "backgrounds")
+from src.constants import UPLOAD_DIR
+
+BACKGROUNDS_DIR = os.path.join(UPLOAD_DIR, "backgrounds")
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
-_SAFE_NAME = re.compile(r'^[\w.\- ]+$', re.UNICODE)
+_SAFE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._\- ]{0,127}$")
 
 
 def _sanitize_filename(name: str) -> str:
-    name = os.path.basename(name).strip()
+    if not isinstance(name, str):
+        raise HTTPException(400, "Invalid filename")
+    if not name:
+        raise HTTPException(400, "Invalid filename")
+    if name != name.strip():
+        raise HTTPException(400, "Invalid filename")
+    if unicodedata.normalize("NFKC", name) != name:
+        raise HTTPException(400, "Invalid filename")
+    if "/" in name or "\\" in name:
+        raise HTTPException(400, "Invalid filename")
+    if name != os.path.basename(name):
+        raise HTTPException(400, "Invalid filename")
+    if name in {".", ".."}:
+        raise HTTPException(400, "Invalid filename")
+    if name.startswith(".") or name.endswith(".") or name.endswith(" "):
+        raise HTTPException(400, "Invalid filename")
+    if any(ord(ch) < 32 for ch in name):
+        raise HTTPException(400, "Invalid filename")
     if not _SAFE_NAME.match(name):
         raise HTTPException(400, "Invalid filename")
     return name

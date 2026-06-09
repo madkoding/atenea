@@ -10,7 +10,8 @@ from src.tools.execution import _resolve_tool_path_in_workspace, _direct_fallbac
 
 def test_workspace_resolver_confines():
     ws = tempfile.mkdtemp()
-    open(os.path.join(ws, "a.txt"), "w").write("x")
+    with open(os.path.join(ws, "a.txt"), "w") as f:
+        f.write("x")
     real = os.path.realpath(os.path.join(ws, "a.txt"))
     # relative path resolves under the workspace
     assert _resolve_tool_path_in_workspace(ws, "a.txt") == real
@@ -46,7 +47,8 @@ async def test_read_write_confined_in_workspace():
     # Reading outside the workspace is rejected (sibling temp dir, portable).
     outside = tempfile.mkdtemp()
     outside_file = os.path.join(outside, "secret.txt")
-    open(outside_file, "w").write("nope")
+    with open(outside_file, "w") as f:
+        f.write("nope")
     res = await _direct_fallback("read_file", outside_file, workspace=ws)
     assert res["exit_code"] == 1 and "outside the workspace" in res["error"]
     # Writing outside is rejected (file must not be created).
@@ -94,16 +96,19 @@ async def test_edit_file_confined_in_workspace():
     import json
     from src.tools.execution import _do_edit_file
     ws = tempfile.mkdtemp()
-    open(os.path.join(ws, "f.txt"), "w").write("foo bar")
+    with open(os.path.join(ws, "f.txt"), "w") as f:
+        f.write("foo bar")
     # Edit inside the workspace succeeds.
     res = await _do_edit_file(json.dumps(
         {"path": "f.txt", "old_string": "foo", "new_string": "baz"}), workspace=ws)
     assert res["exit_code"] == 0
-    assert open(os.path.join(ws, "f.txt")).read() == "baz bar"
+    with open(os.path.join(ws, "f.txt")) as f:
+        assert f.read() == "baz bar"
     # Editing outside the workspace is rejected (sibling temp dir, portable).
     outside = tempfile.mkdtemp()
     outside_file = os.path.join(outside, "f.txt")
-    open(outside_file, "w").write("a")
+    with open(outside_file, "w") as f:
+        f.write("a")
     res = await _do_edit_file(json.dumps(
         {"path": outside_file, "old_string": "a", "new_string": "b"}), workspace=ws)
     assert res["exit_code"] == 1 and "outside the workspace" in res["error"]
@@ -113,7 +118,8 @@ async def test_edit_file_confined_in_workspace():
 async def test_grep_and_ls_confined_in_workspace():
     import json
     ws = tempfile.mkdtemp()
-    open(os.path.join(ws, "doc.txt"), "w").write("hello workspace\n")
+    with open(os.path.join(ws, "doc.txt"), "w") as f:
+        f.write("hello workspace\n")
     # grep with no path searches the workspace root and finds the match.
     res = await _direct_fallback("grep", json.dumps({"pattern": "hello"}), workspace=ws)
     assert res["exit_code"] == 0 and "doc.txt" in res["output"]

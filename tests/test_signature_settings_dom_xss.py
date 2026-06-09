@@ -2,25 +2,26 @@
 
 from pathlib import Path
 
+from tests.helpers.ast_check import assert_source_has
 
-_REPO = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_signature_picker_allows_only_raster_data_urls():
-    src = (_REPO / "static" / "js" / "signature.js").read_text(encoding="utf-8")
+    path = ROOT / "static" / "js" / "signature.js"
 
-    assert "function _safeSignatureDataUrl(raw)" in src
-    assert r"^data:image\/png;base64," in src
-    assert '<img src="${_esc(dataUrl)}"/>' in src
-    assert 'dataUrl: s.data_url' not in src
+    assert_source_has(path, "function _safeSignatureDataUrl(raw)")
+    assert_source_has(path, r"^data:image\/png;base64,")
+    assert_source_has(path, '<img src="${_esc(dataUrl)}"/>')
+    assert 'dataUrl: s.data_url' not in path.read_text(encoding="utf-8")
 
 
 def test_settings_2fa_setup_escapes_secret_and_qr_src():
-    src = (_REPO / "static" / "js" / "settings.js").read_text(encoding="utf-8")
+    path = ROOT / "static" / "js" / "settings.js"
 
-    assert "function safeRasterDataUrl(raw)" in src
-    assert "const qrCode = safeRasterDataUrl(setup.qr_code);" in src
-    assert '<img src="${esc(qrCode)}"' in src
-    assert "${esc(setup.secret)}" in src
-    assert 'src="${setup.qr_code}"' not in src
-    assert ">${setup.secret}</div>" not in src
+    assert_source_has(path, "function safeRasterDataUrl(raw)")
+    assert_source_has(path, "const qrCode = safeRasterDataUrl(setup.qr_code);")
+    assert_source_has(path, '<img src="${esc(qrCode)}"')
+    assert_source_has(path, "${esc(setup.secret)}")
+    assert 'src="${setup.qr_code}"' not in path.read_text(encoding="utf-8")
+    assert '>${setup.secret}</div>' not in path.read_text(encoding="utf-8")

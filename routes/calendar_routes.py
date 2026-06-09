@@ -3,8 +3,7 @@
 import logging
 import re
 import uuid
-from datetime import datetime, date, timedelta
-from typing import Optional, List
+from datetime import datetime, date, timedelta, UTC
 
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File
 from pydantic import BaseModel
@@ -27,8 +26,7 @@ def _ics_naive_dtstart(dt):
     """
     if isinstance(dt, datetime):
         if dt.tzinfo is not None:
-            from datetime import timezone as _tz
-            return dt.astimezone(_tz.utc).replace(tzinfo=None)
+            return dt.astimezone(UTC).replace(tzinfo=None)
         return dt
     if isinstance(dt, date):
         return datetime(dt.year, dt.month, dt.day)
@@ -131,24 +129,24 @@ def _resolve_base_uid(uid: str) -> str:
 class EventCreate(BaseModel):
     summary: str
     dtstart: str  # ISO 8601
-    dtend: Optional[str] = None
+    dtend: str | None = None
     all_day: bool = False
     description: str = ""
     location: str = ""
-    calendar_href: Optional[str] = None  # calendar id
-    rrule: Optional[str] = None
-    color: Optional[str] = None  # per-event color override
+    calendar_href: str | None = None  # calendar id
+    rrule: str | None = None
+    color: str | None = None  # per-event color override
 
 
 class EventUpdate(BaseModel):
-    summary: Optional[str] = None
-    dtstart: Optional[str] = None
-    dtend: Optional[str] = None
-    all_day: Optional[bool] = None
-    description: Optional[str] = None
-    location: Optional[str] = None
-    rrule: Optional[str] = None
-    color: Optional[str] = None
+    summary: str | None = None
+    dtstart: str | None = None
+    dtend: str | None = None
+    all_day: bool | None = None
+    description: str | None = None
+    location: str | None = None
+    rrule: str | None = None
+    color: str | None = None
 
 
 # ── Helpers ──
@@ -179,8 +177,6 @@ from src.misc.user_time import (
     get_user_tz_name,
     get_user_tz_offset,
     now_user_local,
-    set_user_tz_name,
-    set_user_tz_offset,
     user_timezone,
 )
 
@@ -199,7 +195,7 @@ def parse_due_for_user(s: str) -> str:
         evaluated against the user's local "now" instead of the server's,
         then ISO-with-offset.
     """
-    from datetime import timezone as _tz, timedelta as _td
+    from datetime import timedelta as _td
     offset = get_user_tz_offset()
     tz_name = get_user_tz_name()
     s = (s or "").strip()
@@ -226,7 +222,7 @@ def parse_due_for_user(s: str) -> str:
         return parsed.replace(tzinfo=user_tz).isoformat()
 
     # Natural language — evaluate against user's "now".
-    server_now_utc = datetime.now(_tz.utc)
+    server_now_utc = datetime.now(UTC)
     user_now = now_user_local(server_now_utc)
     # Patch datetime.now() inside _parse_dt by leveraging the user's clock:
     # we re-implement the small natural-language phrases here against user_now
@@ -300,7 +296,6 @@ def _parse_dt_pair(s: str):
     naive-local (legacy behavior). DB column is naive — callers that care
     about tz semantics should set ``CalendarEvent.is_utc`` accordingly.
     """
-    from datetime import timezone as _tz
     s = (s or "").strip()
     if not s:
         raise ValueError("empty datetime string")
@@ -310,7 +305,7 @@ def _parse_dt_pair(s: str):
         _s2 = s.replace("Z", "+00:00") if s.endswith("Z") else s
         parsed = datetime.fromisoformat(_s2)
         if parsed.tzinfo is not None:
-            return parsed.astimezone(_tz.utc).replace(tzinfo=None), True
+            return parsed.astimezone(UTC).replace(tzinfo=None), True
         return parsed, False
     except ValueError:
         return _parse_dt(s), False
@@ -344,8 +339,7 @@ def _parse_dt(s: str) -> datetime:
         # Strip tz for the legacy callers — they expect naive. Real tz
         # handling lives in _parse_dt_pair.
         if parsed.tzinfo is not None:
-            from datetime import timezone as _tz
-            return parsed.astimezone(_tz.utc).replace(tzinfo=None)
+            return parsed.astimezone(UTC).replace(tzinfo=None)
         return parsed
     except ValueError:
         pass
@@ -428,8 +422,7 @@ def _parse_dt(s: str) -> datetime:
         # crashed read-back comparisons in _expand_rrule with "can't compare
         # offset-naive and offset-aware datetimes".
         if parsed.tzinfo is not None:
-            from datetime import timezone as _tz
-            return parsed.astimezone(_tz.utc).replace(tzinfo=None)
+            return parsed.astimezone(UTC).replace(tzinfo=None)
         return parsed
     except Exception:
         raise ValueError(f"could not parse datetime: {s!r}")
@@ -476,7 +469,7 @@ _RRULE_EXPANSION_LIMIT = 1000
 
 def _expand_rrule(
     ev: CalendarEvent, start: datetime, end: datetime
-) -> List[dict]:
+) -> list[dict]:
     """Expand a single recurring CalendarEvent into occurrence dicts.
 
     Each occurrence gets a stable compound UID of the form
@@ -1255,7 +1248,6 @@ def setup_calendar_routes() -> APIRouter:
                 # suffix on output — without this, the frontend would parse
                 # the naive ISO as the user's CURRENT local, which is exactly
                 # the bug where imported events fire reminders at wrong times.
-                from datetime import timezone as _tz
                 row_is_utc = False
                 if all_day:
                     start_dt = datetime(dt_val.year, dt_val.month, dt_val.day)
@@ -1263,7 +1255,7 @@ def setup_calendar_routes() -> APIRouter:
                     end_dt = datetime(dtend.dt.year, dtend.dt.month, dtend.dt.day) if dtend else start_dt + timedelta(days=1)
                 else:
                     if hasattr(dt_val, 'tzinfo') and dt_val.tzinfo is not None:
-                        start_dt = dt_val.astimezone(_tz.utc).replace(tzinfo=None)
+                        start_dt = dt_val.astimezone(UTC).replace(tzinfo=None)
                         row_is_utc = True
                     else:
                         start_dt = dt_val
@@ -1271,7 +1263,7 @@ def setup_calendar_routes() -> APIRouter:
                     if dtend:
                         d_end = dtend.dt
                         if hasattr(d_end, 'tzinfo') and d_end.tzinfo is not None:
-                            end_dt = d_end.astimezone(_tz.utc).replace(tzinfo=None)
+                            end_dt = d_end.astimezone(UTC).replace(tzinfo=None)
                         else:
                             end_dt = d_end
                     else:

@@ -47,8 +47,9 @@ Windows is not actively tested. Docker on Linux or a Linux/macOS manual install 
 Run the smallest relevant checks for your change:
 
 ```bash
-python -m pytest
-python -m py_compile app.py routes/*.py src/*.py
+python3 -m ruff check app.py core routes src services scripts tests
+python3 -m mypy --config-file pyproject.toml
+python3 -m pytest
 node --check static/js/<file-you-changed>.js
 ```
 
@@ -130,4 +131,3 @@ Issues with only "help", "does not work", or a screenshot without context may be
 Do not post secrets, API keys, private logs, personal documents, or public IPs in issues or pull requests.
 
 For security reports, follow [SECURITY.md](SECURITY.md).
-
