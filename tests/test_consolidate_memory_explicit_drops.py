@@ -7,7 +7,7 @@ deleted. The fix honors the explicit `drop` set, so an omitted memory survives.
 import asyncio
 import json
 
-import src.builtin_actions as ba
+import src.actions.builtin as ba
 
 
 class _FakeMM:
@@ -28,14 +28,14 @@ class _FakeMM:
 
 
 def test_omitted_memory_survives_only_explicit_drop(monkeypatch):
-    import src.memory
-    import src.endpoint_resolver
+    import src.memory.store as memory_store
+    import src.runtime.endpoint_resolver as endpoint_resolver
     import src.llm_core
 
     _FakeMM.saved = None
-    monkeypatch.setattr(src.memory, "MemoryManager", _FakeMM)
+    monkeypatch.setattr(memory_store, "MemoryManager", _FakeMM)
     monkeypatch.setattr(
-        src.endpoint_resolver, "resolve_endpoint",
+        endpoint_resolver, "resolve_endpoint",
         lambda kind, owner=None: ("http://x/v1", "model", {}),
     )
 

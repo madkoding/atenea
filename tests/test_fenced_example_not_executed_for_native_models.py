@@ -24,7 +24,7 @@ assertions) end-to-end with a mocked LLM stream, and assert on whether
 import asyncio
 import json
 
-import src.agent_loop as al
+import src.chat.agent_loop as al
 
 
 def _collect(gen):
@@ -207,7 +207,7 @@ def test_resolve_tool_blocks_native_path_untouched_when_native_calls_present():
 # back to DSML when it can't emit structured tool_calls. The fix gates ONLY
 # the fenced-code pattern (via `skip_fenced=`) so Patterns 2-5 stay active.
 # ---------------------------------------------------------------------------
-from src.tool_parsing import parse_tool_blocks, strip_tool_blocks  # noqa: E402
+from src.tools.parsing import parse_tool_blocks, strip_tool_blocks  # noqa: E402
 
 
 def test_skip_fenced_still_recovers_xml_invoke_markup():

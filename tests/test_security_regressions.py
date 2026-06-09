@@ -388,7 +388,7 @@ def test_chat_preprocess_does_not_surface_cross_owner_attachment(tmp_path, monke
     _stub_core_database_for_route_imports(monkeypatch)
     from src.chat.handler import ChatHandler
     from src.uploads.handler import UploadHandler
-    from src.settings import settings
+    import src.settings as settings
 
     upload_dir, _alice_id, bob_id = _make_upload_store(tmp_path)
     handler = UploadHandler(str(tmp_path), str(upload_dir))

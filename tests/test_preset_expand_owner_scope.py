@@ -43,7 +43,7 @@ def _patch_model_pipeline(monkeypatch):
     async def fake_llm_call_async(url, model, messages, **kwargs):
         return "  expanded prompt  "
 
-    monkeypatch.setattr("src.ai_interaction._resolve_model", fake_resolve_model)
+    monkeypatch.setattr("src.agent.ai_interaction._resolve_model", fake_resolve_model)
     monkeypatch.setattr("src.llm_core.llm_call_async", fake_llm_call_async)
     return seen
 
