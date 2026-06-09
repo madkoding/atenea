@@ -24,11 +24,15 @@ import argparse, json, logging, os, sys
 from pathlib import Path
 
 try:
-    from src.personal_docs import PersonalDocsManager
+    from src.personal.docs import PersonalDocsManager
     quiet_logs()
-except ModuleNotFoundError as e:
-    sys.stderr.write(f"error: {e}\nhint: run from repo root with venv active.\n")
-    sys.exit(2)
+except ModuleNotFoundError:
+    try:
+        from src.personal_docs import PersonalDocsManager
+        quiet_logs()
+    except ModuleNotFoundError as e:
+        sys.stderr.write(f"error: {e}\nhint: run from repo root with venv active.\n")
+        sys.exit(2)
 
 
 _DATA_DIR = str(_REPO_ROOT / "data")
