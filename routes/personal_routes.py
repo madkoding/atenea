@@ -14,7 +14,7 @@ from src.uploads.handler import secure_filename
 
 UPLOADS_DIR = PERSONAL_UPLOADS_DIR
 MAX_PERSONAL_UPLOAD_BYTES = int(
-    os.getenv("ODYSSEUS_PERSONAL_UPLOAD_MAX_BYTES", str(25 * 1024 * 1024))
+    os.getenv("ATENEA_PERSONAL_UPLOAD_MAX_BYTES", str(25 * 1024 * 1024))
 )
 
 logger = logging.getLogger(__name__)

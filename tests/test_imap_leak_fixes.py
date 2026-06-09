@@ -15,7 +15,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-_TMP = Path(tempfile.mkdtemp(prefix="odysseus-imap-leak-fixes-"))
+_TMP = Path(tempfile.mkdtemp(prefix="atenea-imap-leak-fixes-"))
 os.environ.setdefault("DATA_DIR", str(_TMP))
 os.environ.setdefault("DATABASE_URL", f"sqlite:///{_TMP / 'app.db'}")
 

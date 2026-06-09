@@ -1,4 +1,4 @@
-# Odysseus Pro
+# Atenea Pro
 
 [Español](#espanol) | [English](#english)
 
@@ -6,9 +6,9 @@
 
 ## Espanol
 
-Odysseus Pro es un fork mejorado de [Odysseus](https://github.com/pewdiepie-archdaemon/odysseus), orientado a una experiencia mas completa, mantenible y enfocada en uso real diario.
+Atenea Pro es un fork mejorado de [Atenea](https://github.com/pewdiepie-archdaemon/atenea), orientado a una experiencia mas completa, mantenible y enfocada en uso real diario.
 
-### Que es Odysseus Pro
+### Que es Atenea Pro
 
 - Workspace de IA self-hosted con chat, agente, documentos, memoria, research, email y calendario.
 - Fork activo con cambios funcionales, mejoras de arquitectura y mas control para personalizacion/operacion.
@@ -73,8 +73,8 @@ Este layout mejora mantenibilidad porque:
 ### Instalacion rapida
 
 ```bash
-git clone https://github.com/madkoding/odysseus-pro.git
-cd odysseus-pro
+git clone https://github.com/madkoding/atenea-pro.git
+cd atenea-pro
 git checkout main
 cp .env.example .env
 docker compose up -d --build
@@ -91,9 +91,9 @@ Abrir: `http://localhost:7000`
 
 ## English
 
-Odysseus Pro is an improved fork of [Odysseus](https://github.com/pewdiepie-archdaemon/odysseus), focused on a more complete, maintainable, and production-minded self-hosted AI workspace.
+Atenea Pro is an improved fork of [Atenea](https://github.com/pewdiepie-archdaemon/atenea), focused on a more complete, maintainable, and production-minded self-hosted AI workspace.
 
-### What Odysseus Pro is
+### What Atenea Pro is
 
 - A self-hosted AI workspace with chat, agent, documents, memory, research, email, and calendar.
 - An active fork with functional enhancements, architecture improvements, and stronger operational control.
@@ -153,8 +153,8 @@ This layout improves maintainability by reducing top-level clutter, making domai
 ### Quick start
 
 ```bash
-git clone https://github.com/madkoding/odysseus-pro.git
-cd odysseus-pro
+git clone https://github.com/madkoding/atenea-pro.git
+cd atenea-pro
 git checkout main
 cp .env.example .env
 docker compose up -d --build
@@ -169,4 +169,4 @@ Open: `http://localhost:7000`
 
 ## License
 
-Same as upstream Odysseus. See `LICENSE`.
+Same as upstream Atenea. See `LICENSE`.

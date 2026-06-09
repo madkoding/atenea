@@ -3,7 +3,7 @@
 // auto-applies data-i18n* attributes to the DOM. Default language: en.
 // Persists selection in localStorage so the choice survives reloads.
 
-const STORAGE_KEY = 'odysseus-ui-language';
+const STORAGE_KEY = 'atenea-ui-language';
 const SUPPORTED = ['en', 'es'];
 let _locale = 'en';
 let _messages = {};
