@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from typing import Dict, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -68,14 +68,14 @@ Usa lenguaje preciso. Muestra relaciones causales de forma explicita. Cuantifica
         self.presets_file = os.path.join(data_dir, "presets.json")
         self.presets = self.load()
     
-    def load(self) -> Dict[str, Any]:
+    def load(self) -> dict[str, Any]:
         """Load presets from file, creating defaults if needed"""
         if not os.path.exists(self.presets_file):
             self.save(self.DEFAULT_PRESETS)
             return self.DEFAULT_PRESETS.copy()
         
         try:
-            with open(self.presets_file, 'r', encoding="utf-8") as f:
+            with open(self.presets_file, encoding="utf-8") as f:
                 presets = json.load(f)
             if not isinstance(presets, dict):
                 logger.error("Error loading presets: expected an object")
@@ -112,7 +112,7 @@ Usa lenguaje preciso. Muestra relaciones causales de forma explicita. Cuantifica
             logger.error(f"Error loading presets: {e}")
             return self.DEFAULT_PRESETS.copy()
     
-    def save(self, presets: Dict[str, Any]) -> bool:
+    def save(self, presets: dict[str, Any]) -> bool:
         """Save presets to file"""
         try:
             # Atomic write (tmp file + os.replace) so a crash or serialization
@@ -127,7 +127,7 @@ Usa lenguaje preciso. Muestra relaciones causales de forma explicita. Cuantifica
             logger.error(f"Error saving presets: {e}")
             return False
     
-    def get(self, preset_id: str) -> Dict[str, Any]:
+    def get(self, preset_id: str) -> dict[str, Any]:
         """Get a specific preset"""
         return self.presets.get(preset_id)
     
@@ -154,7 +154,7 @@ Usa lenguaje preciso. Muestra relaciones causales de forma explicita. Cuantifica
         }
         return self.save(self.presets)
     
-    def get_all(self) -> Dict[str, Any]:
+    def get_all(self) -> dict[str, Any]:
         """Get all presets"""
         return self.presets.copy()
 

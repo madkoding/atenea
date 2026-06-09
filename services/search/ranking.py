@@ -2,8 +2,7 @@
 
 import re
 import logging
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import datetime
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
@@ -14,7 +13,7 @@ _AGE_FORMATS = ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S")
 from core.database import utcnow_naive as _utcnow_naive
 
 
-def recency_score(age_str: Optional[str], now: Optional[datetime] = None) -> float:
+def recency_score(age_str: str | None, now: datetime | None = None) -> float:
     """Score how recent a result is: 1.0 for <=7 days old, 0.0 for >=30 days.
 
     The age is measured against UTC, not local time. The previous code used
@@ -86,7 +85,7 @@ def _has_word(text: str, term: str) -> bool:
     return re.search(rf"\b{re.escape(term)}\b", text) is not None
 
 
-def rank_search_results(query: str, results: List[dict]) -> List[dict]:
+def rank_search_results(query: str, results: list[dict]) -> list[dict]:
     """Rank search results by title relevance, snippet quality, domain authority, and recency."""
     query_terms = [t.lower() for t in re.findall(r"\b\w+\b", query)]
     query_lc = query.lower()

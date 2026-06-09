@@ -3,7 +3,7 @@
 import json
 import uuid
 import logging
-from typing import Dict, Any
+from typing import Any
 
 from fastapi import APIRouter, Request, HTTPException
 
@@ -16,6 +16,7 @@ from routes.session_routes import (
     _reject_compact_during_active_run,
     _verify_session_owner,
 )
+from datetime import UTC
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ def setup_history_routes(session_manager) -> APIRouter:
     router = APIRouter(tags=["history"])
 
     @router.get("/api/history/{session_id}")
-    async def get_session_history(request: Request, session_id: str) -> Dict[str, Any]:
+    async def get_session_history(request: Request, session_id: str) -> dict[str, Any]:
         _verify_session_owner(request, session_id)
         try:
             session = session_manager.get_session(session_id)
@@ -201,8 +202,8 @@ def setup_history_routes(session_manager) -> APIRouter:
                 db_session = db.query(DbSession).filter(DbSession.id == session_id).first()
                 if db_session:
                     db_session.message_count = len(session.history)
-                    from datetime import datetime, timezone
-                    db_session.updated_at = datetime.now(timezone.utc)
+                    from datetime import datetime
+                    db_session.updated_at = datetime.now(UTC)
 
                 db.commit()
                 return {"status": "ok", "deleted": deleted}
@@ -516,7 +517,7 @@ def setup_history_routes(session_manager) -> APIRouter:
             raise HTTPException(500, str(e))
 
     @router.get("/api/conversations/topics")
-    async def get_conversation_topics(request: Request) -> Dict[str, Any]:
+    async def get_conversation_topics(request: Request) -> dict[str, Any]:
         from src.auth.helpers import require_user
         user = require_user(request)
         try:
@@ -613,8 +614,8 @@ def setup_history_routes(session_manager) -> APIRouter:
                 # Insert system summary (hidden, for AI context) and visible summary
                 import json as _json
                 import uuid
-                from datetime import datetime, timezone
-                now = datetime.now(timezone.utc)
+                from datetime import datetime
+                now = datetime.now(UTC)
                 db_sys_summary = DbChatMessage(
                     id=str(uuid.uuid4()),
                     session_id=session_id,
@@ -638,7 +639,7 @@ def setup_history_routes(session_manager) -> APIRouter:
                 db_session = db.query(DbSession).filter(DbSession.id == session_id).first()
                 if db_session:
                     db_session.message_count = len(session.history)
-                    db_session.updated_at = datetime.now(timezone.utc)
+                    db_session.updated_at = datetime.now(UTC)
                 db.commit()
             finally:
                 db.close()

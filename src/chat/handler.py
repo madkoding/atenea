@@ -3,7 +3,7 @@
 import os
 import asyncio
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 
 from fastapi import HTTPException
 
@@ -52,7 +52,7 @@ class ChatHandler:
     # Preset helpers
     # ------------------------------------------------------------------
 
-    def validate_and_extract_preset(self, preset_id: Optional[str]) -> tuple:
+    def validate_and_extract_preset(self, preset_id: str | None) -> tuple:
         """Returns (temperature, max_tokens, preset_system_prompt, character_name)."""
         if preset_id and preset_id not in self.preset_manager.presets:
             raise HTTPException(400, f"Invalid preset_id: {preset_id}")
@@ -95,9 +95,9 @@ class ChatHandler:
     async def preprocess_message(
         self,
         message: str,
-        att_ids: List[str],
+        att_ids: list[str],
         sess,
-        auto_opened_docs: Optional[List[Dict[str, Any]]] = None,
+        auto_opened_docs: list[dict[str, Any]] | None = None,
         allow_tool_preprocessing: bool = True,
     ) -> tuple:
         """
@@ -110,11 +110,11 @@ class ChatHandler:
         new doc so the caller can announce it to the frontend before streaming.
         """
         enhanced_message = message
-        attachment_meta: List[Dict[str, Any]] = []
+        attachment_meta: list[dict[str, Any]] = []
 
         # Extract URLs and process YouTube transcripts
         urls = extract_urls(enhanced_message) if allow_tool_preprocessing else []
-        youtube_transcripts: List[str] = []
+        youtube_transcripts: list[str] = []
 
         has_youtube = False
         for url in urls:
@@ -146,7 +146,7 @@ class ChatHandler:
 
         # Resolve uploads once with the session owner. Attachment IDs are
         # bearer-like references; never trust them without an owner check.
-        files_by_id: Dict[str, Dict] = {}
+        files_by_id: dict[str, dict] = {}
         owner = getattr(sess, "owner", None)
         effective_att_ids = att_ids if allow_tool_preprocessing else []
         if effective_att_ids:
@@ -294,7 +294,7 @@ class ChatHandler:
         if len(session.history) > MAX_CONTEXT_MESSAGES:
             session.history = session.history[-MAX_CONTEXT_MESSAGES:]
 
-    async def handle_memory_command(self, session, message: str) -> Optional[str]:
+    async def handle_memory_command(self, session, message: str) -> str | None:
         """Process inline memory commands. Returns response string or None."""
         is_memory_cmd, memory_text = self.memory_manager.process_inline_memory_command(
             message

@@ -18,7 +18,6 @@ live in :mod:`routes.copilot_routes` so they can be auth-gated.
 """
 
 import os
-from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
 import httpx
@@ -75,7 +74,7 @@ def normalize_domain(url: str) -> str:
     return (url or "").replace("https://", "").replace("http://", "").rstrip("/")
 
 
-def enterprise_base(enterprise_url: Optional[str]) -> str:
+def enterprise_base(enterprise_url: str | None) -> str:
     """Return the Copilot API base for a deployment.
 
     Public github.com → ``https://api.githubcopilot.com``.
@@ -86,7 +85,7 @@ def enterprise_base(enterprise_url: Optional[str]) -> str:
     return f"https://copilot-api.{normalize_domain(enterprise_url)}"
 
 
-def is_copilot_base(url: Optional[str]) -> bool:
+def is_copilot_base(url: str | None) -> bool:
     """True if a base URL points at the Copilot API (public or enterprise)."""
     if not url:
         return False
@@ -106,11 +105,11 @@ def is_copilot_base(url: Optional[str]) -> bool:
 
 
 def copilot_headers(
-    api_key: Optional[str],
+    api_key: str | None,
     *,
     agent: bool = False,
     vision: bool = False,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Build the Copilot-specific request headers.
 
     Args:
@@ -120,7 +119,7 @@ def copilot_headers(
                  Copilot's agent-vs-user request accounting.
         vision:  the request carries an image part.
     """
-    headers: Dict[str, str] = {
+    headers: dict[str, str] = {
         "X-GitHub-Api-Version": COPILOT_API_VERSION,
         "Openai-Intent": "conversation-edits",
         "User-Agent": COPILOT_USER_AGENT,
@@ -139,7 +138,7 @@ def copilot_headers(
 # Device-flow OAuth (pure HTTP; orchestration lives in routes.copilot_routes)
 # ---------------------------------------------------------------------------
 
-def _oauth_post_headers() -> Dict[str, str]:
+def _oauth_post_headers() -> dict[str, str]:
     return {
         "Accept": "application/json",
         "Content-Type": "application/json",
@@ -147,7 +146,7 @@ def _oauth_post_headers() -> Dict[str, str]:
     }
 
 
-def request_device_code(host: str = GITHUB_HOST, *, timeout: float = 10.0) -> Dict:
+def request_device_code(host: str = GITHUB_HOST, *, timeout: float = 10.0) -> dict:
     """Start the device flow. Returns GitHub's
     ``{device_code, user_code, verification_uri, expires_in, interval}``.
     """
@@ -161,7 +160,7 @@ def request_device_code(host: str = GITHUB_HOST, *, timeout: float = 10.0) -> Di
     return r.json()
 
 
-def poll_access_token(host: str, device_code: str, *, timeout: float = 10.0) -> Dict:
+def poll_access_token(host: str, device_code: str, *, timeout: float = 10.0) -> dict:
     """Poll once for the access token. GitHub returns HTTP 200 with an
     ``error`` field (``authorization_pending``/``slow_down``) while the user
     hasn't authorised yet, or ``{access_token, ...}`` once they have.
@@ -180,7 +179,7 @@ def poll_access_token(host: str, device_code: str, *, timeout: float = 10.0) -> 
     return r.json()
 
 
-def fetch_models(base: str, token: str, *, timeout: float = 15.0) -> List[Dict]:
+def fetch_models(base: str, token: str, *, timeout: float = 15.0) -> list[dict]:
     """Fetch Copilot's model catalogue, filtered to picker-enabled models.
 
     Returns a list of ``{id, tool_calls, vision}`` dicts. Falls back to the
@@ -192,7 +191,7 @@ def fetch_models(base: str, token: str, *, timeout: float = 15.0) -> List[Dict]:
     r.raise_for_status()
     data = (r.json() or {}).get("data") or []
 
-    def _parse(item: Dict) -> Optional[Dict]:
+    def _parse(item: dict) -> dict | None:
         mid = item.get("id")
         if not mid:
             return None
@@ -242,7 +241,7 @@ def request_flags(messages) -> tuple:
     return agent, vision
 
 
-def apply_request_headers(headers: Dict[str, str], messages) -> Dict[str, str]:
+def apply_request_headers(headers: dict[str, str], messages) -> dict[str, str]:
     """Set ``x-initiator`` / ``Copilot-Vision-Request`` on a header dict based
     on the outgoing messages. Mutates and returns ``headers``."""
     agent, vision = request_flags(messages)

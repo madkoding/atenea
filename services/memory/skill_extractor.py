@@ -8,7 +8,6 @@ we ask the LLM to distill the approach into a reusable skill.
 
 import json
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +62,7 @@ def _has_duplicate_title(skills, title: str) -> bool:
     return False
 
 
-def _extract_json_object(text: str) -> Optional[dict]:
+def _extract_json_object(text: str) -> dict | None:
     """Best-effort extraction of a JSON object from an LLM response.
 
     The response may be wrapped in code fences or surrounded by prose, and some
@@ -111,7 +110,7 @@ async def maybe_extract_skill(
     headers: dict,
     round_count: int,
     tool_count: int,
-    owner: Optional[str] = None,
+    owner: str | None = None,
 ):
     """Extract a skill if the agent run was complex enough."""
     if not model:

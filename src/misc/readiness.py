@@ -9,10 +9,9 @@ for an orchestrator readiness probe (200 only when every critical check passes).
 import os
 import uuid
 from datetime import UTC, datetime
-from typing import Dict
 
 
-def check_readiness() -> Dict[str, object]:
+def check_readiness() -> dict[str, object]:
     """Run the readiness checks and return a JSON-serialisable report.
 
     ``ready`` is True only when every critical check (database, data_dir) passes.
@@ -23,7 +22,7 @@ def check_readiness() -> Dict[str, object]:
     from core.database import DATABASE_URL, engine
     from sqlalchemy import text as sql_text
 
-    checks: Dict[str, Dict[str, object]] = {}
+    checks: dict[str, dict[str, object]] = {}
 
     # Database reachable — the simplest honest probe that the engine is live.
     try:

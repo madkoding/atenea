@@ -2,7 +2,7 @@
 """Initialize all application components and dependencies."""
 import os
 import logging
-from typing import Dict, Any
+from typing import Any
 
 from src.constants import (
     DATA_DIR, PERSONAL_DIR, RUNBOOK_DIR, UPLOAD_DIR,
@@ -30,7 +30,7 @@ def create_directories():
     for directory in (DATA_DIR, PERSONAL_DIR, RUNBOOK_DIR, UPLOAD_DIR):
         os.makedirs(directory, exist_ok=True)
         
-def initialize_managers(base_dir: str, rag_manager=None) -> Dict[str, Any]:
+def initialize_managers(base_dir: str, rag_manager=None) -> dict[str, Any]:
     """
     Initialize all manager and handler instances.
 

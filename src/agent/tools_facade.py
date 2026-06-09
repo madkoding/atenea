@@ -13,7 +13,7 @@ Sub-modules:
 
 import logging
 
-from src.constants import MAX_OUTPUT_CHARS, MAX_READ_CHARS
+from src.constants import MAX_OUTPUT_CHARS
 from src.tools._common import TOOL_TAGS, ToolBlock  # noqa: F401  (re-exported)
 
 logger = logging.getLogger(__name__)

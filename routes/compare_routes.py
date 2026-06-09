@@ -3,9 +3,7 @@
 import json
 import uuid
 import random
-from datetime import UTC, datetime
 from fastapi import APIRouter, Form, HTTPException, Request
-from typing import List
 from pydantic import BaseModel
 import logging
 
@@ -62,7 +60,7 @@ def _owned_endpoint_by_id(db, endpoint_id, owner):
 
 class RecordVoteRequest(BaseModel):
     prompt: str
-    models: List[str]
+    models: list[str]
     winner: str           # model name or "tie"
     is_blind: bool = True
 

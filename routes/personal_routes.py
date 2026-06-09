@@ -3,10 +3,9 @@
 import os
 import logging
 import uuid
-from typing import List, Tuple
 from fastapi import APIRouter, HTTPException, Query, Request, UploadFile, File, Depends
 from src.runtime.request_models import DirectoryRequest
-from core.constants import BASE_DIR, PERSONAL_DIR, PERSONAL_UPLOADS_DIR
+from core.constants import PERSONAL_DIR, PERSONAL_UPLOADS_DIR
 from src.vector.rag_singleton import get_rag_manager
 from src.auth.helpers import require_privilege, require_user
 from core.middleware import require_admin
@@ -31,7 +30,7 @@ def _personal_upload_dir_for_owner(owner: str | None) -> str:
     return upload_dir
 
 
-def _unique_personal_upload_path(upload_dir: str, original_name: str | None) -> Tuple[str, str, str]:
+def _unique_personal_upload_path(upload_dir: str, original_name: str | None) -> tuple[str, str, str]:
     """Build a collision-resistant upload path while preserving a display name."""
     safe_name = secure_filename(os.path.basename(original_name or "upload"))
     if not safe_name or safe_name.startswith("."):
@@ -192,7 +191,7 @@ def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
             raise HTTPException(500, f"Failed to remove directory: {str(e)}")
     
     @router.post("/upload")
-    async def upload_files_to_rag(request: Request, files: List[UploadFile] = File(...)):
+    async def upload_files_to_rag(request: Request, files: list[UploadFile] = File(...)):
         """Upload files directly into RAG. Supports text and PDF."""
         user = require_privilege(request, "can_use_documents")
         rag = _rag()

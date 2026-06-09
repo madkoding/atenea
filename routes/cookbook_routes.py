@@ -748,7 +748,7 @@ def setup_cookbook_routes() -> APIRouter:
                 s.settimeout(0.25)
                 try:
                     s.connect(("127.0.0.1", p))
-                except (ConnectionRefusedError, socket.timeout, OSError):
+                except (TimeoutError, ConnectionRefusedError, OSError):
                     return p
         return None
 
@@ -1376,7 +1376,7 @@ def setup_cookbook_routes() -> APIRouter:
             output = stdout.decode() + stderr.decode()
             ok = "OK" in output
             return {"ok": ok, "output": output.strip(), "platform": platform}
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return {"ok": False, "error": "Setup timed out (120s)", "platform": platform}
         except Exception as e:
             return {"ok": False, "error": str(e), "platform": platform}
@@ -1410,7 +1410,7 @@ def setup_cookbook_routes() -> APIRouter:
                         connect_timeout=5,
                         timeout=timeout,
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     return None, "nvidia-smi timed out"
                 if rc == 0:
                     return stdout.decode("utf-8", errors="replace"), None
@@ -1425,7 +1425,7 @@ def setup_cookbook_routes() -> APIRouter:
             )
         try:
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             proc.kill()
             return None, "nvidia-smi timed out"
         if proc.returncode != 0:
@@ -1454,7 +1454,7 @@ def setup_cookbook_routes() -> APIRouter:
             )
         try:
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             proc.kill()
             return None, "GPU probe timed out"
         if proc.returncode != 0:
@@ -1761,7 +1761,7 @@ def setup_cookbook_routes() -> APIRouter:
                 err = (stderr.decode("utf-8", errors="replace") or "").strip()[:200]
                 return {"ok": False, "error": err or f"kill returned {proc.returncode}"}
             return {"ok": True, "pid": req.pid, "signal": sig}
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return {"ok": False, "error": "kill command timed out"}
         except Exception as e:
             return {"ok": False, "error": str(e)[:200]}

@@ -18,13 +18,12 @@ Pure helpers live in `email_helpers.py`. Routes themselves live in
 
 import email as email_mod
 import email.utils  # the `email` binding is referenced as email.utils.parseaddr inside the pass
-import smtplib
 import json
 import re
 import html
 import logging
 import inspect
-from datetime import UTC, datetime
+from datetime import datetime
 
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -37,7 +36,6 @@ from routes.email_helpers import (
     _imap_connect, _imap, _decode_header,
     _detect_sent_folder, _detect_spam_folder, _imap_move,
     _extract_attachment_text, _extract_text,
-    _pre_retrieve_context,
     _attach_compose_uploads, _cleanup_compose_uploads, _q,
     SCHEDULED_DB, _EMAIL_REPLY_SYS_PROMPT_BASE, _email_cache_owner_clause,
 )

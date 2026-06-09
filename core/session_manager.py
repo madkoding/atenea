@@ -11,13 +11,11 @@ This is the single place that handles:
 import json
 import uuid
 import logging
-from datetime import datetime, timezone, timedelta
-from typing import Dict, Optional
+from datetime import datetime, timedelta, UTC
 
 from .database import Session as DbSession, ChatMessage as DbChatMessage, Document as DbDocument, SessionLocal, utcnow_naive
 from .models import Session, ChatMessage
 from core.cache import db_region
-from dogpile.cache.api import NO_VALUE
 
 logger = logging.getLogger(__name__)
 
@@ -72,12 +70,12 @@ def _invalidate_active_sessions_cache():
     _get_cached_active_sessions_data.invalidate()
 
 
-def _message_timestamp_iso(value: Optional[datetime]) -> Optional[str]:
+def _message_timestamp_iso(value: datetime | None) -> str | None:
     """Return a stable ISO timestamp for chat message metadata."""
     if not value:
         return None
     if value.tzinfo is None:
-        value = value.replace(tzinfo=timezone.utc)
+        value = value.replace(tzinfo=UTC)
     return value.isoformat().replace("+00:00", "Z")
 
 
@@ -109,7 +107,7 @@ class SessionManager:
 
     def __init__(self, sessions_file: str = None):
         # sessions_file kept for backward compat, not used
-        self.sessions: Dict[str, Session] = {}
+        self.sessions: dict[str, Session] = {}
         self.load_sessions()
 
     # ------------------------------------------------------------------
@@ -154,7 +152,7 @@ class SessionManager:
             logger.error(f"Error loading sessions: {e}")
             self.sessions = {}
 
-    def _db_to_session_meta(self, db_session: DbSession) -> Optional[Session]:
+    def _db_to_session_meta(self, db_session: DbSession) -> Session | None:
         """Build a Session with empty history. `get_session` will hydrate
         messages from the DB on first read."""
         headers = db_session.headers
@@ -178,7 +176,7 @@ class SessionManager:
         session.message_count = getattr(db_session, "message_count", 0) or 0
         return session
 
-    def _db_to_session(self, db_session: DbSession, db) -> Optional[Session]:
+    def _db_to_session(self, db_session: DbSession, db) -> Session | None:
         """Convert a database session to a Session object."""
         history = []
 
@@ -290,7 +288,7 @@ class SessionManager:
             db.add(db_message)
 
             db_session.message_count = len(self.sessions.get(session_id, {}).history) if session_id in self.sessions else 0
-            _now = datetime.now(timezone.utc)
+            _now = datetime.now(UTC)
             db_session.last_accessed = _now
             # Clean "last conversation" timestamp — only bumped here on a
             # real message persist, so it powers an accurate "Last active"
@@ -334,7 +332,7 @@ class SessionManager:
                 # defaults to keep_count=10 on a short session); message_count must
                 # track the rows that actually remain, not the requested cap.
                 db_session.message_count = min(keep_count, len(db_messages))
-                db_session.updated_at = datetime.now(timezone.utc)
+                db_session.updated_at = datetime.now(UTC)
 
             db.commit()
 
@@ -358,7 +356,7 @@ class SessionManager:
         db = SessionLocal()
         try:
             db.query(DbChatMessage).filter(DbChatMessage.session_id == session_id).delete()
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             for i, message in enumerate(messages):
                 msg_id = str(uuid.uuid4())
                 db_message = DbChatMessage(
@@ -494,7 +492,7 @@ class SessionManager:
         try:
             db_session = db.query(DbSession).filter(DbSession.id == session_id).first()
             if db_session:
-                db_session.last_accessed = datetime.now(timezone.utc)
+                db_session.last_accessed = datetime.now(UTC)
                 db.commit()
         except Exception as e:
             logger.error(f"Error updating last_accessed: {e}")
@@ -522,8 +520,8 @@ class SessionManager:
                 rag=rag,
                 headers={},
                 owner=owner,
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc)
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC)
             )
             db.add(db_session)
             db.commit()
@@ -602,7 +600,7 @@ class SessionManager:
             db_session = db.query(DbSession).filter(DbSession.id == session_id).first()
             if db_session:
                 db_session.name = name
-                db_session.updated_at = datetime.now(timezone.utc)
+                db_session.updated_at = datetime.now(UTC)
                 db.commit()
                 self.sessions[session_id].name = name
                 _invalidate_active_sessions_cache()
@@ -623,7 +621,7 @@ class SessionManager:
             db_session = db.query(DbSession).filter(DbSession.id == session_id).first()
             if db_session:
                 db_session.archived = True
-                db_session.updated_at = datetime.now(timezone.utc)
+                db_session.updated_at = datetime.now(UTC)
                 db.commit()
                 self.sessions[session_id].archived = True
                 _invalidate_active_sessions_cache()
@@ -641,7 +639,7 @@ class SessionManager:
             db_session = db.query(DbSession).filter(DbSession.id == session_id).first()
             if db_session:
                 db_session.is_important = important
-                db_session.updated_at = datetime.now(timezone.utc)
+                db_session.updated_at = datetime.now(UTC)
                 db.commit()
 
                 if session_id in self.sessions:
@@ -660,7 +658,7 @@ class SessionManager:
     # Queries
     # ------------------------------------------------------------------
 
-    def get_sessions_for_user(self, username: Optional[str] = None) -> Dict[str, Session]:
+    def get_sessions_for_user(self, username: str | None = None) -> dict[str, Session]:
         """Return sessions for a specific user (or all if username is None)."""
         if username is None:
             return self.sessions

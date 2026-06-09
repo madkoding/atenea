@@ -2,7 +2,7 @@
 """Memory service — persistent memory storage and retrieval."""
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any
+from typing import Any
 import os
 
 from .memory import MemoryManager
@@ -17,14 +17,14 @@ class Memory:
     id: str
     text: str
     timestamp: int
-    session_id: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    session_id: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class MemorySearchResult:
     """Result of memory search."""
-    memories: List[Memory]
+    memories: list[Memory]
     query: str
     total: int
 
@@ -50,7 +50,7 @@ class MemoryService:
         self.provider.memory_vector = self.vector_store
 
     @staticmethod
-    def _to_memory(entry: Dict[str, Any], metadata: Optional[Dict[str, Any]] = None) -> Memory:
+    def _to_memory(entry: dict[str, Any], metadata: dict[str, Any] | None = None) -> Memory:
         return Memory(
             id=entry.get("id", ""),
             text=entry.get("text", ""),
@@ -60,7 +60,7 @@ class MemoryService:
         )
 
     @staticmethod
-    def _record_to_memory(record: MemoryRecord, metadata: Optional[Dict[str, Any]] = None) -> Memory:
+    def _record_to_memory(record: MemoryRecord, metadata: dict[str, Any] | None = None) -> Memory:
         merged_metadata = dict(record.metadata)
         if metadata:
             merged_metadata.update(metadata)
@@ -72,7 +72,7 @@ class MemoryService:
             metadata=merged_metadata,
         )
 
-    async def remember(self, text: str, session_id: Optional[str] = None) -> Memory:
+    async def remember(self, text: str, session_id: str | None = None) -> Memory:
         """
         Store a new memory.
 
@@ -108,7 +108,7 @@ class MemoryService:
         ]
         return MemorySearchResult(memories=memories, query=query, total=len(memories))
 
-    def get_all(self, limit: int = 100) -> List[Memory]:
+    def get_all(self, limit: int = 100) -> list[Memory]:
         """Get all memories."""
         records = self.manager.load_all()[:limit]
         return [self._to_memory(m) for m in records]

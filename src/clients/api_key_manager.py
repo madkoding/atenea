@@ -1,7 +1,6 @@
 import os
 import json
 import logging
-from typing import Dict
 from cryptography.fernet import Fernet, InvalidToken
 
 logger = logging.getLogger(__name__)
@@ -37,7 +36,7 @@ class APIKeyManager:
         f = Fernet(self.get_or_create_key())
         return f.decrypt(encrypted_key.encode()).decode()
     
-    def _load_raw(self) -> Dict[str, str]:
+    def _load_raw(self) -> dict[str, str]:
         """Load the raw, still-encrypted keys dict from disk.
 
         Tolerates a missing/corrupt/wrong-shaped file by returning {} — the
@@ -46,7 +45,7 @@ class APIKeyManager:
         if not os.path.exists(self.api_keys_file):
             return {}
         try:
-            with open(self.api_keys_file, 'r', encoding="utf-8") as f:
+            with open(self.api_keys_file, encoding="utf-8") as f:
                 encrypted_keys = json.load(f)
         except (json.JSONDecodeError, OSError) as e:
             # A corrupt/truncated api_keys.json must not crash load() (called on
@@ -72,7 +71,7 @@ class APIKeyManager:
         with open(self.api_keys_file, 'w', encoding="utf-8") as f:
             json.dump(keys, f)
 
-    def load(self) -> Dict[str, str]:
+    def load(self) -> dict[str, str]:
         """Load and decrypt API keys"""
         encrypted_keys = self._load_raw()
         decrypted = {}

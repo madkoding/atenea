@@ -4,7 +4,6 @@ import time
 import json
 import asyncio
 from fastapi import APIRouter, Request, File, UploadFile, HTTPException
-from typing import List
 import logging
 from core.middleware import require_admin
 from src.auth.helpers import get_current_user
@@ -52,7 +51,7 @@ def setup_upload_routes(upload_handler):
         raise HTTPException(404, "File not found")
     
     @router.post("")
-    async def api_upload(request: Request, files: List[UploadFile] = File(...)):
+    async def api_upload(request: Request, files: list[UploadFile] = File(...)):
         """Upload files with enhanced security and organization."""
         if not files:
             raise HTTPException(400, "No files uploaded")

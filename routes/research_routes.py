@@ -7,7 +7,6 @@ import re
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -38,7 +37,7 @@ def _first_chat_model(models) -> str:
     return (models[0] if models else "")
 
 
-def _resolve_research_endpoint(sess, owner: Optional[str] = None) -> tuple:
+def _resolve_research_endpoint(sess, owner: str | None = None) -> tuple:
     """Return (endpoint_url, model, headers) for Deep Research, checking admin overrides."""
     owner = owner or getattr(sess, "owner", None) or None
     url, model, headers = resolve_endpoint(
@@ -75,7 +74,7 @@ def _owned_enabled_endpoint(db, owner, endpoint_id=None):
     return owner_filter(q, ModelEndpoint, owner).first()
 
 
-def _resolve_endpoint_runtime(ep, owner=None, model: Optional[str] = None):
+def _resolve_endpoint_runtime(ep, owner=None, model: str | None = None):
     """Resolve a ModelEndpoint row into (chat_url, model, headers).
 
     Mirrors endpoint_resolver.resolve_endpoint's provider-auth handling for
@@ -253,7 +252,7 @@ def setup_research_routes(research_handler, session_manager=None) -> APIRouter:
     @router.get("/api/research/library")
     async def research_library(
         request: Request,
-        search: Optional[str] = Query(None),
+        search: str | None = Query(None),
         sort: str = Query("recent"),
         limit: int = Query(50),
         archived: bool = Query(False),
@@ -372,13 +371,13 @@ def setup_research_routes(research_handler, session_manager=None) -> APIRouter:
         query: str
         # max_rounds=0 means "Auto" — let the AI decide when to stop, capped at 20.
         max_rounds: int = Field(default=0, ge=0, le=20)
-        search_provider: Optional[str] = None
-        endpoint_id: Optional[str] = None
-        model: Optional[str] = None
+        search_provider: str | None = None
+        endpoint_id: str | None = None
+        model: str | None = None
         max_time: int = Field(default=300, ge=60, le=1800)
-        extraction_timeout: Optional[int] = Field(default=None, ge=15, le=3600)
-        extraction_concurrency: Optional[int] = Field(default=None, ge=1, le=12)
-        category: Optional[str] = None
+        extraction_timeout: int | None = Field(default=None, ge=15, le=3600)
+        extraction_concurrency: int | None = Field(default=None, ge=1, le=12)
+        category: str | None = None
 
     @router.post("/api/research/start")
     async def research_start(body: ResearchStartRequest, request: Request):

@@ -27,7 +27,7 @@ import subprocess
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from core.atomic_io import atomic_write_json
 from core.platform_compat import (
@@ -54,7 +54,7 @@ _MAX_OUTPUT_CHARS = 16000
 _RETENTION_S = 3600  # 1 hour after follow-up
 
 
-def _load() -> Dict[str, Dict[str, Any]]:
+def _load() -> dict[str, dict[str, Any]]:
     try:
         if _STORE.exists():
             data = json.loads(_STORE.read_text(encoding="utf-8")) or {}
@@ -66,11 +66,11 @@ def _load() -> Dict[str, Dict[str, Any]]:
     return {}
 
 
-def _save(jobs: Dict[str, Dict[str, Any]]) -> None:
+def _save(jobs: dict[str, dict[str, Any]]) -> None:
     atomic_write_json(str(_STORE), jobs, indent=2)
 
 
-def _pid_alive(pid: Optional[int]) -> bool:
+def _pid_alive(pid: int | None) -> bool:
     # Delegates to the platform-safe probe. NB: a bare os.kill(pid, 0) is unsafe
     # on Windows — CPython routes it to TerminateProcess, which would KILL the
     # job we're only trying to check. core.platform_compat.pid_alive handles
@@ -78,8 +78,8 @@ def _pid_alive(pid: Optional[int]) -> bool:
     return pid_alive(pid)
 
 
-def launch(command: str, session_id: str, cwd: Optional[str] = None,
-           max_runtime_s: int = DEFAULT_MAX_RUNTIME_S) -> Dict[str, Any]:
+def launch(command: str, session_id: str, cwd: str | None = None,
+           max_runtime_s: int = DEFAULT_MAX_RUNTIME_S) -> dict[str, Any]:
     """Launch `command` detached. Returns the job record (status='running').
 
     Output + the final exit code are written to files so status survives a
@@ -159,7 +159,7 @@ def launch(command: str, session_id: str, cwd: Optional[str] = None,
     return rec
 
 
-def _read_output(rec: Dict[str, Any]) -> str:
+def _read_output(rec: dict[str, Any]) -> str:
     try:
         txt = Path(rec["log_path"]).read_text(encoding="utf-8", errors="replace")
     except Exception:
@@ -172,7 +172,7 @@ def _read_output(rec: Dict[str, Any]) -> str:
     return txt
 
 
-def _prune(jobs: Dict[str, Dict[str, Any]], now: float) -> bool:
+def _prune(jobs: dict[str, dict[str, Any]], now: float) -> bool:
     """Drop records (and their on-disk files) for jobs that finished, were
     followed up, and are older than the retention window. Mutates `jobs`."""
     stale = [jid for jid, rec in jobs.items()
@@ -188,7 +188,7 @@ def _prune(jobs: Dict[str, Dict[str, Any]], now: float) -> bool:
     return bool(stale)
 
 
-def refresh() -> Dict[str, Dict[str, Any]]:
+def refresh() -> dict[str, dict[str, Any]]:
     """Reconcile every running job against disk. Marks done/failed (incl.
     timeout). Idempotent — safe to call from a poll loop. Returns the store."""
     jobs = _load()
@@ -230,12 +230,12 @@ def refresh() -> Dict[str, Dict[str, Any]]:
     return jobs
 
 
-def _kill(pid: Optional[int]) -> None:
+def _kill(pid: int | None) -> None:
     # Cross-platform process-tree teardown (POSIX killpg / Windows taskkill /T).
     kill_process_tree(pid)
 
 
-def pending_followups() -> List[Dict[str, Any]]:
+def pending_followups() -> list[dict[str, Any]]:
     """Finished jobs the agent hasn't been re-invoked for yet. The monitor
     drains these; mark_followed_up() flips the flag only on success."""
     jobs = refresh()
@@ -250,7 +250,7 @@ def mark_followed_up(job_id: str) -> None:
         _save(jobs)
 
 
-def get(job_id: str) -> Optional[Dict[str, Any]]:
+def get(job_id: str) -> dict[str, Any] | None:
     refresh()  # reconcile against disk so status/exit_code are current
     rec = _load().get(job_id)
     if rec:
@@ -259,11 +259,11 @@ def get(job_id: str) -> Optional[Dict[str, Any]]:
     return rec
 
 
-def list_for_session(session_id: str) -> List[Dict[str, Any]]:
+def list_for_session(session_id: str) -> list[dict[str, Any]]:
     return [r for r in refresh().values() if r.get("session_id") == session_id]
 
 
-def result_text(rec: Dict[str, Any]) -> str:
+def result_text(rec: dict[str, Any]) -> str:
     """Human/agent-readable summary of a finished job, for the follow-up."""
     out = _read_output(rec)
     if rec.get("timed_out"):

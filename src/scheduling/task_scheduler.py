@@ -6,15 +6,16 @@ import logging
 import re
 import time
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Any, Awaitable, Callable, Dict, Tuple
+from datetime import datetime, timedelta, UTC
+from typing import Any
+from collections.abc import Awaitable, Callable
 
 logger = logging.getLogger(__name__)
 
 
 def _utcnow() -> datetime:
     """Return naive UTC for task DB fields without using deprecated APIs."""
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 # ── Shared TTL cache (singleflight) ────────────────────────────────────────
@@ -22,12 +23,12 @@ def _utcnow() -> datetime:
 # external data (Miniflux unreads, MCP tool snapshots, etc.). This cache
 # deduplicates those fetches — in-flight requests for the same key await the
 # same underlying coroutine, and completed results are reused until TTL expiry.
-_shared_cache: Dict[Tuple, Tuple[float, Any]] = {}
-_shared_cache_pending: Dict[Tuple, asyncio.Future] = {}
+_shared_cache: dict[tuple, tuple[float, Any]] = {}
+_shared_cache_pending: dict[tuple, asyncio.Future] = {}
 _shared_cache_lock = asyncio.Lock()
 
 
-async def _cached(key: Tuple, ttl: float, fetch: Callable[[], Awaitable[Any]]) -> Any:
+async def _cached(key: tuple, ttl: float, fetch: Callable[[], Awaitable[Any]]) -> Any:
     """Return a cached result for `key` if fresh, else call `fetch()` and store.
 
     Concurrent callers for the same missing key share one `fetch()` call.
@@ -95,7 +96,7 @@ def compute_next_run(schedule: str, scheduled_time: str,
     if tz is not None:
         now_utc = after or _utcnow()
         if now_utc.tzinfo is None:
-            now_utc = now_utc.replace(tzinfo=timezone.utc)
+            now_utc = now_utc.replace(tzinfo=UTC)
         now = now_utc.astimezone(tz)
     else:
         now = after or _utcnow()
@@ -104,7 +105,7 @@ def compute_next_run(schedule: str, scheduled_time: str,
         """Convert a tz-aware datetime to naive UTC for DB storage."""
         if dt.tzinfo is None:
             return dt
-        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt.astimezone(UTC).replace(tzinfo=None)
 
     if schedule == "cron" and cron_expression:
         try:
@@ -464,7 +465,7 @@ class TaskScheduler:
                     ScheduledTask.trigger_type == "schedule",
                     ScheduledTask.next_run.isnot(None),
                 ).all()
-                buckets: Dict[str, list] = {}
+                buckets: dict[str, list] = {}
                 for r in rows:
                     if not r.next_run:
                         continue
@@ -1104,14 +1105,11 @@ class TaskScheduler:
         try:
             if tz_name:
                 from zoneinfo import ZoneInfo
-                from datetime import timezone, timedelta
-                now = _utcnow().replace(tzinfo=timezone.utc).astimezone(ZoneInfo(tz_name))
+                now = _utcnow().replace(tzinfo=UTC).astimezone(ZoneInfo(tz_name))
             else:
-                from datetime import timedelta
                 now = _utcnow()
             time_str = now.strftime("%A, %B %d %Y, %H:%M")
         except Exception:
-            from datetime import timedelta
             now = _utcnow()
             time_str = now.strftime("%H:%M UTC")
 
@@ -1279,7 +1277,7 @@ class TaskScheduler:
 
     async def _execute_llm_task(self, task, db) -> str:
         """Execute an LLM task with full tool access via the agent loop."""
-        from core.database import Session as DbSession, ChatMessage, CrewMember
+        from core.database import Session as DbSession, CrewMember
 
         # If this task is wired to a CrewMember (personal assistant, custom
         # crew), prefer the crew member's persona/model/endpoint as overrides.
@@ -1345,8 +1343,7 @@ class TaskScheduler:
         try:
             if tz_name:
                 from zoneinfo import ZoneInfo
-                from datetime import timezone
-                now_local = _utcnow().replace(tzinfo=timezone.utc).astimezone(ZoneInfo(tz_name))
+                now_local = _utcnow().replace(tzinfo=UTC).astimezone(ZoneInfo(tz_name))
                 time_str = now_local.strftime("%A, %B %d %Y, %H:%M %Z")
             else:
                 time_str = _utcnow().strftime("%A, %B %d %Y, %H:%M UTC")
@@ -1670,7 +1667,7 @@ class TaskScheduler:
 
     async def _execute_research_task(self, task, db) -> str:
         """Execute a deep research task using DeepResearcher."""
-        from core.database import Session as DbSession, ChatMessage
+        from core.database import Session as DbSession
         from src.research.deep import DeepResearcher
         from src.research.handler import RESEARCH_DATA_DIR, ResearchHandler
         from src.research.utils import strip_thinking
@@ -2169,7 +2166,7 @@ class TaskScheduler:
         if not owner or owner in {"internal-tool", "api", "demo", "system"}:
             logger.info(f"ensure_assistant_defaults: skip synthetic owner {owner!r}")
             return
-        from core.database import SessionLocal, CrewMember, ScheduledTask
+        from core.database import SessionLocal, CrewMember
         from core.database import Session as DbSession
 
         db = SessionLocal()

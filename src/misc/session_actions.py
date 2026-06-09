@@ -8,7 +8,7 @@ and the task scheduler / builtin actions system.
 import json
 import logging
 import re
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 

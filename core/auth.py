@@ -9,8 +9,7 @@ import secrets
 import threading
 import time
 import logging
-from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Any
 
 import bcrypt
 import pyotp
@@ -81,8 +80,8 @@ class AuthManager:
     def __init__(self, auth_path: str = DEFAULT_AUTH_PATH):
         self.auth_path = auth_path
         self._sessions_path = os.path.join(os.path.dirname(auth_path), "sessions.json")
-        self._config: Dict[str, Any] = {}
-        self._sessions: Dict[str, Dict[str, Any]] = {}  # token -> {username, expiry}
+        self._config: dict[str, Any] = {}
+        self._sessions: dict[str, dict[str, Any]] = {}  # token -> {username, expiry}
         # Guards mutations of self._sessions and the on-disk sessions.json.
         # Validate/create/revoke run concurrently from the FastAPI threadpool.
         self._sessions_lock = threading.RLock()
@@ -101,7 +100,7 @@ class AuthManager:
     def _load(self):
         try:
             if os.path.exists(self.auth_path):
-                with open(self.auth_path, "r", encoding="utf-8") as f:
+                with open(self.auth_path, encoding="utf-8") as f:
                     self._config = json.load(f)
                 # Normalize all stored usernames to lowercase so they match
                 # the .strip().lower() applied at login/verify time. Fixes
@@ -124,7 +123,7 @@ class AuthManager:
         """Load persisted session tokens from disk, pruning expired ones."""
         try:
             if os.path.exists(self._sessions_path):
-                with open(self._sessions_path, "r", encoding="utf-8") as f:
+                with open(self._sessions_path, encoding="utf-8") as f:
                     data = json.load(f)
                 now = time.time()
                 self._sessions = {k: v for k, v in data.items() if v.get("expiry", 0) > now}
@@ -177,7 +176,7 @@ class AuthManager:
         _atomic_write_json(self.auth_path, self._config, indent=2)
 
     @property
-    def users(self) -> Dict[str, Any]:
+    def users(self) -> dict[str, Any]:
         return self._config.get("users", {})
 
     @property
@@ -312,13 +311,13 @@ class AuthManager:
     def is_admin(self, username: str) -> bool:
         return self.users.get(username, {}).get("is_admin", False)
 
-    def list_users(self) -> List[Dict[str, Any]]:
+    def list_users(self) -> list[dict[str, Any]]:
         return [
             {"username": u, "is_admin": d.get("is_admin", False), "privileges": self.get_privileges(u), "avatar": d.get("avatar", None)}
             for u, d in self.users.items()
         ]
 
-    def get_privileges(self, username: str) -> Dict[str, Any]:
+    def get_privileges(self, username: str) -> dict[str, Any]:
         """Get privileges for a user. Admins get all privileges."""
         user = self.users.get(username, {})
         if user.get("is_admin"):
@@ -327,7 +326,7 @@ class AuthManager:
         stored = user.get("privileges", {})
         return {**DEFAULT_PRIVILEGES, **stored}
 
-    def set_privileges(self, username: str, privileges: Dict[str, Any]) -> bool:
+    def set_privileges(self, username: str, privileges: dict[str, Any]) -> bool:
         """Update privileges for a user. Can't modify admin privileges."""
         username = username.strip().lower()
         with self._config_lock:
@@ -365,7 +364,7 @@ class AuthManager:
         user = self.users.get(username.strip().lower(), {})
         return bool(user.get("totp_enabled"))
 
-    def totp_generate_secret(self, username: str) -> Optional[str]:
+    def totp_generate_secret(self, username: str) -> str | None:
         """Generate a new TOTP secret for a user. Returns the secret (not yet enabled)."""
         username = username.strip().lower()
         if username not in self.users:
@@ -451,7 +450,7 @@ class AuthManager:
             return False
         return _verify_password(password, self.users[username]["password_hash"])
 
-    def create_session(self, username: str, password: str) -> Optional[str]:
+    def create_session(self, username: str, password: str) -> str | None:
         """Verify credentials and return a session token, or None."""
         username = username.strip().lower()
         if not self.verify_password(username, password):
@@ -471,7 +470,7 @@ class AuthManager:
         self._save_sessions()
         return token
 
-    def validate_token(self, token: Optional[str]) -> bool:
+    def validate_token(self, token: str | None) -> bool:
         if not token:
             return False
         expired = False
@@ -496,7 +495,7 @@ class AuthManager:
             return False
         return True
 
-    def get_username_for_token(self, token: Optional[str]) -> Optional[str]:
+    def get_username_for_token(self, token: str | None) -> str | None:
         """Return the username associated with a valid token."""
         if not token:
             return None
@@ -526,7 +525,7 @@ class AuthManager:
             self._sessions.pop(token, None)
         self._save_sessions()
 
-    def revoke_user_sessions(self, username: str, except_token: Optional[str] = None) -> int:
+    def revoke_user_sessions(self, username: str, except_token: str | None = None) -> int:
         """Revoke active browser sessions for a user, optionally preserving one."""
         username = username.strip().lower()
         revoked = 0
@@ -542,7 +541,7 @@ class AuthManager:
                 self._save_sessions()
         return revoked
 
-    def status(self, token: Optional[str]) -> Dict[str, Any]:
+    def status(self, token: str | None) -> dict[str, Any]:
         username = self.get_username_for_token(token)
         authenticated = username is not None
         result = {
@@ -556,7 +555,7 @@ class AuthManager:
             result["privileges"] = self.get_privileges(username)
         return result
 
-    def set_avatar(self, username: str, avatar: Optional[str]) -> bool:
+    def set_avatar(self, username: str, avatar: str | None) -> bool:
         username = username.strip().lower()
         with self._config_lock:
             if username not in self.users:

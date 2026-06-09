@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, field_validator
 
@@ -32,7 +31,7 @@ class DataConfig(BaseSettings):
     
     # Upload settings
     max_upload_size: int = Field(default=10 * 1024 * 1024, description="Maximum upload size in bytes (10MB)")
-    allowed_extensions: List[str] = Field(
+    allowed_extensions: list[str] = Field(
         default=[
             '.txt', '.py', '.html', '.md', '.json', '.csv',
             '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.tiff', '.pdf'
@@ -50,7 +49,7 @@ class LLMConfig(BaseSettings):
     
     # LLM endpoints
     default_host: str = Field(default="localhost", description="Default host for LLM services")
-    openai_api_key: Optional[str] = Field(default=None, description="OpenAI API key if using OpenAI")
+    openai_api_key: str | None = Field(default=None, description="OpenAI API key if using OpenAI")
     openai_compat_path: str = Field(default="/v1/chat/completions", description="OpenAI compatible API path")
     
     # LLM behavior
@@ -82,9 +81,9 @@ class SearchConfig(BaseSettings):
     research_timeout: int = Field(default=300, description="Research service timeout in seconds")
     
     # API keys (optional)
-    serpapi_key: Optional[str] = Field(default=None, description="SerpAPI key if used")
-    google_api_key: Optional[str] = Field(default=None, description="Google API key if used")
-    google_cx: Optional[str] = Field(default=None, description="Google Custom Search Engine ID if used")
+    serpapi_key: str | None = Field(default=None, description="SerpAPI key if used")
+    google_api_key: str | None = Field(default=None, description="Google API key if used")
+    google_cx: str | None = Field(default=None, description="Google Custom Search Engine ID if used")
     
     model_config = SettingsConfigDict(env_prefix="SEARCH_")
 
@@ -98,9 +97,9 @@ class SecurityConfig(BaseSettings):
     upload_rate_max_entries: int = Field(default=1000, description="Maximum number of rate limit entries to keep")
     
     # Security settings
-    allowed_origins: List[str] = Field(default=["*"], description="Allowed origins for CORS")
+    allowed_origins: list[str] = Field(default=["*"], description="Allowed origins for CORS")
     max_file_size: int = Field(default=10 * 1024 * 1024, description="Maximum file size in bytes")
-    dangerous_file_types: List[str] = Field(
+    dangerous_file_types: list[str] = Field(
         default=[
             'application/x-executable', 'application/x-sharedlib',
             'application/x-dll', 'application/x-msdownload',
@@ -109,7 +108,7 @@ class SecurityConfig(BaseSettings):
         ],
         description="Potentially dangerous MIME types to block"
     )
-    dangerous_extensions: List[str] = Field(
+    dangerous_extensions: list[str] = Field(
         default=[
             '.exe', '.dll', '.bat', '.cmd', '.sh', '.bash', 
             '.js', '.vbs', '.ps1', '.py', '.php', '.jsp', '.asp', '.aspx'

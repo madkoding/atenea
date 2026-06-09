@@ -8,9 +8,6 @@ like session creation, message sends, etc.
 import asyncio
 import json
 import logging
-import os
-from datetime import UTC, datetime
-from typing import Optional
 
 from src.constants import AUTH_FILE
 
@@ -33,7 +30,7 @@ def get_task_scheduler():
     return _task_scheduler
 
 
-def fire_event(event_name: str, owner: Optional[str] = None):
+def fire_event(event_name: str, owner: str | None = None):
     """Fire an event — increments counters and triggers tasks that hit threshold.
 
     Safe to call from both sync and async contexts.
@@ -46,7 +43,7 @@ def fire_event(event_name: str, owner: Optional[str] = None):
         asyncio.run(_handle_event(event_name, owner))
 
 
-def _resolve_event_owner(owner: Optional[str]) -> Optional[str]:
+def _resolve_event_owner(owner: str | None) -> str | None:
     """Resolve ownerless app events to the primary configured user.
 
     Some event sources run from localhost/internal code paths where request
@@ -60,7 +57,7 @@ def _resolve_event_owner(owner: Optional[str]) -> Optional[str]:
 
     try:
         auth_path = AUTH_FILE
-        with open(auth_path, "r", encoding="utf-8") as f:
+        with open(auth_path, encoding="utf-8") as f:
             users = (json.load(f).get("users") or {})
         for username, data in users.items():
             if data.get("is_admin") is True:
@@ -72,7 +69,7 @@ def _resolve_event_owner(owner: Optional[str]) -> Optional[str]:
     return None
 
 
-async def _handle_event(event_name: str, owner: Optional[str] = None):
+async def _handle_event(event_name: str, owner: str | None = None):
     """Process an event: increment counters, fire tasks that hit their threshold."""
     from core.database import SessionLocal, ScheduledTask
 

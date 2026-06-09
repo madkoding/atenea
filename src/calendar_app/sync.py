@@ -29,7 +29,7 @@ import logging
 import os
 import socket
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from urllib.parse import urlparse, urlunparse
 
 logger = logging.getLogger(__name__)
@@ -145,7 +145,7 @@ def _to_utc_naive(dt):
     All-day events stay as date and get widened to datetime here."""
     if isinstance(dt, datetime):
         if dt.tzinfo is not None:
-            return dt.astimezone(timezone.utc).replace(tzinfo=None), False
+            return dt.astimezone(UTC).replace(tzinfo=None), False
         return dt, False  # naive → treat as local
     # date-only (all-day)
     return datetime(dt.year, dt.month, dt.day), True
@@ -293,8 +293,8 @@ def _sync_blocking(owner: str, url: str, username: str, password: str, account_i
             result["errors"].append(f"No calendars and URL fallback failed: {e}")
             return result
 
-    start = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=_LOOKBACK_DAYS)
-    end = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=_LOOKAHEAD_DAYS)
+    start = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=_LOOKBACK_DAYS)
+    end = datetime.now(UTC).replace(tzinfo=None) + timedelta(days=_LOOKAHEAD_DAYS)
 
     db = SessionLocal()
     try:

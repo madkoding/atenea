@@ -5,9 +5,8 @@ import json
 import logging
 import os
 import re
-import time
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 from core.models import ChatMessage
 from core.cache import db_region
@@ -51,10 +50,10 @@ def get_enabled_endpoints_cached(ttl: float = 60.0) -> list:
 @dataclass
 class PresetInfo:
     """Extracted preset parameters."""
-    temperature: Optional[float]
-    max_tokens: Optional[int]
-    system_prompt: Optional[str]
-    character_name: Optional[str]
+    temperature: float | None
+    max_tokens: int | None
+    system_prompt: str | None
+    character_name: str | None
 
 
 @dataclass
@@ -77,7 +76,7 @@ class ChatContext:
     messages: list
     context_length: int
     was_compacted: bool
-    user: Optional[str]
+    user: str | None
     uprefs: dict
     preset: PresetInfo
     preprocessed: PreprocessedMessage
@@ -336,7 +335,7 @@ def extract_preset(chat_handler, preset_id) -> PresetInfo:
 
 async def preprocess(
     chat_handler, message, att_ids, sess,
-    auto_opened_docs: Optional[list] = None,
+    auto_opened_docs: list | None = None,
     allow_tool_preprocessing: bool = True,
 ) -> PreprocessedMessage:
     """Run chat_handler.preprocess_message and wrap the result."""
@@ -396,7 +395,7 @@ def _session_url_matches_endpoint(session_url: str, endpoint_base: str) -> bool:
         return False
 
 
-def resolve_session_auth(sess, session_id: str, owner: Optional[str] = None):
+def resolve_session_auth(sess, session_id: str, owner: str | None = None):
     """Ensure session has auth headers — resolve from endpoint DB if missing."""
     has_auth = sess.headers and isinstance(sess.headers, dict) and any(
         k.lower() in ('authorization', 'x-api-key') for k in sess.headers
@@ -460,7 +459,7 @@ def resolve_session_auth(sess, session_id: str, owner: Optional[str] = None):
         logger.warning(f"Failed to resolve session headers: {e}")
 
 
-def _match_cached_model_id(requested: str, models) -> Optional[str]:
+def _match_cached_model_id(requested: str, models) -> str | None:
     if not requested or not models:
         return None
     model_ids = [str(m) for m in models if m]
@@ -474,7 +473,7 @@ def _match_cached_model_id(requested: str, models) -> Optional[str]:
     return None
 
 
-def _normalize_model_id_from_cache(sess) -> Optional[str]:
+def _normalize_model_id_from_cache(sess) -> str | None:
     """Use stored endpoint model IDs before falling back to a live /models probe."""
     endpoint_url = getattr(sess, "endpoint_url", "") or ""
     requested = getattr(sess, "model", "") or ""

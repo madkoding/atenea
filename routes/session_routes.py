@@ -3,7 +3,7 @@ import re
 import html
 import json
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 from fastapi import APIRouter, Form, HTTPException, Response, Request
 import logging
 
@@ -278,7 +278,7 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
                 mode_map[row.id] = row.mode
                 msg_count_map[row.id] = row.message_count or 0
             # Sessions with active documents that have content
-            from sqlalchemy import func, select
+            from sqlalchemy import func
             doc_session_ids = set(
                 r[0] for r in db.query(Document.session_id)
                 .filter(Document.is_active == True,
@@ -548,7 +548,6 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
     @router.post("/sessions/bulk-delete")
     async def bulk_delete_sessions(request: Request):
         """Delete multiple sessions (for compare cleanup via sendBeacon)."""
-        from core.database import ChatMessage as _CM
         try:
             body = await request.json()
             ids = body.get("ids", [])

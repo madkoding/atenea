@@ -7,7 +7,6 @@ Stores pre-computed embeddings (ChromaDB does not manage embedding).
 """
 
 import logging
-from typing import List, Dict, Optional
 
 from src.vector.embedding_lanes import (
     LANE_CUSTOM,
@@ -60,7 +59,7 @@ class MemoryVectorStore:
     def healthy(self) -> bool:
         return self._healthy
 
-    def _embed(self, texts: List[str]) -> List[List[float]]:
+    def _embed(self, texts: list[str]) -> list[list[float]]:
         if not self._lanes:
             return []
         return self._lanes[0].encode(texts)
@@ -129,7 +128,7 @@ class MemoryVectorStore:
             except Exception as e:
                 logger.warning(f"memory remove {memory_id}: {e}")
 
-    def search(self, query: str, k: int = 8) -> List[Dict]:
+    def search(self, query: str, k: int = 8) -> list[dict]:
         """Search for the most relevant memory IDs by semantic similarity.
         Returns list of {"memory_id": str, "score": float}.
 
@@ -162,7 +161,7 @@ class MemoryVectorStore:
         out.sort(key=lambda row: (-row["score"], lane_priority.get(row["embedding_lane"], 99)))
         return dedupe_results(out, id_key="memory_id", limit=k)
 
-    def find_similar(self, text: str, threshold: float = 0.92) -> Optional[str]:
+    def find_similar(self, text: str, threshold: float = 0.92) -> str | None:
         """Check if a near-duplicate exists. Returns memory_id if found, else None."""
         if not self._healthy or self.count() == 0:
             return None
@@ -185,7 +184,7 @@ class MemoryVectorStore:
                 logger.warning("memory similarity search failed in %s lane: %s", lane.name, e)
         return None
 
-    def rebuild(self, memories: List[Dict]):
+    def rebuild(self, memories: list[dict]):
         """Rebuild the entire index from a list of memory entries.
         Each entry must have 'id' and 'text' keys."""
         if not self._healthy:
@@ -243,7 +242,7 @@ class MemoryVectorStore:
 
         logger.info(f"MemoryVectorStore rebuilt with {len(ids)} entries across {len(self._lanes)} lanes")
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         return {
             "healthy": self.healthy,
             "count": self.count(),
