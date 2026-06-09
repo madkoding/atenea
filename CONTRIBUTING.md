@@ -25,7 +25,7 @@ End-users cloning the repo will land on `dev` by default. To run the curated/sta
 Docker is the recommended path for normal testing:
 
 ```bash
-git clone https://github.com/pewdiepie-archdaemon/atenea.git
+git clone https://github.com/madkoding/atenea.git
 cd atenea
 cp .env.example .env
 docker compose up -d --build

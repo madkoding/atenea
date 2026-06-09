@@ -1,6 +1,6 @@
 # Atenea
 
-> **Branch note:** `dev` is the default branch and contains the latest development changes, but it may be unstable. For the more stable curated branch, use [`main`](https://github.com/pewdiepie-archdaemon/atenea/tree/main).
+> **Branch note:** `dev` is the default branch and contains the latest development changes, but it may be unstable. For the more stable curated branch, use [`main`](https://github.com/madkoding/atenea/tree/main).
 
 ```
 ───────────────────────────────────────────────
@@ -61,7 +61,7 @@ pull request guidelines.
 
 ### Docker (recommended)
 ```bash
-git clone https://github.com/pewdiepie-archdaemon/atenea.git
+git clone https://github.com/madkoding/atenea.git
 cd atenea
 cp .env.example .env       # optional, but recommended for explicit defaults
 docker compose up -d --build
@@ -75,7 +75,7 @@ only when you intentionally want LAN/reverse-proxy access.
 
 ### Native Linux / macOS
 ```bash
-git clone https://github.com/pewdiepie-archdaemon/atenea.git
+git clone https://github.com/madkoding/atenea.git
 cd atenea
 python3 -m venv venv
 source venv/bin/activate
@@ -93,7 +93,7 @@ Docker on macOS cannot use the Metal GPU. For GPU-accelerated Cookbook on an
 M-series Mac, run Atenea natively:
 
 ```bash
-git clone https://github.com/pewdiepie-archdaemon/atenea.git
+git clone https://github.com/madkoding/atenea.git
 cd atenea
 ./start-macos.sh
 ```
@@ -267,7 +267,7 @@ do not run on macOS. MLX-only models are not served by Atenea.
 server; safe to re-run):
 
 ```powershell
-git clone https://github.com/pewdiepie-archdaemon/atenea.git
+git clone https://github.com/madkoding/atenea.git
 cd atenea
 powershell -ExecutionPolicy Bypass -File .\launch-windows.ps1
 ```
@@ -275,7 +275,7 @@ powershell -ExecutionPolicy Bypass -File .\launch-windows.ps1
 Or do it by hand:
 
 ```powershell
-git clone https://github.com/pewdiepie-archdaemon/atenea.git
+git clone https://github.com/madkoding/atenea.git
 cd atenea
 py -3.11 -m venv venv
 venv\Scripts\Activate.ps1
@@ -433,11 +433,11 @@ All user data lives in `data/` (gitignored): `app.db` (sessions, messages, docum
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=pewdiepie-archdaemon%2Fatenea&type=date&legend=top-left">
+<a href="https://www.star-history.com/?repos=madkoding%2Fatenea&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=pewdiepie-archdaemon/atenea&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=pewdiepie-archdaemon/atenea&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=pewdiepie-archdaemon/atenea&type=date&legend=top-left" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=madkoding/atenea&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=madkoding/atenea&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=madkoding/atenea&type=date&legend=top-left" />
  </picture>
 </a>
 

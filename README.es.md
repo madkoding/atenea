@@ -1,8 +1,8 @@
 # Atenea — Versión en Español
 
-Fork personal de [Atenea](https://github.com/pewdiepie-archdaemon/atenea) con la interfaz de usuario y las respuestas de la IA en español.
+Fork personal de [Atenea](https://github.com/madkoding/atenea) con la interfaz de usuario y las respuestas de la IA en español.
 
-> **Nota del mantenedor**: El proyecto upstream no acepta contribuciones de internacionalización ([PR #719 cerrado](https://github.com/pewdiepie-archdaemon/atenea/issues/719)). Este fork es exclusivamente local.
+> **Nota del mantenedor**: El proyecto upstream no acepta contribuciones de internacionalización ([PR #719 cerrado](https://github.com/madkoding/atenea/issues/719)). Este fork es exclusivamente local.
 
 ## Qué incluye
 
