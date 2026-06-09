@@ -1,6 +1,6 @@
 import { init, getLocale, getSupported, setLocale } from '/static/js/i18n.js';
 
-const STORAGE_KEY = 'odysseus-ui-language';
+const STORAGE_KEY = 'atenea-ui-language';
 const SERVER_PREF_KEY = 'ui_language';
 const BUTTON_ID = 'lang-toggle';
 const LABEL_ID = 'lang-toggle-label';

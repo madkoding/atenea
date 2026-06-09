@@ -33,7 +33,7 @@ from src.uploads.limits import read_upload_limited
 
 logger = logging.getLogger(__name__)
 
-MEMORY_IMPORT_MAX_BYTES = int(os.getenv("ODYSSEUS_MEMORY_IMPORT_MAX_BYTES", str(10 * 1024 * 1024)))
+MEMORY_IMPORT_MAX_BYTES = int(os.getenv("ATENEA_MEMORY_IMPORT_MAX_BYTES", str(10 * 1024 * 1024)))
 
 def setup_memory_routes(memory_manager: MemoryManager, session_manager: SessionManager, memory_vector=None):
     """Set up memory-related routes."""

@@ -3,8 +3,8 @@
 
 // ── Key constants ──
 export const KEYS = {
-  THEME: 'odysseus-theme',
-  TOGGLES: 'odysseus-toggles',
+  THEME: 'atenea-theme',
+  TOGGLES: 'atenea-toggles',
   SIDEBAR_COLLAPSED: 'sidebar-collapsed',
   SIDEBAR_WIDTH: 'sidebar-width',
   SIDEBAR_SIDE: 'sidebar-side',
@@ -13,19 +13,19 @@ export const KEYS = {
   COMPARE_CHAT: 'compare-continue-chat',
   COMPARE_BLIND: 'compare-blind',
   COMPARE_RANDOM: 'compare-randomize',
-  MODELS_EXPANDED: 'odysseus-model-expanded',
-  MODEL_ENDPOINTS: 'odysseus-model-endpoints',
-  MODEL_SELECTED: 'odysseus-selected-model',
-  SORT_ORDER: 'odysseus-sessions-sort',
-  CHAT_SEARCH_SCOPE: 'odysseus-search-scope',
-  INCOGNITO: 'odysseus-incognito',
-  RAG_ACTIVE: 'odysseus-rag-active',
-  MCP_ACTIVE: 'odysseus-mcp-active',
+  MODELS_EXPANDED: 'atenea-model-expanded',
+  MODEL_ENDPOINTS: 'atenea-model-endpoints',
+  MODEL_SELECTED: 'atenea-selected-model',
+  SORT_ORDER: 'atenea-sessions-sort',
+  CHAT_SEARCH_SCOPE: 'atenea-search-scope',
+  INCOGNITO: 'atenea-incognito',
+  RAG_ACTIVE: 'atenea-rag-active',
+  MCP_ACTIVE: 'atenea-mcp-active',
   SECTION_ORDER: 'sidebar-section-order',
   ADMIN_LAST_TAB: 'admin-last-tab',
-  DENSITY: 'odysseus-density',
-  WORKSPACE: 'odysseus-workspace',
-  PLAN: 'odysseus-plan'
+  DENSITY: 'atenea-density',
+  WORKSPACE: 'atenea-workspace',
+  PLAN: 'atenea-plan'
 };
 
 /**

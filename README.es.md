@@ -1,8 +1,8 @@
-# Odysseus — Versión en Español
+# Atenea — Versión en Español
 
-Fork personal de [Odysseus](https://github.com/pewdiepie-archdaemon/odysseus) con la interfaz de usuario y las respuestas de la IA en español.
+Fork personal de [Atenea](https://github.com/madkoding/atenea) con la interfaz de usuario y las respuestas de la IA en español.
 
-> **Nota del mantenedor**: El proyecto upstream no acepta contribuciones de internacionalización ([PR #719 cerrado](https://github.com/pewdiepie-archdaemon/odysseus/issues/719)). Este fork es exclusivamente local.
+> **Nota del mantenedor**: El proyecto upstream no acepta contribuciones de internacionalización ([PR #719 cerrado](https://github.com/madkoding/atenea/issues/719)). Este fork es exclusivamente local.
 
 ## Qué incluye
 
@@ -28,8 +28,8 @@ Cada commit de este fork incluye un mensaje descriptivo. Los cambios principales
 ## Instalación
 
 ```bash
-git clone https://github.com/madkoding/odysseus.git
-cd odysseus
+git clone https://github.com/madkoding/atenea.git
+cd atenea
 git checkout spanish-dev
 # Instalar dependencias y ejecutar — igual que upstream
 ```
@@ -57,4 +57,4 @@ spanish-dev  ← basada en dev (commit 83b0ab7)
 
 ## Licencia
 
-Igual que el proyecto upstream — véase [LICENSE](LICENSE) de Odysseus.
+Igual que el proyecto upstream — véase [LICENSE](LICENSE) de Atenea.
