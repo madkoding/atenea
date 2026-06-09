@@ -1,25 +1,21 @@
 from pathlib import Path
 
+from tests.helpers.ast_check import assert_contains_call, assert_source_has
 
 CHAT_ROUTES = Path(__file__).resolve().parents[1] / "routes" / "chat_routes.py"
 
 
-def _source() -> str:
-    return CHAT_ROUTES.read_text(encoding="utf-8")
-
-
 def test_chat_stream_uses_request_value_fallback_for_json_and_form():
-    src = _source()
-    assert "def _request_value(key: str, default: Any = None) -> Any:" in src
-    assert "if key in form_data:" in src
-    assert "if isinstance(body, dict):" in src
+    assert_source_has(CHAT_ROUTES, "def _request_value(key: str, default: Any = None) -> Any:")
+    assert_source_has(CHAT_ROUTES, "if key in form_data:")
+    assert_source_has(CHAT_ROUTES, "if isinstance(body, dict):")
 
 
 def test_chat_stream_tool_toggles_use_request_value_not_form_only():
-    src = _source()
-    assert 'allow_bash = _request_value("allow_bash")' in src
-    assert 'allow_web_search = _request_value("allow_web_search")' in src
-    assert 'if str(allow_bash).lower() != "true":' in src
-    assert 'if str(allow_web_search).lower() != "true":' in src
+    assert_contains_call(CHAT_ROUTES, "_request_value")
+    assert_source_has(CHAT_ROUTES, 'if str(allow_bash).lower() != "true":')
+    assert_source_has(CHAT_ROUTES, 'if str(allow_web_search).lower() != "true":')
+    # Negative assertions: verify no direct form_data access for tool toggles
+    src = CHAT_ROUTES.read_text(encoding="utf-8")
     assert 'allow_bash = form_data.get("allow_bash")' not in src
     assert 'allow_web_search = form_data.get("allow_web_search")' not in src

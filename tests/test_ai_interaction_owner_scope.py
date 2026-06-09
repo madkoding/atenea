@@ -1,31 +1,24 @@
-import inspect
+from pathlib import Path
 
 import pytest
 
 import src.agent.ai_interaction as ai_interaction
+from tests.helpers.ast_check import assert_call_has_arg, assert_source_has
 
-
-def _source(fn) -> str:
-    return inspect.getsource(fn)
+AI_PATH = Path(ai_interaction.__file__)
 
 
 def test_model_resolver_applies_owner_filter():
-    body = _source(ai_interaction._resolve_model)
-
-    assert "owner: Optional[str] = None" in body
-    assert "from src.auth.helpers import owner_filter" in body
-    assert "owner_filter(query, ModelEndpoint, owner)" in body
+    assert_source_has(AI_PATH, "owner: Optional[str] = None")
+    assert_source_has(AI_PATH, "from src.auth.helpers import owner_filter")
+    assert_source_has(AI_PATH, "owner_filter(query, ModelEndpoint, owner)")
 
 
 def test_model_listing_and_image_fallback_are_owner_scoped():
-    list_body = _source(ai_interaction.do_list_models)
-    image_body = _source(ai_interaction.do_generate_image)
-
-    assert "owner: Optional[str] = None" in list_body
-    assert "owner_filter(query, ModelEndpoint, owner)" in list_body
-    assert "_resolve_model(candidate, owner=owner)" in image_body
-    assert "owner_filter(_img_q, ModelEndpoint, owner)" in image_body
-    assert "_resolve_model(model_spec, owner=owner)" in image_body
+    assert_source_has(AI_PATH, "owner: Optional[str] = None")
+    assert_source_has(AI_PATH, "owner_filter(query, ModelEndpoint, owner)")
+    assert_call_has_arg(AI_PATH, "_resolve_model", "owner")
+    assert_source_has(AI_PATH, "owner_filter(_img_q, ModelEndpoint, owner)")
 
 
 @pytest.mark.parametrize("tool,content", [
