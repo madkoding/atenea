@@ -128,7 +128,7 @@ def _enforce_chat_privileges(request, sess) -> None:
     if cap <= 0:
         return
 
-    from datetime import datetime as _dt, timedelta as _td
+    from datetime import UTC as _UTC, datetime as _dt, timedelta as _td
     from core.database import Session as _DbSess, ChatMessage as _Cm
     db = SessionLocal()
     try:
@@ -137,7 +137,7 @@ def _enforce_chat_privileges(request, sess) -> None:
             .join(_DbSess, _Cm.session_id == _DbSess.id)
             .filter(_DbSess.owner == user,
                     _Cm.role == "user",
-                    _Cm.timestamp >= _dt.utcnow() - _td(days=1))
+                    _Cm.timestamp >= _dt.now(_UTC).replace(tzinfo=None) - _td(days=1))
             .count()
         )
     finally:
@@ -220,47 +220,84 @@ async def auto_name_session(session_manager, sess):
         logger.error(f"Auto-name failed for {sess.id}: {e}\n{traceback.format_exc()}")
 
 
-async def try_fallback_endpoint(sess, session_id: str) -> dict | None:
+def try_fallback_endpoint(sess, session_id: str) -> dict | None:
     """Find an alternative working endpoint when the current one fails.
 
     Returns {"model": ..., "endpoint_url": ..., "endpoint_name": ...} or None.
     """
     import httpx as _httpx
-    from src.runtime.endpoint_resolver import build_chat_url, build_headers, build_models_url, normalize_base
+    from src.chatgpt_subscription import is_chatgpt_subscription_base
+    from src.runtime.endpoint_resolver import (
+        build_chat_url,
+        build_headers,
+        build_models_url,
+        normalize_base,
+        resolve_endpoint_runtime,
+    )
 
     current_url = sess.endpoint_url or ""
-    endpoints_data = get_enabled_endpoints_cached(ttl=60.0)
 
-    async with _httpx.AsyncClient(timeout=5.0) as client:
-        for ep_data in endpoints_data:
-            base = normalize_base(ep_data["base_url"])
+    db = SessionLocal()
+    try:
+        q = db.query(ModelEndpoint).filter(ModelEndpoint.is_enabled == True)
+        owner = getattr(sess, "owner", None)
+        if owner:
+            from src.auth.helpers import owner_filter
+
+            q = owner_filter(q, ModelEndpoint, owner)
+        endpoints = q.all()
+    finally:
+        db.close()
+
+    with _httpx.Client(timeout=5.0) as client:
+        for ep in endpoints:
+            base, api_key = resolve_endpoint_runtime(ep, owner=getattr(sess, "owner", None))
+            base = normalize_base(base or ep.base_url or "")
+            ep_name = getattr(ep, "name", None) or ""
             # Skip current endpoint
             if current_url and base in current_url:
                 continue
-            # Quick ping
-            ping_url = build_models_url(base)
-            headers = build_headers(ep_data["api_key"], base)
+
+            headers = build_headers(api_key, base)
             try:
-                r = await client.get(ping_url, headers=headers)
-                r.raise_for_status()
-                data = r.json()
-                models = [m.get("id") for m in (data.get("data") or []) if m.get("id")]
-                if not models:
-                    models = [
-                        m.get("name") or m.get("model")
-                        for m in (data.get("models") or [])
-                        if m.get("name") or m.get("model")
-                    ]
+                models: list[str] = []
+                ping_url = build_models_url(base)
+                if ping_url:
+                    r = client.get(ping_url, headers=headers)
+                    r.raise_for_status()
+                    data = r.json()
+                    models = [m.get("id") for m in (data.get("data") or []) if m.get("id")]
+                    if not models:
+                        models = [
+                            m.get("name") or m.get("model")
+                            for m in (data.get("models") or [])
+                            if m.get("name") or m.get("model")
+                        ]
+                else:
+                    raw_models = getattr(ep, "cached_models", None)
+                    if raw_models:
+                        try:
+                            models = json.loads(raw_models) if isinstance(raw_models, str) else raw_models
+                        except Exception:
+                            models = []
+                    models = [m for m in (models or []) if isinstance(m, str) and m]
                 if not models:
                     continue
                 # Found a working endpoint — update session
                 new_model = models[0]
                 chat_url = build_chat_url(base)
-                new_headers = build_headers(ep_data["api_key"], base)
+                new_headers = build_headers(api_key, base)
 
                 sess.model = new_model
                 sess.endpoint_url = chat_url
                 sess.headers = new_headers
+
+                persisted_headers = new_headers
+                if is_chatgpt_subscription_base(base):
+                    persisted_headers = {
+                        k: v for k, v in (new_headers or {}).items()
+                        if k.lower() not in ("authorization", "x-api-key")
+                    }
 
                 # Persist
                 _db = SessionLocal()
@@ -268,7 +305,7 @@ async def try_fallback_endpoint(sess, session_id: str) -> dict | None:
                     _db.query(DBSession).filter(DBSession.id == session_id).update({
                         "model": new_model,
                         "endpoint_url": chat_url,
-                        "headers": json.dumps(new_headers),
+                        "headers": persisted_headers,
                     })
                     _db.commit()
                 finally:
@@ -277,7 +314,7 @@ async def try_fallback_endpoint(sess, session_id: str) -> dict | None:
                 return {
                     "model": new_model,
                     "endpoint_url": chat_url,
-                    "endpoint_name": ep_data["name"],
+                    "endpoint_name": ep_name,
                 }
             except Exception:
                 continue
@@ -368,7 +405,8 @@ def resolve_session_auth(sess, session_id: str, owner: Optional[str] = None):
         return
 
     try:
-        from src.runtime.endpoint_resolver import build_headers, normalize_base
+        from src.chatgpt_subscription import is_chatgpt_subscription_base
+        from src.runtime.endpoint_resolver import build_headers, normalize_base, resolve_endpoint_runtime
         db = SessionLocal()
         try:
             target_url = getattr(sess, "endpoint_url", "") or ""
@@ -384,13 +422,34 @@ def resolve_session_auth(sess, session_id: str, owner: Optional[str] = None):
             for ep in q.all():
                 if not _session_url_matches_endpoint(target_url, ep.base_url or ""):
                     continue
-                if not ep.api_key:
-                    return
-                base = normalize_base(ep.base_url or "")
-                sess.headers = build_headers(ep.api_key, base)
+
+                runtime_owner = owner or getattr(sess, "owner", None)
+                base, api_key = resolve_endpoint_runtime(ep, owner=runtime_owner)
+                base = normalize_base(base or ep.base_url or "")
+                resolved_headers = build_headers(api_key, base)
+                if not any(k.lower() in ("authorization", "x-api-key") for k in resolved_headers):
+                    continue
+
+                sess.headers = resolved_headers
                 update_q = db.query(DBSession).filter(DBSession.id == session_id)
                 if owner:
                     update_q = update_q.filter(DBSession.owner == owner)
+
+                if is_chatgpt_subscription_base(base):
+                    # Keep live ChatGPT bearer request-local; only strip any stale
+                    # persisted auth leaked by older code paths.
+                    row = update_q.first()
+                    stored_headers = row.headers if row and isinstance(row.headers, dict) else {}
+                    cleaned_headers = {
+                        k: v for k, v in (stored_headers or {}).items()
+                        if k.lower() not in ("authorization", "x-api-key")
+                    }
+                    if cleaned_headers != (stored_headers or {}):
+                        update_q.update({"headers": cleaned_headers})
+                        db.commit()
+                    logger.info(f"Resolved request-local auth for session {session_id} from endpoint {ep.name}")
+                    return
+
                 update_q.update({"headers": sess.headers})
                 db.commit()
                 logger.info(f"Resolved and persisted auth headers for session {session_id} from endpoint {ep.name}")
