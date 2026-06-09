@@ -344,6 +344,7 @@ def _stub_core_database_for_route_imports(monkeypatch):
         "DocumentVersion",
         "GalleryImage",
         "ModelEndpoint",
+        "utcnow_naive",
     ):
         setattr(db, name, MagicMock())
     monkeypatch.setitem(sys.modules, "core", core_pkg)
