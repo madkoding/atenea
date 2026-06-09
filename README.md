@@ -6,7 +6,7 @@
 
 ## Espanol
 
-Atenea Pro es un fork mejorado de [Atenea](https://github.com/pewdiepie-archdaemon/atenea), orientado a una experiencia mas completa, mantenible y enfocada en uso real diario.
+Atenea Pro es un fork mejorado de [Atenea](https://github.com/madkoding/atenea), orientado a una experiencia mas completa, mantenible y enfocada en uso real diario.
 
 ### Que es Atenea Pro
 
@@ -91,7 +91,7 @@ Abrir: `http://localhost:7000`
 
 ## English
 
-Atenea Pro is an improved fork of [Atenea](https://github.com/pewdiepie-archdaemon/atenea), focused on a more complete, maintainable, and production-minded self-hosted AI workspace.
+Atenea Pro is an improved fork of [Atenea](https://github.com/madkoding/atenea), focused on a more complete, maintainable, and production-minded self-hosted AI workspace.
 
 ### What Atenea Pro is
 

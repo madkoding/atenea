@@ -2,7 +2,7 @@
 
 ## Goal
 
-Spanish variant of [Atenea](https://github.com/pewdiepie-archdaemon/atenea) (branch `spanish-dev`).
+Spanish variant of [Atenea](https://github.com/madkoding/atenea) (branch `spanish-dev`).
 UI in Spanish + AI responses in Spanish across chat, agent, deep research, presets, and skills.
 Built as a local-only fork; maintainer rejected i18n upstream (PR #719, 3 jun 2026).
 
@@ -11,7 +11,7 @@ Built as a local-only fork; maintainer rejected i18n upstream (PR #719, 3 jun 20
 ```
 origin  madkoding/atenea (fork)
   └── spanish-dev   ← our work branch (based on dev at 83b0ab7)
-upstream  pewdiepie-archdaemon/atenea
+upstream  madkoding/atenea
   └── dev          ← sync target
 ```
 
