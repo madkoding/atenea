@@ -24,7 +24,7 @@ import html
 from html.parser import HTMLParser as _HTMLParser
 import logging
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC
 from pathlib import Path
 
 from email.mime.text import MIMEText
@@ -50,7 +50,7 @@ from routes.email_helpers import (
     _EMAIL_REPLY_SYS_PROMPT_BASE, _POOL_HOOKS,
     _friendly_email_auth_error,
     SendEmailRequest, ExtractStyleRequest,
-    ATTACHMENTS_DIR, COMPOSE_UPLOADS_DIR, SCHEDULED_DB,
+    COMPOSE_UPLOADS_DIR, SCHEDULED_DB,
     attachment_extract_dir, _email_cache_owner_clause,
     _friendly_email_auth_error,
 )
@@ -519,11 +519,13 @@ def setup_email_routes():
                         return conn, True  # reused
                     except Exception:
                         try: conn.logout()
-                        except Exception: pass
+                        except Exception:
+                            logger.exception("email_routes: failed to logout IMAP on reconnect failure")
                         del _IMAP_POOL[pool_key]
                 else:
                     try: conn.logout()
-                    except Exception: pass
+                    except Exception:
+                        logger.exception("email_routes: failed to logout IMAP connection on release")
                     del _IMAP_POOL[pool_key]
         # Fresh connection
         return _imap_connect(account_id, owner=owner), False
@@ -533,7 +535,8 @@ def setup_email_routes():
         # so a pooled handle is returned to the same per-user slot.
         if not ok:
             try: conn.logout()
-            except Exception: pass
+            except Exception:
+                logger.exception("email_routes: failed to logout IMAP on pool release failure")
             return
         with _pool_lock:
             _IMAP_POOL[(account_id, owner)] = (conn, _time.monotonic())
@@ -886,8 +889,7 @@ def setup_email_routes():
                         # Normalise tz-naive parses to UTC so timestamp() is
                         # deterministic across hosts.
                         if parsed_date and parsed_date.tzinfo is None:
-                            from datetime import timezone as _tz
-                            parsed_date = parsed_date.replace(tzinfo=_tz.utc)
+                            parsed_date = parsed_date.replace(tzinfo=UTC)
                         iso_date = parsed_date.isoformat() if parsed_date else ""
                         date_epoch = parsed_date.timestamp() if parsed_date else 0.0
                         is_read = "\\Seen" in flags
@@ -1123,8 +1125,7 @@ def setup_email_routes():
                         cc_str = _decode_header(msg.get("Cc", ""))
                         parsed_date = email.utils.parsedate_to_datetime(date_str) if date_str else None
                         if parsed_date and parsed_date.tzinfo is None:
-                            from datetime import timezone as _tz
-                            parsed_date = parsed_date.replace(tzinfo=_tz.utc)
+                            parsed_date = parsed_date.replace(tzinfo=UTC)
                         iso_date = parsed_date.isoformat() if parsed_date else ""
                         date_epoch = parsed_date.timestamp() if parsed_date else 0.0
                         ct = msg.get("Content-Type", "")
@@ -1986,12 +1987,12 @@ def setup_email_routes():
             # Validate parseable + reject past times (the poller fires
             # anything in the past immediately on the next tick — a
             # 1970-dated schedule would deliver right now).
-            from datetime import datetime as _dt, timezone as _tz
+            from datetime import datetime as _dt
             try:
                 parsed_at = _dt.fromisoformat(send_at.replace("Z", "+00:00"))
             except ValueError:
                 return {"success": False, "error": "send_at must be ISO8601"}
-            now_utc = _dt.now(_tz.utc) if parsed_at.tzinfo else _utcnow_naive()
+            now_utc = _dt.now(UTC) if parsed_at.tzinfo else _utcnow_naive()
             # Tiny 30s grace so a user clicking Send right at the chosen
             # minute doesn't trip the past-time guard.
             if parsed_at < now_utc:
@@ -2003,7 +2004,7 @@ def setup_email_routes():
             # hours early, and a "Z" suffix compares after the fractional
             # seconds of the poller timestamp.
             if parsed_at.tzinfo:
-                parsed_at = parsed_at.astimezone(_tz.utc).replace(tzinfo=None)
+                parsed_at = parsed_at.astimezone(UTC).replace(tzinfo=None)
             send_at = parsed_at.isoformat()
 
             sid = _uuid.uuid4().hex[:16]
@@ -3166,7 +3167,8 @@ def setup_email_routes():
                     imap_result = {"ok": True}
                 finally:
                     try: conn.logout()
-                    except Exception: pass
+                    except Exception:
+                        logger.exception("email_routes: failed to logout IMAP connection in test")
             except Exception as e:
                 imap_result = {"ok": False, "error": _friendly_email_auth_error("IMAP", imap_host, e)}
 
@@ -3188,7 +3190,8 @@ def setup_email_routes():
                     smtp_result = {"ok": True}
                 finally:
                     try: smtp.quit()
-                    except Exception: pass
+                    except Exception:
+                        logger.exception("email_routes: failed to quit SMTP connection in test")
             except Exception as e:
                 smtp_result = {"ok": False, "error": _friendly_email_auth_error("SMTP", smtp_host, e)}
 

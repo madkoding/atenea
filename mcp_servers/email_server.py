@@ -21,7 +21,10 @@ import sys
 import os
 import os.path
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
@@ -505,7 +508,8 @@ def _list_emails(folder="INBOX", max_results=20, unresponded_only=False,
     finally:
         if conn:
             try: conn.logout()
-            except Exception: pass
+            except Exception:
+                logger.exception("email_server: failed to logout IMAP connection")
 
 
 def _result_sort_time(result: dict) -> datetime:
@@ -609,7 +613,8 @@ def _search_emails(query, folders=None, max_results=20, account=None):
                 continue
     finally:
         try: conn.logout()
-        except Exception: pass
+        except Exception:
+            logger.exception("email_server: failed to logout IMAP connection")
     # Cap total across folders.
     return out[: max_results * len(folders)]
 
@@ -726,7 +731,8 @@ def _read_email(uid=None, message_id=None, folder="INBOX", account=None):
     finally:
         if conn:
             try: conn.logout()
-            except Exception: pass
+            except Exception:
+                logger.exception("email_server: failed to logout IMAP connection")
 
 
 def _read_email_across_accounts(uid=None, message_id=None, folder="INBOX"):
@@ -906,7 +912,8 @@ def _reply_to_email(uid, body, folder="INBOX", reply_all=False, account=None):
     finally:
         if conn:
             try: conn.logout()
-            except Exception: pass
+            except Exception:
+                logger.exception("email_server: failed to logout IMAP connection")
     if status != "OK" or not msg_data or not msg_data[0]:
         return {"error": f"Failed to fetch email UID {uid}"}
     raw = msg_data[0][1]
@@ -1091,7 +1098,8 @@ def _download_attachment(uid, index, folder="INBOX", account=None):
     finally:
         if conn:
             try: conn.logout()
-            except Exception: pass
+            except Exception:
+                logger.exception("email_server: failed to logout IMAP connection")
     if status != "OK":
         return {"error": f"Failed to fetch email UID {uid}"}
     raw = msg_data[0][1]
