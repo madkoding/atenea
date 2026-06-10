@@ -171,7 +171,7 @@ class ModelDiscovery:
         try:
             r = httpx.get(f"{base}/models", timeout=3)
             if not r.is_success:
-                return None
+                raise RuntimeError("openai-compatible endpoint not ready")
             data = r.json() or {}
             ids = [m.get("id") for m in (data.get("data") or []) if m.get("id")]
             if ids:
@@ -183,6 +183,47 @@ class ModelDiscovery:
                     "models_display": [i.lstrip("/") for i in ids],
                     "provider": self._fingerprint_provider(host, port),
                 }
+        except Exception:
+            pass
+
+        # Native Ollama fallback: /api/tags advertises pulled models even when
+        # /v1/models is unavailable. Keep the returned URL OpenAI-compatible so
+        # the existing endpoint-add flow can normalize/probe consistently.
+        try:
+            tags = httpx.get(f"http://{host}:{port}/api/tags", timeout=2.5)
+            if tags.is_success:
+                payload = tags.json() or {}
+                models = payload.get("models") if isinstance(payload, dict) else []
+                ids = []
+                if isinstance(models, list):
+                    for item in models:
+                        if not isinstance(item, dict):
+                            continue
+                        mid = item.get("name") or item.get("model")
+                        if isinstance(mid, str) and mid.strip():
+                            ids.append(mid.strip())
+                if ids:
+                    return {
+                        "host": host,
+                        "port": port,
+                        "url": f"http://{host}:{port}{self.openai_compat_path}",
+                        "models": ids,
+                        "models_display": [i.lstrip("/") for i in ids],
+                        "provider": "ollama",
+                    }
+
+                # API reachable but no pulled models yet: still surface server
+                # so Admin -> Discover can add it and show "empty" clearly.
+                version = httpx.get(f"http://{host}:{port}/api/version", timeout=1.8)
+                if version.is_success:
+                    return {
+                        "host": host,
+                        "port": port,
+                        "url": f"http://{host}:{port}{self.openai_compat_path}",
+                        "models": [],
+                        "models_display": [],
+                        "provider": "ollama",
+                    }
         except Exception:
             pass
         return None

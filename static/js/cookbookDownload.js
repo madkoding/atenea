@@ -107,7 +107,8 @@ function _missingGgufCommand(model) {
 export function _buildDownloadCmd(model, backend) {
   let cmd = '';
   if (backend === 'ollama') {
-    cmd = `ollama pull ${model.name.split('/').pop().toLowerCase()}`;
+    const modelId = String(model?.repo_id || model?.name || '').trim();
+    cmd = `ollama pull ${modelId}`;
   } else {
     const ggufSource = _ggufDownloadSource(model, backend);
     if (backend === 'llamacpp' && !ggufSource) {

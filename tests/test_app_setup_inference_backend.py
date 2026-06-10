@@ -111,6 +111,8 @@ def test_setup_ollama_local_attempts_zstd_install_when_missing(monkeypatch):
         return None
 
     monkeypatch.setattr(setup.shutil, "which", _which)
+    monkeypatch.setattr(setup.os.path, "isfile", lambda _p: False)
+    monkeypatch.setattr(setup.os, "access", lambda _p, _mode: False)
 
     calls: list[list[str]] = []
 
@@ -134,3 +136,42 @@ def test_setup_ollama_local_attempts_zstd_install_when_missing(monkeypatch):
 
     assert ok is False
     assert any(cmd[:3] == ["apt-get", "install", "-y"] and cmd[-1] == "zstd" for cmd in calls)
+
+
+def test_setup_local_inference_backend_starts_ollama_api_when_not_running(monkeypatch):
+    setup = _load_setup_module()
+
+    calls = {"detect": 0}
+
+    def _detect():
+        calls["detect"] += 1
+        return []
+
+    monkeypatch.setattr(setup, "detect_running_local_models", _detect)
+    monkeypatch.setenv("ATENEA_INFERENCE_SETUP", "auto")
+    monkeypatch.setenv("ATENEA_INFERENCE_BACKEND", "ollama")
+    monkeypatch.setattr(setup, "_setup_selected_inference_backend", lambda _choice: True)
+    monkeypatch.setattr(setup, "_ensure_ollama_api_running", lambda: True)
+
+    assert setup.setup_local_inference_backend() is True
+    assert calls["detect"] >= 2
+
+
+def test_setup_local_inference_backend_skips_ollama_autostart_for_other_backends(monkeypatch):
+    setup = _load_setup_module()
+
+    monkeypatch.setattr(setup, "detect_running_local_models", lambda: [])
+    monkeypatch.setenv("ATENEA_INFERENCE_SETUP", "auto")
+    monkeypatch.setenv("ATENEA_INFERENCE_BACKEND", "hf-local")
+    monkeypatch.setattr(setup, "_setup_selected_inference_backend", lambda _choice: True)
+
+    called = {"ollama_start": 0}
+
+    def _mark_start():
+        called["ollama_start"] += 1
+        return True
+
+    monkeypatch.setattr(setup, "_ensure_ollama_api_running", _mark_start)
+
+    assert setup.setup_local_inference_backend() is True
+    assert called["ollama_start"] == 0

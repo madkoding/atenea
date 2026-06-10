@@ -742,6 +742,88 @@ def detect_running_local_models() -> list[dict[str, str]]:
     return found
 
 
+def _resolve_ollama_bin() -> str | None:
+    found = shutil.which("ollama")
+    if found:
+        return found
+    for candidate in (
+        "/usr/local/bin/ollama",
+        "/usr/bin/ollama",
+        "/bin/ollama",
+    ):
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+    return None
+
+
+def _ollama_probe_base_url() -> str:
+    raw = os.getenv("OLLAMA_HOST", "").strip()
+    if not raw:
+        return "http://127.0.0.1:11434"
+    host_part = raw
+    port_part = "11434"
+    if raw.startswith("["):
+        right = raw.find("]")
+        if right > 0:
+            host_part = raw[1:right]
+            tail = raw[right + 1 :]
+            if tail.startswith(":") and tail[1:].isdigit():
+                port_part = tail[1:]
+    elif ":" in raw:
+        maybe_host, maybe_port = raw.rsplit(":", 1)
+        if maybe_port.isdigit():
+            host_part = maybe_host
+            port_part = maybe_port
+    host_part = host_part.strip() or "127.0.0.1"
+    if host_part in ("0.0.0.0", "::"):
+        host_part = "127.0.0.1"
+    return f"http://{host_part}:{port_part}"
+
+
+def _ensure_ollama_api_running() -> bool:
+    base = _ollama_probe_base_url()
+    data = _json_get(f"{base}/api/tags", timeout=1)
+    if isinstance(data, dict):
+        print(f"  [ok] Ollama API already listening at {base}")
+        return True
+
+    ollama_bin = _resolve_ollama_bin()
+    if not ollama_bin:
+        return False
+
+    print(f"  [info] Starting Ollama API at {base} ...")
+    log_dir = os.path.join(DATA_DIR, "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, "ollama-serve.log")
+    env = os.environ.copy()
+    host_env = os.getenv("OLLAMA_HOST", "").strip()
+    if host_env:
+        env["OLLAMA_HOST"] = host_env
+    try:
+        with open(log_file, "a", encoding="utf-8") as log:
+            subprocess.Popen(
+                [ollama_bin, "serve"],
+                stdout=log,
+                stderr=log,
+                env=env,
+                start_new_session=True,
+            )
+    except Exception as e:
+        print(f"  [warn] Could not start Ollama automatically: {e}")
+        return False
+
+    for _ in range(15):
+        probe = _json_get(f"{base}/api/tags", timeout=1)
+        if isinstance(probe, dict):
+            print(f"  [ok] Ollama API is up at {base}")
+            return True
+        time.sleep(1)
+
+    print("  [warn] Ollama serve process started but API is not ready yet")
+    print(f"         Check log: {log_file}")
+    return False
+
+
 def _can_prompt_inference_choice() -> bool:
     if os.getenv("ATENEA_INFERENCE_NONINTERACTIVE", "").strip().lower() in ("1", "true", "yes"):
         return False
@@ -826,20 +908,7 @@ def _setup_ollama_local() -> bool:
         print(f"  [warn] No supported package manager found to install '{pkg}'")
         return False
 
-    def _resolve_ollama() -> str | None:
-        found = shutil.which("ollama")
-        if found:
-            return found
-        for candidate in (
-            "/usr/local/bin/ollama",
-            "/usr/bin/ollama",
-            "/bin/ollama",
-        ):
-            if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
-                return candidate
-        return None
-
-    ollama_bin = _resolve_ollama()
+    ollama_bin = _resolve_ollama_bin()
     if ollama_bin:
         print("  [ok] Ollama already installed")
         return True
@@ -862,7 +931,7 @@ def _setup_ollama_local() -> bool:
             r = subprocess.run(cmd, shell=True)
         else:
             r = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-        ollama_bin = _resolve_ollama()
+        ollama_bin = _resolve_ollama_bin()
         if ollama_bin:
             ollama_dir = os.path.dirname(ollama_bin)
             if ollama_dir and ollama_dir not in os.environ.get("PATH", ""):
@@ -1033,6 +1102,11 @@ def setup_local_inference_backend() -> bool:
     running_after = detect_running_local_models()
     if running_after:
         print("  [ok] Local model backend is running")
+        return True
+
+    if chosen == "ollama" and _ensure_ollama_api_running():
+        print("  [ok] Ollama API started")
+        print("         Next: pull at least one model (e.g. ollama pull llama3.2:3b)")
         return True
 
     print("  [warn] Backend installed, but no local model server is running yet.")

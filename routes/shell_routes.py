@@ -976,6 +976,7 @@ def setup_shell_routes() -> APIRouter:
         import json as _json
         import site
         import sys
+        import urllib.request
 
         _prepend_user_install_bins_to_path()
         importlib.invalidate_caches()
@@ -1037,6 +1038,17 @@ def setup_shell_routes() -> APIRouter:
                 "desc": "High-throughput LLM serving engine",
                 "category": "LLM",
                 "target": "remote",
+            },
+            {
+                "name": "ollama",
+                "pip": "",
+                "desc": "Local Ollama runtime and model pulls",
+                "category": "LLM",
+                "target": "remote",
+                "kind": "system",
+                "install_cmd": "if [ \"$(id -u)\" -eq 0 ] || sudo -n true >/dev/null 2>&1; then curl -fsSL https://ollama.com/install.sh | sh; else echo 'ERROR: Installing Ollama here requires sudo, but this session is non-interactive and cannot prompt for a password.' >&2; echo 'Run manually on that server: curl -fsSL https://ollama.com/install.sh | sh' >&2; exit 1; fi",
+                "update_cmd": "if [ \"$(id -u)\" -eq 0 ] || sudo -n true >/dev/null 2>&1; then curl -fsSL https://ollama.com/install.sh | sh; else echo 'ERROR: Updating Ollama here requires sudo, but this session is non-interactive and cannot prompt for a password.' >&2; echo 'Run manually on that server: curl -fsSL https://ollama.com/install.sh | sh' >&2; exit 1; fi",
+                "install_hint": "Install Ollama on the selected server. Cookbook runs non-interactive commands, so hosts that require a sudo password must install manually in a terminal: curl -fsSL https://ollama.com/install.sh | sh. Windows: install from https://ollama.com/download/windows.",
             },
             {
                 "name": "APFEL",
@@ -1135,9 +1147,34 @@ def setup_shell_routes() -> APIRouter:
                 checks = []
                 for name in remote_system_names:
                     qn = shlex.quote(name)
-                    checks.append(
-                        f"if command -v {qn} >/dev/null 2>&1; then echo {qn}=1; else echo {qn}=0; fi"
-                    )
+                    if name == "ollama":
+                        checks.append(
+                            "if command -v ollama >/dev/null 2>&1; then "
+                            "echo ollama=1; "
+                            "elif command -v curl >/dev/null 2>&1 && "
+                            "curl -fsS --max-time 2 http://127.0.0.1:11434/api/version >/dev/null 2>&1; then "
+                            "echo ollama=1; "
+                            "elif command -v python3 >/dev/null 2>&1 && "
+                            "python3 - <<'PY' >/dev/null 2>&1\n"
+                            "import urllib.request\n"
+                            "urls=['http://127.0.0.1:11434/api/version','http://localhost:11434/api/version']\n"
+                            "ok=False\n"
+                            "for u in urls:\n"
+                            "  try:\n"
+                            "    with urllib.request.urlopen(u, timeout=2) as r:\n"
+                            "      if r.status < 500:\n"
+                            "        ok=True\n"
+                            "        break\n"
+                            "  except Exception:\n"
+                            "    pass\n"
+                            "raise SystemExit(0 if ok else 1)\n"
+                            "PY\n"
+                            "then echo ollama=1; else echo ollama=0; fi"
+                        )
+                    else:
+                        checks.append(
+                            f"if command -v {qn} >/dev/null 2>&1; then echo {qn}=1; else echo {qn}=0; fi"
+                        )
                 inner = " ; ".join(checks)
                 argv = _ssh_base_argv(host, ssh_port) + [inner]
                 proc = await asyncio.create_subprocess_exec(
@@ -1176,6 +1213,29 @@ def setup_shell_routes() -> APIRouter:
                         if IS_APPLE_SILICON
                         else "Requires a native Apple Silicon Mac with Apple Foundational Models support."
                     )
+                elif pkg["name"] == "ollama":
+                    _ollama_cli = which_tool("ollama") or shutil.which("ollama")
+                    if _ollama_cli:
+                        pkg["installed"] = True
+                        pkg["status_note"] = f"ollama CLI: {_ollama_cli}"
+                    else:
+                        _ollama_api = ""
+                        for base in (
+                            "http://127.0.0.1:11434",
+                            "http://localhost:11434",
+                            "http://host.docker.internal:11434",
+                        ):
+                            try:
+                                with urllib.request.urlopen(f"{base}/api/version", timeout=1.5):
+                                    _ollama_api = base
+                                    break
+                            except Exception:
+                                continue
+                        pkg["installed"] = bool(_ollama_api)
+                        if _ollama_api:
+                            pkg["status_note"] = f"Ollama API reachable at {_ollama_api}"
+                        else:
+                            pkg["status_note"] = "ollama CLI not found on PATH."
                 else:
                     pkg["installed"] = shutil.which(pkg["name"]) is not None
             elif pkg["name"] == "llama_cpp" and shutil.which("llama-server"):

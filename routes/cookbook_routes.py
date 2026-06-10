@@ -925,7 +925,7 @@ def setup_cookbook_routes() -> APIRouter:
         # Otherwise the runner script picks one at runtime and `_auto_register`
         # below still registers the stale 11434 default — which on a host with
         # a systemd ollama lands on the wrong (unreachable-from-docker) service.
-        if "ollama" in req.cmd and "OLLAMA_HOST=" not in req.cmd:
+        if re.search(r"(?:^|\s)ollama\s+serve(?:\s|$)", req.cmd) and "OLLAMA_HOST=" not in req.cmd:
             _ollama_bind_host = "0.0.0.0" if remote else "127.0.0.1"
             _ollama_chosen_port = _pick_free_port_for_ollama(
                 remote, req.ssh_port, start_port=11434, max_offset=10,
@@ -1027,6 +1027,10 @@ def setup_cookbook_routes() -> APIRouter:
             if not remote:
                 runner_lines.append(_local_tooling_path_export(sys.executable))
             runner_lines.append("export FLASHINFER_DISABLE_VERSION_CHECK=1")
+            # Keep common user/local bin dirs on PATH so binaries installed by
+            # setup scripts (including Ollama) are resolvable in non-login tmux
+            # shells and over SSH.
+            runner_lines.append('export PATH="$HOME/.local/bin:$HOME/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"')
             if req.hf_token:
                 runner_lines.append(f"export HF_TOKEN='{_bash_squote(req.hf_token)}'")
             if req.gpus:
@@ -1039,6 +1043,27 @@ def setup_cookbook_routes() -> APIRouter:
             # model vLLM has to download will be denied without it.
             runner_lines.append(_HF_TOKEN_STATUS_SNIPPET)
             handled_ollama_serve = False
+            _cmd_for_runner = req.cmd
+            if re.search(r"(?:^|\s)ollama(?:\s|$)", req.cmd):
+                runner_lines.append('ATENEA_OLLAMA_BIN=""')
+                runner_lines.append('if command -v ollama >/dev/null 2>&1; then')
+                runner_lines.append('  ATENEA_OLLAMA_BIN="$(command -v ollama)"')
+                runner_lines.append('elif [ -x /usr/local/bin/ollama ]; then')
+                runner_lines.append('  ATENEA_OLLAMA_BIN="/usr/local/bin/ollama"')
+                runner_lines.append('elif [ -x /usr/bin/ollama ]; then')
+                runner_lines.append('  ATENEA_OLLAMA_BIN="/usr/bin/ollama"')
+                runner_lines.append('elif [ -x /bin/ollama ]; then')
+                runner_lines.append('  ATENEA_OLLAMA_BIN="/bin/ollama"')
+                runner_lines.append('fi')
+                runner_lines.append('if [ -z "$ATENEA_OLLAMA_BIN" ]; then')
+                runner_lines.append("  echo 'ERROR: Ollama not found on this server. Install it from https://ollama.com/download or run: curl -fsSL https://ollama.com/install.sh | sh'")
+                runner_lines.append('  ATENEA_PREFLIGHT_EXIT=127')
+                runner_lines.append('fi')
+                _cmd_for_runner = re.sub(
+                    r"(?<![A-Za-z0-9_.-])ollama(?![A-Za-z0-9_.-])",
+                    '"${ATENEA_OLLAMA_BIN:-ollama}"',
+                    req.cmd,
+                )
             # Auto-install inference engine if missing
             if "llama_cpp" in req.cmd or "llama-server" in req.cmd:
                 # Prefer the NATIVE llama-server or pip-installed Python bindings.
@@ -1103,7 +1128,7 @@ def setup_cookbook_routes() -> APIRouter:
                     runner_lines.append('    ATENEA_PREFLIGHT_EXIT=127')
                     runner_lines.append('  fi')
                     runner_lines.append('fi')
-            elif "ollama" in req.cmd:
+            elif re.search(r"(?:^|\s)ollama\s+serve(?:\s|$)", req.cmd):
                 handled_ollama_serve = True
                 _ollama_default_host = "0.0.0.0" if remote else "127.0.0.1"
                 _ollama_host, _ollama_port = _ollama_bind_from_cmd(
@@ -1133,8 +1158,8 @@ def setup_cookbook_routes() -> APIRouter:
                 else:
                     runner_lines.append('  exec bash -i')
                 runner_lines.append('fi')
-                runner_lines.append('if ! command -v ollama &>/dev/null; then')
-                runner_lines.append('  echo "ERROR: Ollama not found on this server. Install it from https://ollama.com/download or `curl -fsSL https://ollama.com/install.sh | sh`."')
+                runner_lines.append('if [ -z "${ATENEA_OLLAMA_BIN:-}" ]; then')
+                runner_lines.append("  echo 'ERROR: Ollama not found on this server. Install it from https://ollama.com/download or run: curl -fsSL https://ollama.com/install.sh | sh'")
                 runner_lines.append('  echo')
                 runner_lines.append('  echo "=== Process exited with code 127 ==="')
                 if local_windows:
@@ -1147,7 +1172,7 @@ def setup_cookbook_routes() -> APIRouter:
                     runner_lines.append('echo "[atenea] WARNING: remote Ollama will bind to ${ATENEA_OLLAMA_HOST}:${ATENEA_OLLAMA_PORT} so Atenea can reach it from this host."')
                     runner_lines.append('echo "[atenea] Ollama has no built-in authentication; expose this only on a trusted LAN/VPN or provide an explicit OLLAMA_HOST with your own access controls."')
                 runner_lines.append('echo "Starting ollama server on ${ATENEA_OLLAMA_HOST}:${ATENEA_OLLAMA_PORT}..."')
-                runner_lines.append('OLLAMA_HOST="${ATENEA_OLLAMA_HOST}:${ATENEA_OLLAMA_PORT}" ollama serve')
+                runner_lines.append('OLLAMA_HOST="${ATENEA_OLLAMA_HOST}:${ATENEA_OLLAMA_PORT}" "${ATENEA_OLLAMA_BIN}" serve')
                 if local_windows:
                     _append_serve_exit_code_lines(runner_lines, keep_shell_open=False)
                 else:
@@ -1188,7 +1213,7 @@ def setup_cookbook_routes() -> APIRouter:
                 if is_pip_install:
                     _append_pip_install_runner_lines(runner_lines, req.cmd)
                 else:
-                    runner_lines.append(req.cmd)
+                    runner_lines.append(_cmd_for_runner)
                 if local_windows:
                     # Detached background process — no interactive shell to keep open.
                     # Print the exit marker the status poller looks for, then stop.
@@ -1371,6 +1396,35 @@ def setup_cookbook_routes() -> APIRouter:
                 "pip3 install --user -q huggingface_hub hf_transfer 2>/dev/null || "
                 "( pip3 install --help 2>/dev/null | grep -q -- --break-system-packages && "
                 "pip3 install --user --break-system-packages -q huggingface_hub hf_transfer 2>/dev/null ); "
+                # Install Ollama when possible. Cookbook setup runs over a non-
+                # interactive SSH command, so sudo password prompts are not
+                # possible here; only attempt when running as root or with
+                # passwordless sudo.
+                "if ! command -v ollama >/dev/null 2>&1; then "
+                "  if [ \"$(id -u)\" -eq 0 ] || sudo -n true >/dev/null 2>&1; then "
+                "    if ! command -v curl >/dev/null 2>&1; then "
+                "      if command -v apt-get >/dev/null 2>&1; then sudo -n apt-get install -y curl 2>/dev/null; "
+                "      elif command -v pacman >/dev/null 2>&1; then sudo -n pacman -S --noconfirm curl 2>/dev/null; "
+                "      elif command -v dnf >/dev/null 2>&1; then sudo -n dnf install -y curl 2>/dev/null; "
+                "      elif command -v apk >/dev/null 2>&1; then sudo -n apk add --no-interactive curl 2>/dev/null; "
+                "      elif command -v zypper >/dev/null 2>&1; then sudo -n zypper --non-interactive install curl 2>/dev/null; "
+                "      fi; "
+                "    fi; "
+                "    if ! command -v zstd >/dev/null 2>&1; then "
+                "      if command -v apt-get >/dev/null 2>&1; then sudo -n apt-get install -y zstd 2>/dev/null; "
+                "      elif command -v pacman >/dev/null 2>&1; then sudo -n pacman -S --noconfirm zstd 2>/dev/null; "
+                "      elif command -v dnf >/dev/null 2>&1; then sudo -n dnf install -y zstd 2>/dev/null; "
+                "      elif command -v apk >/dev/null 2>&1; then sudo -n apk add --no-interactive zstd 2>/dev/null; "
+                "      elif command -v zypper >/dev/null 2>&1; then sudo -n zypper --non-interactive install zstd 2>/dev/null; "
+                "      fi; "
+                "    fi; "
+                "    command -v curl >/dev/null 2>&1 && "
+                "      (curl -fsSL https://ollama.com/install.sh | sh) >/dev/null 2>&1 || true; "
+                "  else "
+                "    echo 'WARNING: Ollama missing and setup cannot prompt for sudo password. Install it manually in a terminal: curl -fsSL https://ollama.com/install.sh | sh'; "
+                "  fi; "
+                "fi; "
+                "command -v ollama >/dev/null 2>&1 || echo 'WARNING: ollama missing after auto-setup attempt.'; "
                 "python3 -c 'from huggingface_hub import snapshot_download; print(\"OK\")'"
             )
             cmd = f"ssh {pf}{host} '{setup_script}'"

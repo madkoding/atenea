@@ -689,7 +689,7 @@ async function _fetchDependencies() {
     const data = await resp.json();
     const pkgs = data.packages || [];
     if (!pkgs.length) { list.innerHTML = '<div class="hwfit-loading">No packages found</div>'; return; }
-    const _winUnsupported = new Set(['vllm', 'rembg', 'gfpgan']);
+    const _winUnsupported = new Set(['vllm', 'rembg', 'gfpgan', 'ollama']);
 
     const _statusTag = (pkg, isLocal, isSystemDep, winBlocked) => {
       if (winBlocked) return `<span class="cookbook-dep-tag cookbook-dep-na">N/A</span>`;
@@ -703,7 +703,7 @@ async function _fetchDependencies() {
       if (pkg.installed) return `<button class="cookbook-dep-tag cookbook-dep-installed cookbook-dep-installed-btn" title="Installed — click for actions"><span class="cookbook-dep-installed-label">Installed</span><span class="cookbook-dep-caret">&#9662;</span></button>`;
       if (isSystemDep && !hasCustomInstall) {
         const depTip = esc(pkg.install_hint || 'Install this OS package on the selected server.');
-        const depLabel = pkg.applicable === false ? 'N/A ?' : _t('cookbook.missing');
+      const depLabel = pkg.applicable === false ? 'N/A' : _t('cookbook.missing');
         return `<span class="cookbook-dep-tag cookbook-dep-na" title="${depTip}">${depLabel}</span>`;
       }
       return `<button class="cookbook-dep-tag cookbook-dep-install" data-dep-pip="${esc(pkg.pip || '')}" data-dep-install-cmd="${esc(pkg.install_cmd || '')}" data-dep-update-cmd="${esc(pkg.update_cmd || '')}" data-dep-target="${isLocal ? 'local' : 'remote'}">Install</button>`;
@@ -823,6 +823,11 @@ async function _fetchDependencies() {
           const exitMatches = [...body.matchAll(/"exit_code":\s*(-?\d+)/g)].map(m => Number(m[1]));
           const exitCode = exitMatches.length ? exitMatches[exitMatches.length - 1] : 0;
           if (exitCode !== 0) {
+            const sudoBlocked = /requires sudo, but this session is non-interactive/i.test(body)
+              || /cannot prompt for a password/i.test(body);
+            if (sudoBlocked) {
+              throw new Error(`${pkgName} needs sudo on that server, but Cookbook cannot prompt for password. Open a terminal on that server and run: curl -fsSL https://ollama.com/install.sh | sh`);
+            }
             throw new Error((body.slice(-500).trim() || `${pkgName} command failed`) + ` (exit ${exitCode})`);
           }
 
@@ -1326,6 +1331,7 @@ function _wireTabEvents(body) {
     });
   }
   if (dlBtn && dlInput) {
+    const _OLLAMA_MODEL_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,200}$/;
     function _stripHfUrl(input) {
       let repo = input.trim();
       // Strip Ollama-style "hf.co/" prefix if present (e.g. hf.co/unsloth/...:tag)
@@ -1334,6 +1340,84 @@ function _wireTabEvents(body) {
       if (hfMatch) repo = hfMatch[1];
       return repo;
     }
+    function _resolveDownloadTargetHost() {
+      const dlSrv = document.getElementById('hwfit-dl-server');
+      const srvVal = dlSrv ? dlSrv.value : 'local';
+      if (srvVal === 'local') return '';
+      return _serverByVal(srvVal)?.host || '';
+    }
+    async function _startOllamaPull(modelId, host, env, envPath, srvPlatform) {
+      const trimmed = (modelId || '').trim();
+      if (!trimmed || !_OLLAMA_MODEL_ID_RE.test(trimmed)) {
+        uiModule.showToast('Enter a valid Ollama model ID like "qwen2.5:7b" or "ollama:library/llama3.2:3b".');
+        dlInput.focus();
+        return;
+      }
+      if (srvPlatform === 'windows') {
+        uiModule.showToast('Ollama pull from Cookbook is not supported on Windows targets yet. Install/use Ollama manually on Windows.');
+        return;
+      }
+      const cmd = `ollama pull ${trimmed}`;
+      const shortName = trimmed.split('/').pop() || trimmed;
+      const targetHost = host || 'local';
+      const duplicate = (_loadTasks() || []).find(t =>
+        t?.type === 'download'
+        && (t?.status === 'running' || t?.status === 'queued')
+        && ((t?.remoteHost || 'local') === targetHost)
+        && ((t?.payload?.repo_id || '') === trimmed || (t?.name || '') === shortName)
+      );
+      if (duplicate) {
+        uiModule.showToast(`${shortName} is already ${duplicate.status === 'queued' ? 'queued' : 'downloading'}`);
+        return;
+      }
+
+      const reqBody = {
+        repo_id: trimmed,
+        cmd,
+        remote_host: host || undefined,
+        ssh_port: _getPort(host) || undefined,
+        platform: srvPlatform || undefined,
+      };
+      if (srvPlatform === 'windows') {
+        if (env === 'venv' && envPath) {
+          reqBody.env_prefix = '& ' + _psQuote(envPath.endsWith('\\Scripts\\Activate.ps1') ? envPath : envPath + '\\Scripts\\Activate.ps1');
+        } else if (env === 'conda' && envPath) {
+          reqBody.env_prefix = 'conda activate ' + _psQuote(envPath);
+        }
+      } else {
+        if (env === 'venv' && envPath) {
+          const p = envPath;
+          reqBody.env_prefix = 'source ' + _shellQuote(p.endsWith('/bin/activate') ? p : p + '/bin/activate');
+        } else if (env === 'conda' && envPath) {
+          reqBody.env_prefix = 'eval "$(conda shell.bash hook)" && conda activate ' + _shellQuote(envPath);
+        }
+      }
+
+      try {
+        const res = await fetch('/api/model/serve', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(reqBody),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          const reason = data.detail || data.error || `HTTP ${res.status}`;
+          uiModule.showToast('Ollama pull failed: ' + String(reason).slice(0, 220));
+          return;
+        }
+        _addTask(data.session_id, shortName, 'download', {
+          repo_id: trimmed,
+          _cmd: cmd,
+          remote_host: host || undefined,
+          ssh_port: _getPort(host) || undefined,
+          backend: 'ollama',
+          is_ollama: true,
+        });
+        uiModule.showToast(`Downloading ${shortName} with Ollama on ${host || 'local'}...`);
+      } catch (err) {
+        uiModule.showToast('Ollama pull failed: ' + err.message);
+      }
+    }
     // Split `org/repo:tag` (Ollama/llama.cpp style) into repo + include-glob.
     // The `:tag` picks a specific GGUF quantization file from the repo.
     function _splitRepoTag(raw) {
@@ -1341,9 +1425,27 @@ function _wireTabEvents(body) {
       if (!m) return { repo: raw, include: null };
       return { repo: m[1], include: `*${m[2]}*` };
     }
-    const triggerDownload = () => {
-      const rawRepo = _stripHfUrl(dlInput.value);
-      if (!rawRepo) return;
+    const triggerDownload = async () => {
+      const rawInput = (dlInput.value || '').trim();
+      if (!rawInput) return;
+      // Resolve the host straight from THIS window's server dropdown. We
+      // deliberately don't trust _envState.remoteHost here.
+      const host = _resolveDownloadTargetHost();
+      const _hsrv = _envState.servers.find(sv => sv.host === host) || {};
+      let env = host ? (_hsrv.env || 'none') : _envState.env;
+      let envPath = host ? (_hsrv.envPath || '') : _envState.envPath;
+      const srvPlatform = _getPlatform(host);
+
+      const ollamaPrefixed = rawInput.toLowerCase().startsWith('ollama:');
+      const ollamaModelId = ollamaPrefixed ? rawInput.slice('ollama:'.length).trim() : '';
+      const hfLikeInput = rawInput.includes('huggingface.co') || /^https?:\/\//i.test(rawInput) || /^[^\s/]+\/[^\s/]+(?::[^\s/]+)?$/.test(rawInput);
+      if (ollamaPrefixed || !hfLikeInput) {
+        await _startOllamaPull(ollamaPrefixed ? ollamaModelId : rawInput, host, env, envPath, srvPlatform);
+        dlInput.value = '';
+        return;
+      }
+
+      const rawRepo = _stripHfUrl(rawInput);
       const { repo, include: autoInclude } = _splitRepoTag(rawRepo);
       // HuggingFace repo IDs must be `org/model`. A bare model name would 404
       // at snapshot_download time with a raw traceback, so reject it up front.
@@ -1352,25 +1454,10 @@ function _wireTabEvents(body) {
         dlInput.focus();
         return;
       }
-      // Resolve the host straight from THIS window's server dropdown, by index
-      // into the (consistent) servers list. We deliberately don't use
-      // _envState.remoteHost — there can be multiple copies of the cookbook
-      // state in memory and they disagree on the active host, which is what sent
-      // downloads to the wrong server. The dropdown the user sees is the truth.
-      const dlSrv = document.getElementById('hwfit-dl-server');
-      const srvVal = dlSrv ? dlSrv.value : 'local';
-      let host = '';
-      if (srvVal !== 'local') {
-        host = _serverByVal(srvVal)?.host || '';
-      }
-      const _hsrv = _envState.servers.find(sv => sv.host === host) || {};
-      let env = host ? (_hsrv.env || 'none') : _envState.env;
-      let envPath = host ? (_hsrv.envPath || '') : _envState.envPath;
       const payload = { repo_id: repo };
       if (autoInclude) payload.include = autoInclude;
       if (_envState.hfToken) payload.hf_token = _envState.hfToken;
       if (host) { payload.remote_host = host; const _sp3 = _getPort(host); if (_sp3) payload.ssh_port = _sp3; }
-      const srvPlatform = _getPlatform(host);
       if (srvPlatform) payload.platform = srvPlatform;
       if (srvPlatform === 'windows') {
         if (env === 'venv' && envPath) {
@@ -1390,7 +1477,7 @@ function _wireTabEvents(body) {
       _retryDownload(shortName, payload);
       dlInput.value = '';
     };
-    dlBtn.addEventListener('click', triggerDownload);
+    dlBtn.addEventListener('click', () => { triggerDownload(); });
     dlInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') triggerDownload();
     });
@@ -1754,7 +1841,7 @@ function _renderRecipes() {
   html += `<button class="memory-toolbar-btn cookbook-dl-add-server" title="Add server in Settings" style="height:28px;">add server</button>`;
   html += `</div>`;
   html += `<div class="cookbook-dl-input" style="margin-top:0;">`;
-  html += `<input type="text" class="cookbook-dl-repo" id="cookbook-dl-repo" placeholder="org/model-name, HF URL, or org/model:QUANT_TAG" />`;
+  html += `<input type="text" class="cookbook-dl-repo" id="cookbook-dl-repo" placeholder="org/model-name, HF URL, org/model:QUANT_TAG, or ollama:qwen2.5:7b" />`;
   html += `<button class="cookbook-btn cookbook-dl-btn" id="cookbook-dl-btn">Download</button>`;
   html += `</div>`;
   // Latest HF models that fit — collapsible card list
@@ -2242,6 +2329,8 @@ initDownload({
 initServe({
   ...shared,
   _launchServeTask,
+  _addTask,
+  _renderRunningTab,
   _retryDownload,
   _nextAvailablePort,
 });

@@ -133,7 +133,8 @@ def test_ollama_cookbook_runner_does_not_force_public_bind():
     route = Path("routes/cookbook_routes.py").read_text(encoding="utf-8")
     cookbook_js = Path("static/js/cookbook.js").read_text(encoding="utf-8")
     assert 'OLLAMA_HOST="0.0.0.0:${ATENEA_OLLAMA_PORT}" ollama serve' not in route
-    assert 'OLLAMA_HOST="${ATENEA_OLLAMA_HOST}:${ATENEA_OLLAMA_PORT}" ollama serve' in route
+    assert 'OLLAMA_HOST="${ATENEA_OLLAMA_HOST}:${ATENEA_OLLAMA_PORT}" "${ATENEA_OLLAMA_BIN}" serve' in route
+    assert 'ATENEA_OLLAMA_BIN' in route
     assert '_ollama_default_host = "0.0.0.0" if remote else "127.0.0.1"' in route
     assert "WARNING: remote Ollama will bind" in route
     assert "OLLAMA_HOST=0.0.0.0:${ollamaPort}" not in cookbook_js

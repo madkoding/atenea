@@ -1509,3 +1509,45 @@ def test_manual_refresh_timeout_keeps_cached_models_and_warns(monkeypatch):
     assert db.commits == 0
     assert response.headers["X-Model-Refresh-Status"] == "failed"
     assert "kept cached models" in response.headers["X-Model-Refresh-Warning"]
+
+
+def test_discover_route_returns_ollama_server_even_with_zero_models(monkeypatch):
+    class _FakeDiscovery:
+        def discover_models(self):
+            return {
+                "hosts": ["localhost"],
+                "items": [
+                    {
+                        "host": "localhost",
+                        "port": 11434,
+                        "url": "http://localhost:11434/v1/chat/completions",
+                        "models": [],
+                        "models_display": [],
+                        "provider": "ollama",
+                    }
+                ],
+            }
+
+    router = model_routes.setup_model_routes(model_discovery=_FakeDiscovery())
+    monkeypatch.setattr(model_routes, "require_admin", lambda request: None)
+
+    result = _route_endpoint(router, "/api/discover")(_route_request())
+
+    assert len(result["items"]) == 1
+    assert result["items"][0]["provider"] == "ollama"
+    assert result["items"][0]["models"] == []
+
+
+def test_discover_route_calls_model_discovery_once(monkeypatch):
+    calls = {"count": 0}
+
+    class _FakeDiscovery:
+        def discover_models(self):
+            calls["count"] += 1
+            return {"hosts": [], "items": []}
+
+    router = model_routes.setup_model_routes(model_discovery=_FakeDiscovery())
+    monkeypatch.setattr(model_routes, "require_admin", lambda request: None)
+
+    _route_endpoint(router, "/api/discover")(_route_request())
+    assert calls["count"] == 1

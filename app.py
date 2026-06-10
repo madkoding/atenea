@@ -660,6 +660,10 @@ app.include_router(setup_shell_routes())
 from routes.cookbook_routes import setup_cookbook_routes
 app.include_router(setup_cookbook_routes())
 
+# Ollama helper routes (catalog + pull + model listing)
+from routes.ollama_routes import setup_ollama_routes
+app.include_router(setup_ollama_routes())
+
 # Hardware model fitting (cookbook "What Fits?" tab)
 from routes.hwfit_routes import setup_hwfit_routes
 app.include_router(setup_hwfit_routes())

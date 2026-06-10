@@ -33,6 +33,8 @@ let _getGpuToggleTotal;
 let modelLogo;
 let esc;
 let _launchServeTask;
+let _addTask;
+let _renderRunningTab;
 let _retryDownload;
 let _nextAvailablePort;
 
@@ -2107,6 +2109,188 @@ export async function openServePanelForRepo(repo, fields) {
   return false;
 }
 
+async function _fetchOllamaCatalog(host, sshPort) {
+  try {
+    const qp = new URLSearchParams();
+    if (host) {
+      qp.set('host', host);
+      if (sshPort) qp.set('ssh_port', sshPort);
+    }
+    const [modelsRes, catalogRes] = await Promise.all([
+      fetch('/api/ollama/models' + (qp.toString() ? `?${qp}` : ''), { credentials: 'same-origin' }),
+      fetch('/api/ollama/catalog', { credentials: 'same-origin' }),
+    ]);
+
+    const installedRaw = modelsRes.ok
+      ? (await modelsRes.json().catch(() => ({})))?.models
+      : [];
+    const catalogRaw = catalogRes.ok
+      ? (await catalogRes.json().catch(() => ({})))?.models
+      : [];
+
+    const installed = Array.isArray(installedRaw)
+      ? installedRaw
+          .map(m => String(m?.name || m?.model || '').trim())
+          .filter(Boolean)
+      : [];
+    const installedSet = new Set(installed);
+
+    const out = [];
+    const seen = new Set();
+
+    if (Array.isArray(catalogRaw)) {
+      for (const m of catalogRaw) {
+        const id = String(m?.id || m?.name || '').trim();
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        out.push({
+          id,
+          name: String(m?.name || id),
+          installed: installedSet.has(id),
+          size: String(m?.size || ''),
+          context: String(m?.context || ''),
+          modality: String(m?.modality || ''),
+          vram_hint: String(m?.vram_hint || ''),
+        });
+      }
+    }
+
+    for (const id of installed) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push({ id, name: id, installed: true, size: '', context: '', modality: '', vram_hint: '' });
+    }
+
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+async function _triggerOllamaPull(modelId, host) {
+  const model = String(modelId || '').trim();
+  if (!model) return;
+  const shortName = model.split('/').pop() || model;
+  const sshPort = _getPort(host) || undefined;
+
+  try {
+    uiModule.showToast(`Pulling ${shortName} via Ollama API...`);
+    const body = { model, host: host || undefined, ssh_port: sshPort };
+    const res = await fetch('/api/ollama/pull', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      const reason = data.detail || data.error || `HTTP ${res.status}`;
+      uiModule.showToast(`Ollama pull failed: ${String(reason).slice(0, 220)}`);
+      return;
+    }
+    const ep = data.endpoint || `http://localhost:11434/v1`;
+    uiModule.showToast(`Pull complete: ${shortName} ready at ${ep}`);
+    _fetchCachedModels();
+  } catch (err) {
+    uiModule.showToast('Ollama pull failed: ' + err.message);
+  }
+}
+
+function _renderVramBadge(hint) {
+  const span = document.createElement('span');
+  span.style.cssText = 'display:inline-block;padding:0 6px;border-radius:4px;font-size:10px;font-weight:600;line-height:18px;white-space:nowrap;';
+  switch (hint) {
+    case 'vram-only':
+      span.textContent = 'VRAM ✓';
+      span.style.cssText += 'color:#0a0;background:#dfd;';
+      break;
+    case 'vram+ram':
+      span.textContent = 'VRAM+RAM';
+      span.style.cssText += 'color:#960;background:#ffd;';
+      break;
+    case 'unloadable':
+      span.textContent = '✗ No cabe';
+      span.style.cssText += 'color:#a00;background:#fdd;';
+      break;
+    case 'unified-memory':
+      span.textContent = 'Unified';
+      span.style.cssText += 'color:#058;background:#def;';
+      break;
+    default:
+      span.textContent = '—';
+      span.style.cssText += 'color:#999;background:transparent;';
+  }
+  return span;
+}
+
+function _renderOllamaCatalogSection(list, host, catalog) {
+  if (!list || !Array.isArray(catalog) || !catalog.length) return;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'margin-bottom:10px;padding:8px;border:1px solid var(--border);border-radius:8px;background:color-mix(in srgb,var(--panel) 88%, transparent);';
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:11px;opacity:0.8;margin-bottom:6px;';
+  title.textContent = 'Ollama catalog (click a model to pull)';
+  wrap.appendChild(title);
+
+  const table = document.createElement('table');
+  table.style.cssText = 'width:100%;border-collapse:collapse;font-size:11px;';
+
+  const thead = document.createElement('thead');
+  const hdr = document.createElement('tr');
+  for (const label of ['Model', 'Size', 'Context', 'Modality', 'VRAM', '']) {
+    const th = document.createElement('th');
+    th.textContent = label;
+    th.style.cssText = 'text-align:left;padding:3px 6px;border-bottom:1px solid var(--border);opacity:0.7;font-weight:600;white-space:nowrap;';
+    hdr.appendChild(th);
+  }
+  thead.appendChild(hdr);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  for (const m of catalog) {
+    const modelId = String(m.id || '').trim();
+    if (!modelId) continue;
+
+    const tr = document.createElement('tr');
+    tr.style.cssText = 'cursor:pointer;transition:background 0.15s;';
+    tr.addEventListener('mouseenter', () => { tr.style.background = 'color-mix(in srgb,var(--accent) 12%, transparent)'; });
+    tr.addEventListener('mouseleave', () => { tr.style.background = ''; });
+    tr.addEventListener('click', () => _triggerOllamaPull(modelId, host));
+
+    const _installed = !!m.installed;
+    const nameLabel = _installed ? `${m.name || modelId} ✓` : (m.name || modelId);
+    const cells = [
+      { text: nameLabel, title: `${modelId}${_installed ? ' (installed)' : ''}`, style: 'padding:3px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;' },
+      { text: m.size || '—', style: 'padding:3px 6px;white-space:nowrap;' },
+      { text: m.context || '—', style: 'padding:3px 6px;white-space:nowrap;' },
+      { text: m.modality || '—', style: 'padding:3px 6px;white-space:nowrap;' },
+    ];
+
+    for (const c of cells) {
+      const td = document.createElement('td');
+      td.textContent = c.text;
+      if (c.title) td.title = c.title;
+      td.style.cssText = c.style;
+      tr.appendChild(td);
+    }
+
+    const vramTd = document.createElement('td');
+    vramTd.style.cssText = 'padding:3px 6px;white-space:nowrap;';
+    vramTd.appendChild(_renderVramBadge(m.vram_hint));
+    tr.appendChild(vramTd);
+
+    const actionTd = document.createElement('td');
+    actionTd.style.cssText = 'padding:3px 6px;text-align:right;white-space:nowrap;';
+    actionTd.textContent = _installed ? 'local' : 'pull';
+    actionTd.style.opacity = '0.6';
+    tr.appendChild(actionTd);
+
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  list.prepend(wrap);
+}
+
 // ── Fetch cached models from server ──
 
 export async function _fetchCachedModels() {
@@ -2168,7 +2352,11 @@ export async function _fetchCachedModels() {
     if (host) { qp.set('host', host); const _sp4 = _getPort(host); if (_sp4) qp.set('ssh_port', _sp4); const _plat = _getPlatform(host); if (_plat) qp.set('platform', _plat); }
     if (modelDirs.length) qp.set('model_dir', modelDirs.join(','));
     const params = qp.toString() ? `?${qp}` : '';
-    const res = await fetch(`/api/model/cached${params}`);
+    const _spHost = host ? (_getPort(host) || '') : '';
+    const [res, catalog] = await Promise.all([
+      fetch(`/api/model/cached${params}`),
+      _fetchOllamaCatalog(host, _spHost),
+    ]);
     if (!res.ok) throw new Error(res.statusText);
     const data = await res.json();
     _dlWp.destroy();
@@ -2181,12 +2369,19 @@ export async function _fetchCachedModels() {
     const allModels = [...ready, ...downloading];
     _cachedAllModels = allModels;
 
+    list.innerHTML = '';
+    _renderOllamaCatalogSection(list, host, catalog);
+
     if (!allModels.length) {
+      const empty = document.createElement('div');
+      empty.className = 'hwfit-loading';
       if (!host) {
-        list.innerHTML = '<div class="hwfit-loading" style="flex-direction:column;gap:6px;text-align:center;"><div>No cached models found</div><div style="font-size:11px;opacity:0.55;max-width:420px;line-height:1.4;">Docker Local uses Atenea’s cache in <code>data/huggingface</code>. Download a model here, or copy an existing host HuggingFace cache into that folder once.</div></div>';
+        empty.style.cssText = 'flex-direction:column;gap:6px;text-align:center;';
+        empty.innerHTML = '<div>No cached models found</div><div style="font-size:11px;opacity:0.55;max-width:420px;line-height:1.4;">Docker Local uses Atenea’s cache in <code>data/huggingface</code>. Download a model here, or copy an existing host HuggingFace cache into that folder once.</div>';
       } else {
-        list.innerHTML = '<div class="hwfit-loading">No cached models found</div>';
+        empty.textContent = 'No cached models found';
       }
+      list.appendChild(empty);
       document.getElementById('serve-tags').innerHTML = '';
       return;
     }
@@ -2285,6 +2480,8 @@ export function initServe(shared) {
   modelLogo = shared.modelLogo;
   esc = shared.esc;
   _launchServeTask = shared._launchServeTask;
+  _addTask = shared._addTask;
+  _renderRunningTab = shared._renderRunningTab;
   _retryDownload = shared._retryDownload;
   _nextAvailablePort = shared._nextAvailablePort;
 }

@@ -121,6 +121,50 @@ class TestFingerprintProvider:
         assert result["models"] == ["qwen3.6-27b"]
 
 
+class TestOllamaFallbackDiscovery:
+    def test_check_port_uses_ollama_api_tags_when_v1_models_fails(self, monkeypatch):
+        discovery = ModelDiscovery(default_host="localhost")
+
+        def fake_get(url, timeout=None):
+            if url.endswith("/v1/models"):
+                raise OSError("connection refused")
+            if url.endswith("/api/tags"):
+                return _FakeResponse(
+                    {
+                        "models": [
+                            {"name": "qwen2.5:7b"},
+                            {"model": "llama3.1:8b"},
+                            {},
+                        ]
+                    }
+                )
+            raise AssertionError(f"unexpected url: {url}")
+
+        monkeypatch.setattr("src.runtime.model_discovery.httpx.get", fake_get)
+        result = discovery._check_port("localhost", 11434)
+        assert result is not None
+        assert result["provider"] == "ollama"
+        assert result["models"] == ["qwen2.5:7b", "llama3.1:8b"]
+
+    def test_check_port_surfaces_empty_ollama_server_when_no_models(self, monkeypatch):
+        discovery = ModelDiscovery(default_host="localhost")
+
+        def fake_get(url, timeout=None):
+            if url.endswith("/v1/models"):
+                return _FakeResponse({}, ok=False)
+            if url.endswith("/api/tags"):
+                return _FakeResponse({"models": []})
+            if url.endswith("/api/version"):
+                return _FakeResponse({"version": "0.6.0"})
+            raise AssertionError(f"unexpected url: {url}")
+
+        monkeypatch.setattr("src.runtime.model_discovery.httpx.get", fake_get)
+        result = discovery._check_port("localhost", 11434)
+        assert result is not None
+        assert result["provider"] == "ollama"
+        assert result["models"] == []
+
+
 # ════════════════════════════════════════════════════════════
 # _get_hosts — LM_STUDIO_URL env var
 # ════════════════════════════════════════════════════════════
