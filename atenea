@@ -6,13 +6,65 @@ COMPOSE_BASE="docker/compose.yml"
 COMPOSE_NVIDIA="docker/compose.gpu-nvidia.yml"
 COMPOSE_AMD="docker/compose.gpu-amd.yml"
 
-# ─── helpers ───────────────────────────────────────────────────────────────────
-_info()  { printf '\033[34m[INFO]\033[0m %s\n' "$*"; }
-_ok()    { printf '\033[32m[ OK ]\033[0m %s\n' "$*"; }
-_warn()  { printf '\033[33m[WARN]\033[0m %s\n' "$*"; }
-_fail()  { printf '\033[31m[FAIL]\033[0m %s\n' "$*"; }
-_step()  { printf '\033[36m[STEP]\033[0m %s\n' "$*"; }
+# ─── styling ───────────────────────────────────────────────────────────────────
+C_INFO=$'\033[36m'
+C_OK=$'\033[32m'
+C_WARN=$'\033[33m'
+C_FAIL=$'\033[31m'
+C_STEP=$'\033[35m'
+C_DIM=$'\033[2m'
+C_BOLD=$'\033[1m'
+C_RST=$'\033[0m'
 
+_info()   { printf "${C_INFO}ℹ${C_RST}  %s\n" "$*"; }
+_ok()     { printf "${C_OK}✔${C_RST}  %s\n" "$*"; }
+_warn()   { printf "${C_WARN}⚠${C_RST}  %s\n" "$*"; }
+_fail()   { printf "${C_FAIL}✘${C_RST}  %s\n" "$*"; }
+_step()   { printf "\n${C_BOLD}${C_STEP}◆${C_RST}  ${C_BOLD}%s${C_RST}\n" "$*"; }
+_dim()    { printf "${C_DIM}%s${C_RST}\n" "$*"; }
+_sep()    { printf "${C_DIM}──────────────────────────────────────────${C_RST}\n"; }
+
+# ─── spinner ───────────────────────────────────────────────────────────────────
+_spin() {
+    local msg="$1"; shift
+    local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    local i=0 start ms formatted out
+    start=$(date +%s%N)
+    out=$(mktemp)
+
+    printf '\033[?25l'
+    "$@" >"$out" 2>&1 &
+    local pid=$!
+
+    while kill -0 "$pid" 2>/dev/null; do
+        printf '\r  \033[36m%s\033[0m  %s' "${spin:$i:1}" "$msg"
+        i=$(( (i + 1) % ${#spin} ))
+        sleep 0.08
+    done
+
+    local rc=0
+    wait "$pid" 2>/dev/null || rc=$?
+    printf '\033[?25h'
+
+    ms=$(( ($(date +%s%N) - start) / 1000000 ))
+    if [ "$ms" -ge 1000 ]; then
+        formatted="$(awk "BEGIN{printf \"%.1fs\",$ms/1000}")"
+    else
+        formatted="${ms}ms"
+    fi
+
+    if [ "$rc" -eq 0 ]; then
+        printf '\r  \033[32m✔\033[0m  %s  \033[2m(%s)\033[0m\n' "$msg" "$formatted"
+    else
+        printf '\r  \033[31m✘\033[0m  %s  \033[2m(%s)\033[0m\n' "$msg" "$formatted"
+        [ -s "$out" ] && sed 's/^/    /' "$out"
+        echo
+    fi
+    rm -f "$out"
+    return "$rc"
+}
+
+# ─── core helpers ──────────────────────────────────────────────────────────────
 _detect_gpu() {
     if command -v nvidia-smi &>/dev/null && nvidia-smi &>/dev/null; then
         echo "nvidia"
@@ -25,49 +77,38 @@ _detect_gpu() {
 
 _ensure_env() {
     if [ ! -f "${REPO_ROOT}/.env" ]; then
-        _step "No .env found — copying from .env.example"
-        cp "${REPO_ROOT}/.env.example" "${REPO_ROOT}/.env"
-        _ok "Created .env — edit it to configure your instance"
+        _spin "Creating .env from .env.example" \
+            cp "${REPO_ROOT}/.env.example" "${REPO_ROOT}/.env"
+        _info "Edit .env to configure your instance"
     fi
 }
 
 _compose_cmd() {
-    # $1 = "up", "down", "logs", "ps", "exec", etc. Remaining args forwarded.
     local action="$1"; shift
-    local gpu
-    gpu="$(_detect_gpu)"
+    local gpu; gpu="$(_detect_gpu)"
     local compose_args=()
 
     _ensure_env
 
     case "${GPU_MODE:-$gpu}" in
-        nvidia)
-            _info "GPU mode: NVIDIA"
-            compose_args+=(-f "${COMPOSE_NVIDIA}")
-            ;;
-        amd)
-            _info "GPU mode: AMD"
-            compose_args+=(-f "${COMPOSE_AMD}")
-            ;;
-        cpu)
-            _info "GPU mode: CPU"
-            compose_args+=(-f "${COMPOSE_BASE}")
-            ;;
+        nvidia) _info "GPU mode: NVIDIA"; compose_args+=(-f "${COMPOSE_NVIDIA}") ;;
+        amd)    _info "GPU mode: AMD";    compose_args+=(-f "${COMPOSE_AMD}") ;;
+        cpu)    _info "GPU mode: CPU";    compose_args+=(-f "${COMPOSE_BASE}") ;;
         *)
             _fail "Unknown GPU_MODE: ${GPU_MODE:-auto}. Use nvidia, amd, or cpu."
-            return 1
-            ;;
+            return 1 ;;
     esac
 
-    (cd "${REPO_ROOT}" && docker compose "${compose_args[@]}" "$action" "$@")
+    (cd "${REPO_ROOT}" && docker compose -p atenea "${compose_args[@]}" "$action" "$@")
 }
 
 # ─── subcommands ───────────────────────────────────────────────────────────────
-
 _ensure_sysdeps() {
     local pkgs=()
-    if ! python3 -m venv --help &>/dev/null; then
-        pkgs+=(python3-venv)
+    if ! python3 -c 'import ensurepip' &>/dev/null; then
+        local py_ver
+        py_ver="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+        pkgs+=("python${py_ver}-venv")
     fi
     if ! python3-config --include &>/dev/null 2>&1; then
         pkgs+=(python3-dev)
@@ -78,9 +119,10 @@ _ensure_sysdeps() {
     if ! command -v git &>/dev/null; then
         pkgs+=(git)
     fi
+
     [ ${#pkgs[@]} -eq 0 ] && return
 
-    _step "Installing system dependencies: ${pkgs[*]}"
+    _dim "Installing: ${pkgs[*]}"
     if command -v apt-get &>/dev/null; then
         sudo apt-get update -qq && sudo apt-get install -y -qq "${pkgs[@]}"
     elif command -v dnf &>/dev/null; then
@@ -94,29 +136,38 @@ _ensure_sysdeps() {
     else
         _warn "Unknown package manager — install manually: ${pkgs[*]}"
     fi
-    _ok "System dependencies installed"
 }
 
 _setup() {
-    _step "Atenea first-time setup"
+    _sep
+    printf "${C_BOLD}${C_STEP}  Atenea Setup${C_RST}\n"
+    _sep
 
-    # 1. Check Python version
+    # ── 1. Python version ─────────────────────────────────────────────────────
+    _step "1/6  Checking Python"
     if ! command -v python3 &>/dev/null; then
         _fail "python3 not found — install Python 3.12 first"
         exit 1
     fi
     py_version="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
     if [ "$py_version" != "3.12" ]; then
-        _warn "Python 3.12 recommended (found $py_version) — continuing anyway"
+        _warn "Python 3.12 recommended (found $py_version) — continuing"
+    else
+        _ok "Python $py_version"
     fi
 
-    # 2. System dependencies (python3-venv, build-essential, etc.)
+    # ── 2. System dependencies ────────────────────────────────────────────────
+    _step "2/6  System dependencies"
     _ensure_sysdeps
+    _ok "System dependencies ready"
 
-    # 3. .env
+    # ── 3. Environment file ───────────────────────────────────────────────────
+    _step "3/6  Environment file"
     _ensure_env
+    _ok "Environment ready"
 
-    # 4. Virtual environment (rebuild if broken)
+    # ── 4. Virtual environment ────────────────────────────────────────────────
+    _step "4/6  Python virtual environment"
     VENV_PY="${REPO_ROOT}/.venv/bin/python3"
     VENV_PIP="${REPO_ROOT}/.venv/bin/pip"
     if [ ! -f "$VENV_PIP" ] || [ ! -f "$VENV_PY" ]; then
@@ -124,41 +175,41 @@ _setup() {
             _warn "Virtual environment is broken — rebuilding"
             rm -rf "${REPO_ROOT}/.venv"
         fi
-        _step "Creating Python virtual environment"
-        python3 -m venv "${REPO_ROOT}/.venv"
-        _ok "Virtual environment created"
+        _spin "Creating virtual environment" python3 -m venv "${REPO_ROOT}/.venv"
+    else
+        _ok "Virtual environment exists"
     fi
 
-    # 5. Python dependencies
-    _step "Installing Python dependencies"
-    "${REPO_ROOT}/.venv/bin/pip" install --upgrade pip -q
-    "${REPO_ROOT}/.venv/bin/pip" install -r "${REPO_ROOT}/requirements.txt" -q
+    # ── 5. Python dependencies ────────────────────────────────────────────────
+    _step "5/6  Python dependencies"
+    _spin "Upgrading pip" "${VENV_PIP}" install --upgrade pip -q
+    _spin "Installing core dependencies" "${VENV_PIP}" install -r "${REPO_ROOT}/requirements.txt" -q
     if [ -f "${REPO_ROOT}/requirements-optional.txt" ]; then
-        "${REPO_ROOT}/.venv/bin/pip" install -r "${REPO_ROOT}/requirements-optional.txt" -q
+        _spin "Installing optional dependencies" "${VENV_PIP}" install -r "${REPO_ROOT}/requirements-optional.txt" -q
     fi
-    _ok "Python dependencies installed"
+    _spin "Installing project in dev mode" "${VENV_PIP}" install -e "${REPO_ROOT}" -q
 
-    # 6. Install project in dev mode
-    _step "Installing project in development mode"
-    "${REPO_ROOT}/.venv/bin/pip" install -e "${REPO_ROOT}" -q
-    _ok "Project installed"
+    # ── 6. Application setup ──────────────────────────────────────────────────
+    _step "6/6  Application setup"
+    if ATENEA_SKIP_RUN_HINT=1 "${VENV_PY}" "${REPO_ROOT}/app_setup.py"; then
+        _ok "Application setup complete"
+    else
+        _fail "Application setup failed"
+        return 1
+    fi
 
-    # 7. Application setup (db init, admin user, directories)
-    _step "Running application setup"
-    ATENEA_SKIP_RUN_HINT=1 "${VENV_PY}" "${REPO_ROOT}/setup.py"
-    _ok "Application setup complete"
-
-    _ok "All done"
-    _info "Run  ./atenea up               to start with Docker (auto-detects GPU)"
-    _info "Run  ./atenea up --native       to run directly on the host"
-    _info "Run  ./atenea up --nvidia|--amd to force a GPU mode"
+    # ── done ──────────────────────────────────────────────────────────────────
+    _sep
+    _ok "Setup complete"
+    _sep
+    _info "Start the server:"
+    _dim "  ./atenea up              (Docker, auto-detects GPU)"
+    _dim "  ./atenea up --native     (directly on host)"
+    echo
 }
 
 _up() {
-    local native=0
-    local build=0
-    local gpu_mode=""
-    local args=()
+    local native=0 build=0 gpu_mode="" args=()
 
     for arg in "$@"; do
         case "$arg" in
@@ -172,7 +223,7 @@ _up() {
     done
 
     if [ "$native" -eq 1 ]; then
-        _info "Starting Atenea natively (no Docker)"
+        _step "Starting Atenea natively"
         _setup
         exec "${REPO_ROOT}/.venv/bin/uvicorn" app:app --host 0.0.0.0 --port "${APP_PORT:-7000}" "${args[@]}"
         return
@@ -181,35 +232,36 @@ _up() {
     [ "$build" -eq 1 ] && args+=(--build)
     GPU_MODE="$gpu_mode" _compose_cmd up -d "${args[@]}"
 
-    _info "Atenea is running"
-    _info "Open  http://localhost:${APP_PORT:-7000}  in your browser"
-    _info "Run  ./atenea logs  to follow output"
+    _sep
+    _ok "Atenea is running"
+    _info "Open  ${C_BOLD}http://localhost:${APP_PORT:-7000}${C_RST}  in your browser"
+    _info "Run   ./atenea logs  to follow output"
 }
 
 _usage() {
-    cat <<'USAGE'
-Usage: ./atenea <command> [options]
-
-Commands:
-  setup                  First-time setup (venv, .env, deps)
-  up [options]           Start Atenea (auto-detects GPU)
-    --native               Run directly on host (no Docker)
-    --build                Rebuild Docker image before starting
-    --nvidia | --amd | --cpu   Force GPU mode (override auto-detect)
-  down                   Stop all containers
-  logs [options]         Follow container logs
-  shell                  Open a shell in the running container
-  exec <cmd...>          Run a command in the running container
-  ps                     List running containers
-  help                   Show this help
-
-GPU auto-detection checks nvidia-smi (NVIDIA) and /dev/kfd (AMD).
-Set GPU_MODE=nvidia|amd|cpu in .env to pin the mode.
-USAGE
+    _sep
+    printf "${C_BOLD}${C_STEP}  atenea — CLI${C_RST}\n"
+    _sep
+    printf '\n'
+    printf "  ${C_BOLD}Usage:${C_RST}  ${C_BOLD}./atenea <command>${C_RST} [options]\n"
+    printf '\n'
+    printf "  ${C_BOLD}Commands:${C_RST}\n"
+    printf "    setup                  First-time setup (venv, .env, deps)\n"
+    printf "    up [options]           Start Atenea (auto-detects GPU)\n"
+    printf "      --native               Run directly on host (no Docker)\n"
+    printf "      --build                Rebuild Docker image before starting\n"
+    printf "      --nvidia | --amd | --cpu   Force GPU mode\n"
+    printf '\n'
+    printf "    down                   Stop all containers\n"
+    printf "    logs [options]         Follow container logs\n"
+    printf "    shell                  Open a shell in the running container\n"
+    printf "    exec <cmd...>          Run a command in the running container\n"
+    printf "    ps                     List running containers\n"
+    printf "    help                   Show this help\n"
+    printf '\n'
 }
 
 # ─── main dispatch ─────────────────────────────────────────────────────────────
-
 cmd="${1:-help}"
 shift 2>/dev/null || true
 

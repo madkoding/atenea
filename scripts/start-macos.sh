@@ -160,7 +160,7 @@ fi
 #    the first time (idempotent — does nothing if already set up). Suppress its
 #    manual run hint — we launch the server ourselves just below.
 echo "▶ Preparing Atenea…"
-ATENEA_SKIP_RUN_HINT=1 ./venv/bin/python setup.py
+ATENEA_SKIP_RUN_HINT=1 ./venv/bin/python app_setup.py
 
 # Local provider bootstrap.
 #     On Apple Silicon macOS, Apfel is treated as a sibling local model server

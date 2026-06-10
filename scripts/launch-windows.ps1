@@ -117,8 +117,8 @@ if ($LASTEXITCODE -ne 0) { Fail "Dependency install failed. Scroll up for the pi
 
 # 4. First-time setup (creates data dirs, DB, .env, admin user)
 Write-Step "Running first-time setup"
-& $venvPy setup.py
-if ($LASTEXITCODE -ne 0) { Fail "setup.py failed." }
+& $venvPy app_setup.py
+if ($LASTEXITCODE -ne 0) { Fail "app_setup.py failed." }
 
 # 5. Friendly note about Git Bash (full Cookbook / agent-shell parity)
 if (-not (Find-GitBash)) {
