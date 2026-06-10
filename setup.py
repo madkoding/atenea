@@ -131,7 +131,7 @@ def create_default_admin():
             # for the rarer case of an x86 wheel inside an arm64 venv.
             print("  [error] bcrypt loaded with the wrong CPU architecture.")
             print("          Rebuild the venv with an arm64 Python:")
-            print("            rm -rf venv && /opt/homebrew/bin/python3.11 -m venv venv")
+            print("            rm -rf venv && /opt/homebrew/bin/python3.12 -m venv venv")
             print("            ./venv/bin/pip install -r requirements.txt")
             return "skipped"
         print("  [warn] bcrypt not installed — skipping admin user creation")
@@ -213,9 +213,9 @@ def check_arch():
     print('          load as the wrong architecture and crash with "incompatible')
     print('          architecture" later on.')
     print("\n          Rebuild the environment with Homebrew's arm64 Python:")
-    print("            brew install python@3.11          # if you don't have it yet")
-    print("            rm -rf venv")
-    print("            /opt/homebrew/bin/python3.11 -m venv venv")
+            print("            brew install python@3.12          # if you don't have it yet")
+            print("            rm -rf venv")
+            print("            /opt/homebrew/bin/python3.12 -m venv venv")
     print("            ./venv/bin/pip install -r requirements.txt")
     print("            ./venv/bin/python setup.py")
     print("\n          Tip: ./start-macos.sh does all of this with the right Python.\n")
