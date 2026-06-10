@@ -10,6 +10,7 @@ FROM python:3.12-slim
 # uvicorn directly (no extra shell layer like `su`/`sudo` would add).
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    ccache \
     cmake \
     curl \
     git \
