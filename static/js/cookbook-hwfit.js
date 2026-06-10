@@ -92,6 +92,29 @@ export function _resetGpuToggleState(clearDismissed = true) {
   _gpuToggleTotal = 0;
 }
 
+// Check whether a model is in _cachedModelIds by trying the catalog name, short
+// name, and every gguf_sources/quant_repo the download flow would use. This
+// bridges the gap between a catalog name like "allenai/Olmo-3-7B-Instruct" and
+// its actual GGUF download repo "unsloth/Olmo-3-7B-Instruct-GGUF" (or a custom-
+// dir bare folder name like "Olmo-3-7B-Instruct-GGUF").
+function _checkModelDownloaded(name, ggufSources, quantRepo) {
+  if (!_cachedModelIds || !name) return false;
+  if (_cachedModelIds.has(name)) return true;
+  const short = name.split('/').pop();
+  if ([..._cachedModelIds].some(id => id === name || id === short || id.endsWith('/' + short))) return true;
+  const downloadRepos = [];
+  if (Array.isArray(ggufSources)) {
+    for (const s of ggufSources) { if (s && s.repo) downloadRepos.push(s.repo); }
+  }
+  if (quantRepo && !downloadRepos.includes(quantRepo)) downloadRepos.push(quantRepo);
+  for (const dr of downloadRepos) {
+    if (_cachedModelIds.has(dr)) return true;
+    const drShort = dr.split('/').pop();
+    if ([..._cachedModelIds].some(id => id === dr || id === drShort || id.endsWith('/' + drShort))) return true;
+  }
+  return false;
+}
+
 // Trim vendor noise so a pool label reads "RTX 4090 D" not "NVIDIA GeForce RTX 4090 D".
 function _shortGpuName(name) {
   return String(name || 'GPU')
@@ -424,6 +447,39 @@ function _applyEngineFilter(models) {
   });
 }
 
+// Force-refresh _cachedModelIds from the server. Used after a download completes
+// so the What-Fits tab instantly shows the green dot and un-gates the buttons.
+export async function _refreshCachedModels() {
+  const remoteHost = _envState.remoteHost || '';
+  const _cacheSrv = _envState.servers.find(s => s.host === remoteHost);
+  const _cachePort = _cacheSrv?.port || '';
+  const params = new URLSearchParams({ host: remoteHost });
+  if (_cachePort) params.set('ssh_port', _cachePort);
+  if (_cacheSrv?.platform) params.set('platform', _cacheSrv.platform);
+  if (_cacheSrv && Array.isArray(_cacheSrv.modelDirs) && _cacheSrv.modelDirs.length) {
+    params.set('model_dir', _cacheSrv.modelDirs.filter(d => d && d !== '~/.cache/huggingface/hub').join(','));
+  }
+  try {
+    const r = await fetch(`/api/model/cached?${params}`, { credentials: 'same-origin' });
+    const d = await r.json();
+    _cachedModelIds = new Set((d.models || []).filter(m => m.status !== 'stalled').map(m => m.repo_id));
+    // Re-mark rendered rows
+    const list = document.getElementById('hwfit-list');
+    if (list) {
+      list.querySelectorAll('.hwfit-row[data-model]').forEach(row => {
+        const name = row.dataset.model;
+        const cachedM = _hwfitCache?.models?.find(m => m.name === name);
+        if (_checkModelDownloaded(name, cachedM?.gguf_sources, cachedM?.quant_repo)) {
+          const nameEl = row.querySelector('.hwfit-name');
+          if (nameEl && !nameEl.querySelector('.hwfit-dl-dot')) {
+            nameEl.insertAdjacentHTML('beforeend', '<span class="hwfit-dl-dot" title="Downloaded">\u25CF</span>');
+          }
+        }
+      });
+    }
+  } catch {}
+}
+
 export async function _hwfitFetch(fresh = false) {
   const _tk = ++_hwfitFetchToken;
   const useCase = document.getElementById('hwfit-usecase')?.value || '';
@@ -472,6 +528,9 @@ export async function _hwfitFetch(fresh = false) {
     const _cacheSrv = _envState.servers.find(s => s.host === remoteHost);
     const _cachePort = _cacheSrv?.port || '';
     const _cacheParams = new URLSearchParams({ host: remoteHost }); if (_cachePort) _cacheParams.set('ssh_port', _cachePort); if (_cacheSrv?.platform) _cacheParams.set('platform', _cacheSrv.platform);
+    if (_cacheSrv && Array.isArray(_cacheSrv.modelDirs) && _cacheSrv.modelDirs.length) {
+      _cacheParams.set('model_dir', _cacheSrv.modelDirs.filter(d => d && d !== '~/.cache/huggingface/hub').join(','));
+    }
     fetch(`/api/model/cached?${_cacheParams}`, { credentials: 'same-origin' })
       .then(r => r.json())
       .then(d => {
@@ -481,7 +540,8 @@ export async function _hwfitFetch(fresh = false) {
         // Re-mark rows if already rendered
         list.querySelectorAll('.hwfit-row[data-model]').forEach(row => {
           const name = row.dataset.model;
-          if (_cachedModelIds.has(name) || [..._cachedModelIds].some(id => id.endsWith('/' + name?.split('/').pop()))) {
+          const cachedM = _hwfitCache?.models?.find(m => m.name === name);
+          if (_checkModelDownloaded(name, cachedM?.gguf_sources, cachedM?.quant_repo)) {
             const nameEl = row.querySelector('.hwfit-name');
             if (nameEl && !nameEl.querySelector('.hwfit-dl-dot')) {
               nameEl.insertAdjacentHTML('beforeend', '<span class="hwfit-dl-dot" title="Downloaded">\u25CF</span>');
@@ -924,7 +984,7 @@ export function _hwfitRenderList(el, models) {
     const vramLabel = m.required_gb ? m.required_gb.toFixed(1) + 'G' : '?';
     const moeBadge = m.is_moe ? '<span class="hwfit-badge hwfit-moe">MoE</span>' : '';
     const imgBadge = m.is_image_gen ? '<span class="hwfit-badge" style="background:color-mix(in srgb, var(--red) 20%, transparent);color:var(--red);font-size:8px;padding:1px 4px;border-radius:3px;margin-left:4px;">IMG</span>' : '';
-    const dlDot = (_cachedModelIds && (_cachedModelIds.has(m.name) || [..._cachedModelIds].some(id => id === m.name?.split('/').pop()))) ? '<span class="hwfit-dl-dot" title="Downloaded">\u25CF</span>' : '';
+    const dlDot = _checkModelDownloaded(m.name, m.gguf_sources, m.quant_repo) ? '<span class="hwfit-dl-dot" title="Downloaded">\u25CF</span>' : '';
     html += `<div class="hwfit-row" data-model="${esc(m.name)}">`;
     html += `<span class="hwfit-col hwfit-fit" style="color:${fitColor}">${esc(fitLabel)}</span>`;
     // Append quant to the title when it's not already in the repo name. The
@@ -1119,10 +1179,7 @@ export function _expandModelRow(row, modelData) {
       // present, honor the button's "Download" half by kicking off the download
       // instead, then the user can Run again to serve once it finishes.
       const _short = modelData.name.split('/').pop();
-      const _downloaded = _cachedModelIds && (
-        _cachedModelIds.has(modelData.name)
-        || [..._cachedModelIds].some(id => id === modelData.name || id.endsWith('/' + _short))
-      );
+      const _downloaded = _checkModelDownloaded(modelData.name, modelData.gguf_sources, modelData.quant_repo);
       if (_cachedModelIds && !_downloaded) {
         uiModule.showToast('Model not downloaded yet — starting download. Run again to serve once it finishes.');
         if (backend === 'ollama') {
@@ -1252,15 +1309,11 @@ export function _expandModelRow(row, modelData) {
   if (configBtn) {
     configBtn.addEventListener('click', async () => {
       const repo = modelData.name;
-      const short = repo?.split('/').pop();
       // Use the same "downloaded" source as the dl-dot (_cachedModelIds), NOT a
       // DOM lookup for .hwfit-cached-item — those only exist on the Serve tab, so
       // from the What-Fits tab the old check always failed and falsely said
       // "download first" even for models that ARE downloaded.
-      const downloaded = _cachedModelIds && (
-        _cachedModelIds.has(repo)
-        || [..._cachedModelIds].some(id => id === repo || id.endsWith('/' + short))
-      );
+      const downloaded = _checkModelDownloaded(repo, modelData.gguf_sources, modelData.quant_repo);
       if (_cachedModelIds && !downloaded) {
         uiModule.showToast('Download the model first, then configure from Serve tab');
         return;
