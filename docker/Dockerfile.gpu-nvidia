@@ -16,7 +16,7 @@ RUN cp /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so.1
 RUN --mount=type=cache,target=/root/.ccache \
     cmake -B build -DCMAKE_BUILD_TYPE=Release \
     -DGGML_CUDA=ON \
-    -DCMAKE_CUDA_ARCHITECTURES=75 \
+    -DCMAKE_CUDA_ARCHITECTURES="80;86;90" \
     -DCMAKE_C_COMPILER_LAUNCHER=ccache \
     -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
     -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache \
@@ -43,7 +43,9 @@ WORKDIR /app
 ARG INSTALL_OPTIONAL=false
 COPY requirements.txt requirements-optional.txt ./
 RUN pip install --no-cache-dir -r requirements.txt \
-    && if [ "$INSTALL_OPTIONAL" = "true" ]; then pip install --no-cache-dir -r requirements-optional.txt; fi
+    && if [ "$INSTALL_OPTIONAL" = "true" ]; then pip install --no-cache-dir -r requirements-optional.txt; fi \
+    && pip install --no-cache-dir --force-reinstall llama-cpp-python[server] \
+        --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124
 
 COPY . .
 
