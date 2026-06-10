@@ -110,19 +110,33 @@ services:
       - -c
       - |
         set -eu
-        if [ ! -s /etc/searxng/settings.yml ] || grep -q 'atenea-local-searxng-json-2026-05-30\|__SEARXNG_SECRET__' /etc/searxng/settings.yml; then
+        if [ ! -s /etc/searxng/settings.yml ] || grep -q 'atenea-local-searxng-json-2026-05-30\|__SEARXNG_SECRET__' /etc/searxng/settings.yml || ! grep -q '^[[:space:]]*limiter:' /etc/searxng/settings.yml || ! grep -q 'name:[[:space:]]*radio browser' /etc/searxng/settings.yml; then
           secret="$${SEARXNG_SECRET:-}"
+          if [ -z "$$secret" ]; then
+            secret="$$(sed -n 's/^[[:space:]]*secret_key:[[:space:]]*"\(.*\)"/\1/p' /etc/searxng/settings.yml | head -n1 || true)"
+          fi
           if [ -z "$$secret" ]; then
             secret="$$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
           fi
           sed "s|__SEARXNG_SECRET__|$$secret|g" /tmp/searxng-settings.yml.template > /etc/searxng/settings.yml
         fi
+        # Recover from broken sqlite cache state after image/schema changes.
+        rm -f /tmp/sxng_cache_*.db /tmp/sxng_cache_*.db-shm /tmp/sxng_cache_*.db-wal || true
+        python - <<'PY'
+        import sqlite3
+        for path in ('/tmp/sxng_cache_ENGINES_CACHE.db', '/tmp/sxng_cache_DATA_CACHE.db'):
+            con = sqlite3.connect(path)
+            con.execute("CREATE TABLE IF NOT EXISTS properties (name TEXT PRIMARY KEY, value TEXT, m_time INTEGER DEFAULT (strftime('%s','now')))" )
+            con.commit()
+            con.close()
+        PY
         exec /usr/local/searxng/entrypoint.sh
     ports:
       - "127.0.0.1:8080:8080"
     volumes:
       - searxng-data:/etc/searxng
       - ../config/searxng/settings.yml:/tmp/searxng-settings.yml.template:ro,z
+      - ../config/searxng/limiter.toml:/etc/searxng/limiter.toml:ro,z
     environment:
       - SEARXNG_BASE_URL=http://localhost:8080/
       - SEARXNG_SECRET=${SEARXNG_SECRET:-}
