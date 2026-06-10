@@ -788,7 +788,21 @@ def _prompt_inference_backend_choice() -> str:
 
 
 def _setup_ollama_local() -> bool:
-    if shutil.which("ollama"):
+    def _resolve_ollama() -> str | None:
+        found = shutil.which("ollama")
+        if found:
+            return found
+        for candidate in (
+            "/usr/local/bin/ollama",
+            "/usr/bin/ollama",
+            "/bin/ollama",
+        ):
+            if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                return candidate
+        return None
+
+    ollama_bin = _resolve_ollama()
+    if ollama_bin:
         print("  [ok] Ollama already installed")
         return True
 
@@ -799,11 +813,27 @@ def _setup_ollama_local() -> bool:
             print("         Install manually: https://ollama.com/download")
             return False
         print("  [info] Installing Ollama...")
-        r = subprocess.run("curl -fsSL https://ollama.com/install.sh | sh", shell=True, capture_output=True, text=True)
-        if r.returncode == 0 and shutil.which("ollama"):
+        cmd = "curl -fsSL https://ollama.com/install.sh | sh"
+        interactive = bool(sys.stdin.isatty() and sys.stdout.isatty())
+        if interactive:
+            print("         You may be prompted for sudo password.")
+            r = subprocess.run(cmd, shell=True)
+        else:
+            r = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        ollama_bin = _resolve_ollama()
+        if ollama_bin:
+            ollama_dir = os.path.dirname(ollama_bin)
+            if ollama_dir and ollama_dir not in os.environ.get("PATH", ""):
+                os.environ["PATH"] = f"{ollama_dir}:{os.environ.get('PATH', '')}"
             print("  [ok] Ollama installed")
             return True
         print("  [warn] Ollama installation failed")
+        if not interactive:
+            stderr = (r.stderr or "").strip()
+            if stderr:
+                print(f"         {stderr.splitlines()[-1]}")
+            print("         Try manually in a terminal with sudo:")
+            print("         curl -fsSL https://ollama.com/install.sh | sh")
         return False
 
     if system == "darwin":

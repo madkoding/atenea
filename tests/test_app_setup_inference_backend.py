@@ -82,3 +82,13 @@ def test_setup_hf_local_reports_running_endpoint(monkeypatch):
     )
 
     assert setup._setup_hf_local() is True
+
+
+def test_setup_ollama_local_accepts_existing_binary_outside_path(monkeypatch):
+    setup = _load_setup_module()
+
+    monkeypatch.setattr(setup.shutil, "which", lambda _name: None)
+    monkeypatch.setattr(setup.os.path, "isfile", lambda p: p == "/usr/local/bin/ollama")
+    monkeypatch.setattr(setup.os, "access", lambda p, _mode: p == "/usr/local/bin/ollama")
+
+    assert setup._setup_ollama_local() is True
