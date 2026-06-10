@@ -510,8 +510,11 @@ export function _buildServeCmd(f, modelName, backend) {
     }
     if (_kv) {
       _lcExtra += ` --cache-type-k ${_kv} --cache-type-v ${_kv}`;
-      // llama-cpp-python exposes these as type_k/type_v; pass through best-effort.
-      _lcpExtra += ` --type_k ${_kv} --type_v ${_kv}`;
+      // llama-cpp-python's --type_k/--type_v expect int values (ggml_type enum),
+      // not string names like q4_0. Only pass integers to avoid parse errors.
+      if (/^\d+$/.test(_kv)) {
+        _lcpExtra += ` --type_k ${_kv} --type_v ${_kv}`;
+      }
     }
     const _llamaFit = String(f.llama_fit || '').trim();
     if (['on', 'off'].includes(_llamaFit)) _lcExtra += ` --fit ${_llamaFit}`;

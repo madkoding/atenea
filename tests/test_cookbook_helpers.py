@@ -466,7 +466,7 @@ def test_validate_serve_cmd_accepts_windows_printf_format():
     cmd = (
         "python -m llama_cpp.server --model "
         "\"$(printf %s ${HOME}'/.cache/huggingface/hub/models--unsloth--Qwen3.5-2B-GGUF/snapshots/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q4_K_M.gguf')\" "
-        "--host 0.0.0.0 --port 8000 --n_gpu_layers 99 --n_ctx 32768 --flash_attn true --type_k q4_0 --type_v q4_0"
+        "--host 0.0.0.0 --port 8000 --n_gpu_layers 99 --n_ctx 32768 --flash_attn true"
     )
     assert _validate_serve_cmd(cmd) == cmd
 
