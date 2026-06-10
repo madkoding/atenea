@@ -359,11 +359,19 @@ def _build_ollama_payload(
     truncated. The reasoning field is preserved on the response side
     (via ``_parse_ollama_response``) so it can still be surfaced
     elsewhere if a future caller wants it.
+
+    ``keep_alive="5m"`` keeps the model warm in VRAM between turns
+    so agent multi-round conversations don't pay a cold-start on
+    every round. Without it Ollama unloads the model immediately
+    after each response, and the next LLM call (e.g. round 2 of the
+    agent loop) triggers a full model reload from disk — 2+ minutes
+    of silence that looks like a hang to the user.
     """
     payload: dict = {
         "model": model,
         "messages": _ollama_normalize_tool_messages(messages),
         "stream": stream,
+        "keep_alive": "5m",
         "chat_template_kwargs": {"enable_thinking": False},
     }
     options: dict = {}
