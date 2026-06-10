@@ -3,10 +3,13 @@
 import asyncio
 import json
 import os
+import socket
 import time
 import logging
+import httpx
 from typing import Any
 from collections.abc import AsyncGenerator
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Request, HTTPException, Form, Query
 from fastapi.responses import StreamingResponse
@@ -14,12 +17,12 @@ from pydantic import ValidationError
 
 from core.models import ChatMessage
 from src.runtime.request_models import ChatRequest
-from src.llm_core import llm_call_async, stream_llm, stream_llm_with_fallback
+from src.llm_core import llm_call_async_with_fallback, stream_llm, stream_llm_with_fallback
 from src.chat.agent_loop import stream_agent_loop
 import src.agent.runs as agent_runs
 from src.chat.model_context import estimate_tokens
 from src.chat.helpers import coerce_message_and_session
-from src.runtime.endpoint_resolver import normalize_base as _normalize_base, build_chat_url
+from src.runtime.endpoint_resolver import normalize_base as _normalize_base, build_chat_url, build_headers, build_models_url
 from src.misc.session_search import search_session_messages
 from src.security.prompt_security import untrusted_context_message
 from core.exceptions import SessionNotFoundError
@@ -300,6 +303,262 @@ def _set_user_time_from_request(request: Request) -> None:
         pass
 
 
+def _chat_fallback_candidates(sess, owner: str | None = None) -> list[tuple[str, str, dict]]:
+    """Resolve ordered fallback candidates for chat requests.
+
+    Includes configured default-model fallbacks and, as a last resort, the
+    currently configured default chat endpoint/model. This lets a chat recover
+    from a stale per-session endpoint selection without hiding explicit fallback
+    config (which still runs first).
+    """
+    candidates: list[tuple[str, str, dict]] = []
+    try:
+        from src.runtime.endpoint_resolver import resolve_chat_fallback_candidates
+
+        configured = resolve_chat_fallback_candidates(owner=owner)
+        if configured:
+            candidates.extend(configured)
+    except Exception:
+        pass
+
+    try:
+        from src.runtime.endpoint_resolver import resolve_endpoint
+
+        d_url, d_model, d_headers = resolve_endpoint("default", owner=owner)
+        if d_url and d_model:
+            # Dedupe happens in llm_core; append so explicit fallback-chain
+            # entries keep their priority.
+            candidates.append((d_url, d_model, d_headers or {}))
+    except Exception:
+        pass
+
+    return candidates
+
+
+def _promote_session_to_candidate(
+    sess,
+    session_id: str,
+    *,
+    answered_by: str,
+    candidates: list[tuple[str, str, dict]],
+    owner: str | None = None,
+) -> bool:
+    """Persist the candidate that actually answered as session default.
+
+    When a stale session endpoint fails and a fallback model responds, update
+    the session row so next turns use the live endpoint/model directly.
+    """
+    model = (answered_by or "").strip()
+    if not model:
+        return False
+
+    def _chat_url_variants(raw_url: str) -> set[str]:
+        url = (raw_url or "").strip().rstrip("/")
+        if not url:
+            return set()
+        base = _normalize_base(url).rstrip("/")
+        variants = {url, base, build_chat_url(base).rstrip("/")}
+        variants.add(base + "/chat/completions")
+        return {v for v in variants if v}
+
+    current_variants = _chat_url_variants(getattr(sess, "endpoint_url", "") or "")
+    chosen = None
+    same_endpoint_match = None
+    for cand_url, cand_model, cand_headers in candidates:
+        if (cand_model or "").strip() == model:
+            cand = (cand_url, cand_model.strip(), cand_headers or {})
+            cand_variants = _chat_url_variants(cand_url)
+            if current_variants and cand_variants and current_variants.intersection(cand_variants):
+                same_endpoint_match = same_endpoint_match or cand
+                continue
+            chosen = cand
+            break
+    if not chosen and same_endpoint_match:
+        chosen = same_endpoint_match
+    if not chosen:
+        return False
+    cand_url, cand_model, cand_headers = chosen
+    if (getattr(sess, "endpoint_url", "") or "").strip() == cand_url.strip() and (getattr(sess, "model", "") or "").strip() == cand_model:
+        return False
+
+    db = SessionLocal()
+    try:
+        q = db.query(DBSession).filter(DBSession.id == session_id)
+        if owner:
+            q = q.filter(DBSession.owner == owner)
+        row = q.first()
+        if row:
+            row.endpoint_url = cand_url
+            row.model = cand_model
+            row.updated_at = _utcnow_naive()
+            db.commit()
+        sess.endpoint_url = cand_url
+        sess.model = cand_model
+        sess.headers = cand_headers
+        logger.info(
+            "Promoted session %s to fallback candidate model=%s endpoint=%s",
+            session_id,
+            cand_model,
+            cand_url,
+        )
+        return True
+    except Exception as e:
+        db.rollback()
+        logger.warning("Failed to promote session %s to fallback candidate: %s", session_id, e)
+        return False
+    finally:
+        db.close()
+
+
+def _url_reachable(url: str, timeout: float = 0.6) -> bool:
+    """Fast TCP reachability check for a chat endpoint URL."""
+    try:
+        parsed = urlparse((url or "").strip())
+        host = parsed.hostname
+        port = parsed.port
+        if not host or not port:
+            return False
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+def _repair_unreachable_session_endpoint(sess, session_id: str, owner: str | None = None) -> bool:
+    """Repair stale session endpoint/model in-app when current endpoint is down.
+
+    Prefer a reachable enabled endpoint that still exposes the session model; if
+    none matches, fall back to any reachable enabled endpoint's first visible
+    model, then to configured default endpoint/model.
+    """
+    current_url = (getattr(sess, "endpoint_url", "") or "").strip()
+    if not current_url or _url_reachable(current_url):
+        return False
+
+    desired_model = (getattr(sess, "model", "") or "").strip()
+    chosen_url = ""
+    chosen_model = ""
+    chosen_headers: dict = {}
+
+    db = SessionLocal()
+    try:
+        q = db.query(ModelEndpoint).filter(ModelEndpoint.is_enabled == True)
+        if owner:
+            from src.auth.helpers import owner_filter
+
+            q = owner_filter(q, ModelEndpoint, owner)
+        endpoints = q.all()
+
+        first_reachable = None
+        for ep in endpoints:
+            base = _normalize_base(getattr(ep, "base_url", "") or "")
+            chat_url = build_chat_url(base)
+            if not chat_url or not _url_reachable(chat_url):
+                continue
+
+            hdrs = {}
+            try:
+                from src.runtime.endpoint_resolver import resolve_endpoint_runtime
+
+                _base, api_key = resolve_endpoint_runtime(ep, owner=owner)
+                hdrs = build_headers(api_key, base)
+            except Exception:
+                hdrs = {}
+
+            try:
+                visible = _visible_models(
+                    getattr(ep, "cached_models", None),
+                    getattr(ep, "hidden_models", None),
+                    getattr(ep, "pinned_models", None),
+                )
+            except Exception:
+                visible = []
+
+            # Serve tab registers endpoints before /v1/models is populated.
+            # If cache is empty, do a bounded live probe so a fresh local serve
+            # can be picked immediately from chat without manual settings edits.
+            if not visible:
+                try:
+                    murl = build_models_url(base)
+                    if murl:
+                        r = httpx.get(murl, headers=hdrs, timeout=1.5)
+                        if r.is_success:
+                            data = r.json()
+                            ids = [m.get("id") for m in (data.get("data") or []) if m.get("id")]
+                            if not ids:
+                                ids = [m.get("name") or m.get("model") for m in (data.get("models") or []) if m.get("name") or m.get("model")]
+                            if ids:
+                                visible = [str(x).strip() for x in ids if str(x).strip()]
+                except Exception:
+                    pass
+
+            model = ""
+            if desired_model:
+                wanted = {str(m).strip() for m in visible}
+                if wanted and desired_model in wanted:
+                    model = desired_model
+                elif not wanted:
+                    # Fresh serves can be reachable before their model cache is
+                    # written. Keep the current session model optimistically so
+                    # chat can recover in-app immediately after Serve starts.
+                    model = desired_model
+            elif visible:
+                model = str(visible[0]).strip()
+            if not model:
+                continue
+
+            if model == desired_model:
+                chosen_url, chosen_model, chosen_headers = chat_url, model, hdrs
+                break
+            if first_reachable is None:
+                first_reachable = (chat_url, model, hdrs)
+
+        if not chosen_url and first_reachable:
+            chosen_url, chosen_model, chosen_headers = first_reachable
+
+        if not chosen_url:
+            try:
+                from src.runtime.endpoint_resolver import resolve_endpoint
+
+                d_url, d_model, d_headers = resolve_endpoint("default", owner=owner)
+                if d_url and d_model and _url_reachable(d_url):
+                    chosen_url = d_url
+                    chosen_model = d_model
+                    chosen_headers = d_headers or {}
+            except Exception:
+                pass
+
+        if not chosen_url or not chosen_model:
+            return False
+
+        q_sess = db.query(DBSession).filter(DBSession.id == session_id)
+        if owner:
+            q_sess = q_sess.filter(DBSession.owner == owner)
+        row = q_sess.first()
+        if row:
+            row.endpoint_url = chosen_url
+            row.model = chosen_model
+            row.updated_at = _utcnow_naive()
+            db.commit()
+
+        sess.endpoint_url = chosen_url
+        sess.model = chosen_model
+        sess.headers = chosen_headers
+        logger.info(
+            "Repaired unreachable session endpoint for %s -> model=%s endpoint=%s",
+            session_id,
+            chosen_model,
+            chosen_url,
+        )
+        return True
+    except Exception as e:
+        db.rollback()
+        logger.warning("Failed to repair session endpoint for %s: %s", session_id, e)
+        return False
+    finally:
+        db.close()
+
+
 def setup_chat_routes(
     session_manager,
     chat_handler,
@@ -339,6 +598,7 @@ def setup_chat_routes(
         owner = get_current_user(request)
         if _clear_orphaned_session_endpoint(sess, owner=owner):
             raise HTTPException(400, "Selected model endpoint was removed. Pick another model in Settings.")
+        _repair_unreachable_session_endpoint(sess, session, owner=owner)
 
         # Empty model + live endpoint = setup race (Issue #587). Repair from
         # the endpoint's cached model list before privilege checks, which
@@ -396,11 +656,11 @@ def setup_chat_routes(
             except Exception as e:
                 logger.error(f"Research failed: {e}")
 
-        reply = await llm_call_async(
-            sess.endpoint_url,
-            sess.model,
+        _fallback_candidates = _chat_fallback_candidates(sess, owner=owner)
+        _chat_candidates = [(sess.endpoint_url, sess.model, sess.headers)] + _fallback_candidates
+        reply = await llm_call_async_with_fallback(
+            _chat_candidates,
             ctx.messages,
-            headers=sess.headers,
             temperature=ctx.preset.temperature,
             max_tokens=ctx.preset.max_tokens,
             prompt_type=preset_id,
@@ -526,6 +786,7 @@ def setup_chat_routes(
             owner = get_current_user(request)
             if _clear_orphaned_session_endpoint(sess, owner=owner):
                 raise HTTPException(400, "Selected model endpoint was removed. Pick another model in Settings.")
+            _repair_unreachable_session_endpoint(sess, session, owner=owner)
             # Issue #587: picker shows a model from the endpoint cache but
             # s.model never made it onto the DB row (first-send race after
             # endpoint setup, or a previous endpoint delete/recreate). Pull
@@ -933,11 +1194,7 @@ def setup_chat_routes(
             # Configured fallback chain for the default chat model. Tried in
             # order if the session's primary model fails before producing
             # output. Resolved once per request.
-            try:
-                from src.runtime.endpoint_resolver import resolve_chat_fallback_candidates
-                _fallback_candidates = resolve_chat_fallback_candidates(owner=_user)
-            except Exception:
-                _fallback_candidates = []
+            _fallback_candidates = _chat_fallback_candidates(sess, owner=_user)
 
             # Send model name early so the frontend can show it during streaming
             _model_suffix = "Research" if effective_do_research else None
@@ -992,6 +1249,7 @@ def setup_chat_routes(
                 _answered_by = None  # set if the selected model failed and a fallback answered
                 _requested_model = sess.model
                 _actual_model = None
+                _session_promoted = False
                 # ── Chat mode: call stream_llm directly, NO tools, NO document access ──
                 try:
                     _chat_candidates = [(sess.endpoint_url, sess.model, sess.headers)] + _fallback_candidates
@@ -1025,6 +1283,14 @@ def setup_chat_routes(
                                     # Forward the notice and remember the real model.
                                     _answered_by = data.get("answered_by") or _answered_by
                                     _actual_model = _actual_model or _answered_by
+                                    if _answered_by and not _session_promoted and not incognito:
+                                        _session_promoted = _promote_session_to_candidate(
+                                            sess,
+                                            session,
+                                            answered_by=_answered_by,
+                                            candidates=_chat_candidates,
+                                            owner=_user,
+                                        )
                                     data["selected_model"] = data.get("selected_model") or _requested_model
                                     yield chunk
                                 elif data.get("type") == "model_actual":
@@ -1124,6 +1390,7 @@ def setup_chat_routes(
                 _answered_by = None  # set if the selected model failed and a fallback answered
                 _requested_model = sess.model
                 _actual_model = None
+                _session_promoted = False
                 try:
                     from src.settings import get_setting
                     from src.agent.tools_facade import MAX_AGENT_ROUNDS as _DEFAULT_ROUNDS
@@ -1136,6 +1403,7 @@ def setup_chat_routes(
                         _max_rounds = _DEFAULT_ROUNDS
                     _max_rounds = max(1, min(_max_rounds, 200))
 
+                    _agent_candidates = [(sess.endpoint_url, sess.model, sess.headers)] + _fallback_candidates
                     async for chunk in stream_agent_loop(
                         sess.endpoint_url,
                         sess.model,
@@ -1192,6 +1460,14 @@ def setup_chat_routes(
                                     # selected model.
                                     _answered_by = data.get("answered_by") or _answered_by
                                     _actual_model = _actual_model or _answered_by
+                                    if _answered_by and not _session_promoted and not incognito:
+                                        _session_promoted = _promote_session_to_candidate(
+                                            sess,
+                                            session,
+                                            answered_by=_answered_by,
+                                            candidates=_agent_candidates,
+                                            owner=_user,
+                                        )
                                     data["selected_model"] = data.get("selected_model") or _requested_model
                                     yield chunk
                                 elif data.get("type") == "model_actual":
