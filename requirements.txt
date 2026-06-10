@@ -50,3 +50,6 @@ mypy
 # Query-result and response caching (dogpile.cache with memory backend).
 # Wraps hot DB queries, LLM responses, settings, and context lookups.
 dogpile.cache
+# Local LLM inference server (llama.cpp). The [server] extra pulls in
+# starlette_context needed for python -m llama_cpp.server.
+llama-cpp-python[server]
