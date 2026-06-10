@@ -66,25 +66,55 @@ _compose_cmd() {
 
 _setup() {
     _step "Atenea first-time setup"
+
+    # 1. Check Python version
+    if ! command -v python3 &>/dev/null; then
+        _fail "python3 not found — install Python 3.12 first"
+        exit 1
+    fi
+    py_version="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+    if [ "$py_version" != "3.12" ]; then
+        _warn "Python 3.12 recommended (found $py_version) — continuing anyway"
+    fi
+
+    # 2. .env
     _ensure_env
 
+    # 3. Virtual environment
+    VENV_PY="${REPO_ROOT}/.venv/bin/python3"
     if [ ! -d "${REPO_ROOT}/.venv" ]; then
         _step "Creating Python virtual environment"
         python3 -m venv "${REPO_ROOT}/.venv"
         _ok "Virtual environment created"
     fi
 
-    _step "Installing Python dependencies"
+    # 4. Core dependencies
+    _step "Installing core Python dependencies"
     "${REPO_ROOT}/.venv/bin/pip" install --upgrade pip -q
     "${REPO_ROOT}/.venv/bin/pip" install -r "${REPO_ROOT}/requirements.txt" -q
-    _ok "Dependencies installed"
+    _ok "Core dependencies installed"
 
-    mkdir -p "${REPO_ROOT}/data" "${REPO_ROOT}/logs"
+    # 5. Optional dependencies
+    if [ -f "${REPO_ROOT}/requirements-optional.txt" ]; then
+        _step "Installing optional Python dependencies"
+        "${REPO_ROOT}/.venv/bin/pip" install -r "${REPO_ROOT}/requirements-optional.txt" -q
+        _ok "Optional dependencies installed"
+    fi
 
-    _ok "Setup complete"
-    _info "Run  ./atenea up  to start (auto-detects GPU)"
-    _info "Run  ./atenea up --native  to run without Docker"
-    _info "Run  ./atenea up --nvidia  to force NVIDIA GPU mode"
+    # 6. Install project in dev mode
+    _step "Installing project in development mode"
+    "${REPO_ROOT}/.venv/bin/pip" install -e "${REPO_ROOT}" -q
+    _ok "Project installed"
+
+    # 7. Run setup.py (db init, admin user, directories)
+    _step "Running application setup"
+    ATENEA_SKIP_RUN_HINT=1 "${VENV_PY}" "${REPO_ROOT}/setup.py"
+    _ok "Application setup complete"
+
+    _ok "All done"
+    _info "Run  ./atenea up               to start with Docker (auto-detects GPU)"
+    _info "Run  ./atenea up --native       to run directly on the host"
+    _info "Run  ./atenea up --nvidia|--amd to force a GPU mode"
 }
 
 _up() {
@@ -106,7 +136,6 @@ _up() {
 
     if [ "$native" -eq 1 ]; then
         _info "Starting Atenea natively (no Docker)"
-        _step "Checking virtual environment"
         if [ ! -d "${REPO_ROOT}/.venv" ]; then
             _setup
         fi
