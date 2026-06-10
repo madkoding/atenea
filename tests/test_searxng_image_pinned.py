@@ -10,13 +10,13 @@ startup. This guards that the pin stays in place.
 import re
 from pathlib import Path
 
-COMPOSE = Path(__file__).resolve().parent.parent / "docker-compose.yml"
+COMPOSE = Path(__file__).resolve().parent.parent / "docker" / "compose.yml"
 
 
 def test_searxng_image_is_pinned_not_latest():
     text = COMPOSE.read_text(encoding="utf-8")
     m = re.search(r"image:\s*\S*searxng/searxng:(\S+)", text)
-    assert m, "searxng image line not found in docker-compose.yml"
+    assert m, "searxng image line not found in docker/compose.yml"
     tag = m.group(1)
     assert tag != "latest", (
         "SearXNG must be pinned, not ':latest' — atenea startup depends on its "

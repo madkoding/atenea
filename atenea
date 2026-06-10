@@ -68,11 +68,98 @@ _spin() {
 _detect_gpu() {
     if command -v nvidia-smi &>/dev/null && nvidia-smi &>/dev/null; then
         echo "nvidia"
-    elif [ -e /dev/kfd ]; then
+    elif [ -e /dev/kfd ] || command -v rocminfo &>/dev/null || command -v hipconfig &>/dev/null; then
         echo "amd"
     else
         echo "cpu"
     fi
+}
+
+_env_get() {
+    local key="$1"
+    local env_file="${REPO_ROOT}/.env"
+    [ -f "$env_file" ] || return 1
+    awk -F= -v k="$key" '
+        $1 == k {
+            v = substr($0, index($0, "=") + 1)
+            gsub(/^[[:space:]"]+|[[:space:]"]+$/, "", v)
+            val = v
+        }
+        END {
+            if (val != "") print val
+            else exit 1
+        }
+    ' "$env_file"
+}
+
+_gpu_mode_from_compose_file() {
+    local compose_file="$1"
+    case "$compose_file" in
+        *"gpu.nvidia.yml"*) echo "nvidia" ;;
+        *"gpu.amd.yml"*)    echo "amd" ;;
+        *)                    echo "" ;;
+    esac
+}
+
+_docker_has_nvidia_runtime() {
+    docker info 2>/dev/null | grep -Eq 'Runtimes:.*\bnvidia\b'
+}
+
+_host_amd_devices_ready() {
+    [ -e /dev/kfd ] && [ -d /dev/dri ]
+}
+
+_auto_gpu_mode() {
+    local detected
+    detected="$(_detect_gpu)"
+    case "$detected" in
+        nvidia)
+            if _docker_has_nvidia_runtime; then
+                echo "nvidia"
+            else
+                _warn "NVIDIA GPU detected, but Docker nvidia runtime is unavailable. Falling back to CPU."
+                _warn "Run scripts/check-docker-gpu.sh to enable NVIDIA Docker passthrough."
+                echo "cpu"
+            fi
+            ;;
+        amd)
+            if _host_amd_devices_ready; then
+                echo "amd"
+            else
+                _warn "AMD GPU tooling detected, but /dev/kfd or /dev/dri is missing. Falling back to CPU."
+                _warn "Run scripts/check-docker-amd-gpu.sh to diagnose AMD Docker passthrough."
+                echo "cpu"
+            fi
+            ;;
+        *)
+            echo "cpu"
+            ;;
+    esac
+}
+
+_resolve_gpu_mode() {
+    local cli_override="${ATENEA_GPU_MODE_OVERRIDE:-}"
+    local mode=""
+    local compose_file="${COMPOSE_FILE:-}"
+
+    if [ -n "$cli_override" ]; then
+        mode="$cli_override"
+    elif [ -n "${GPU_MODE:-}" ]; then
+        mode="${GPU_MODE}"
+    else
+        if [ -z "$compose_file" ]; then
+            compose_file="$(_env_get COMPOSE_FILE || true)"
+        fi
+        mode="$(_gpu_mode_from_compose_file "$compose_file")"
+        [ -n "$mode" ] || mode="$(_auto_gpu_mode)"
+    fi
+
+    case "$mode" in
+        nvidia|amd|cpu) echo "$mode" ;;
+        *)
+            _fail "Unknown GPU mode: ${mode}. Use nvidia, amd, or cpu."
+            return 1 ;;
+    esac
 }
 
 _ensure_env() {
@@ -85,18 +172,26 @@ _ensure_env() {
 
 _compose_cmd() {
     local action="$1"; shift
-    local gpu; gpu="$(_detect_gpu)"
+    local gpu
     local compose_args=()
 
     _ensure_env
+    gpu="$(_resolve_gpu_mode)" || return 1
 
-    case "${GPU_MODE:-$gpu}" in
-        nvidia) _info "GPU mode: NVIDIA"; compose_args+=(-f "${COMPOSE_NVIDIA}") ;;
-        amd)    _info "GPU mode: AMD";    compose_args+=(-f "${COMPOSE_AMD}") ;;
-        cpu)    _info "GPU mode: CPU";    compose_args+=(-f "${COMPOSE_BASE}") ;;
-        *)
-            _fail "Unknown GPU_MODE: ${GPU_MODE:-auto}. Use nvidia, amd, or cpu."
-            return 1 ;;
+    compose_args+=(-f "${COMPOSE_BASE}")
+
+    case "${gpu}" in
+        nvidia)
+            _info "GPU mode: NVIDIA"
+            compose_args+=(-f "${COMPOSE_NVIDIA}")
+            ;;
+        amd)
+            _info "GPU mode: AMD"
+            compose_args+=(-f "${COMPOSE_AMD}")
+            ;;
+        cpu)
+            _info "GPU mode: CPU"
+            ;;
     esac
 
     (cd "${REPO_ROOT}" && docker compose -p atenea "${compose_args[@]}" "$action" "$@")
@@ -244,7 +339,7 @@ _up() {
     fi
 
     [ "$build" -eq 1 ] && args+=(--build)
-    GPU_MODE="$gpu_mode" _compose_cmd up -d "${args[@]}"
+    ATENEA_GPU_MODE_OVERRIDE="$gpu_mode" _compose_cmd up -d "${args[@]}"
 
     local port="${APP_PORT:-7000}"
     _spin "Waiting for Atenea to be ready on port ${port}" \

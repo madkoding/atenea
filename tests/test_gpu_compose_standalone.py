@@ -2,8 +2,8 @@
 
 Stack-management UIs (Portainer, Coolify, Dockhand, ...) often accept only a
 single compose file and do not honor COMPOSE_FILE or multiple ``-f`` overlays,
-so the repo ships standalone ``docker-compose.gpu-*.yml`` files that inline the
-GPU overlay. The base ``docker-compose.yml`` plus ``docker/gpu.*.yml`` overlays
+so the repo ships standalone ``docker/compose.gpu-*.yml`` files that inline the
+GPU overlay. The base ``docker/compose.yml`` plus ``docker/gpu.*.yml`` overlays
 remain the source of truth; these tests assert each standalone file equals the
 base compose with only the matching overlay merged into the ``atenea``
 service. No Docker / docker compose is required — everything is pure YAML.
@@ -17,11 +17,11 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 
-BASE = ROOT / "docker-compose.yml"
+BASE = ROOT / "docker" / "compose.yml"
 NVIDIA_OVERLAY = ROOT / "docker" / "gpu.nvidia.yml"
 AMD_OVERLAY = ROOT / "docker" / "gpu.amd.yml"
-NVIDIA_STANDALONE = ROOT / "docker-compose.gpu-nvidia.yml"
-AMD_STANDALONE = ROOT / "docker-compose.gpu-amd.yml"
+NVIDIA_STANDALONE = ROOT / "docker" / "compose.gpu-nvidia.yml"
+AMD_STANDALONE = ROOT / "docker" / "compose.gpu-amd.yml"
 
 SERVICE = "atenea"
 
@@ -117,12 +117,9 @@ def test_nvidia_atenea_adds_only_overlay(base):
         "NVIDIA_DRIVER_CAPABILITIES=compute,utility",
     }
 
-    # deploy block is new and matches the overlay's GPU reservation exactly.
-    assert "deploy" not in base_svc
-    devices = svc["deploy"]["resources"]["reservations"]["devices"]
-    assert devices == [
-        {"driver": "nvidia", "count": "all", "capabilities": ["gpu"]}
-    ]
+    # runtime is set by the NVIDIA overlay.
+    assert "runtime" not in base_svc
+    assert svc["runtime"] == "nvidia"
 
     # No AMD-only keys leaked in.
     assert "devices" not in svc
@@ -144,4 +141,4 @@ def test_amd_atenea_adds_only_overlay(base):
     assert svc["group_add"] == ["video", "${RENDER_GID:-render}"]
 
     # No NVIDIA-only keys leaked in.
-    assert "deploy" not in svc
+    assert "runtime" not in svc

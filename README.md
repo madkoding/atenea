@@ -20,6 +20,12 @@ El script unificado maneja setup y lanzamiento con detección automática de GPU
 ./atenea exec <comando>         # ejecuta comando en el contenedor
 ./atenea ps                     # lista contenedores
 ./atenea help                   # muestra todos los comandos
+
+# verificacion rapida del setup/contenedor GPU
+scripts/verify-gpu-setup.sh         # auto
+scripts/verify-gpu-setup.sh --nvidia
+scripts/verify-gpu-setup.sh --amd
+scripts/verify-gpu-setup.sh --cpu
 ```
 
 Auto-detección: `nvidia-smi` → NVIDIA, `/dev/kfd` → AMD, sino CPU.

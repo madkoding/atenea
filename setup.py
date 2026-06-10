@@ -60,7 +60,6 @@ setup(
         "qrcode[pil]",
         "croniter",
         "dogpile.cache",
-        "llama-cpp-python[server]",
     ],
     extras_require=extras_require,
 )

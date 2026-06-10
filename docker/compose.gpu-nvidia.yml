@@ -2,8 +2,8 @@
 # Coolify, Dockhand, etc.) that accept only a single Compose file and do not
 # reliably honor COMPOSE_FILE or multiple `-f` overlays.
 #
-# This is equivalent to: docker-compose.yml + docker/gpu.nvidia.yml.
-# The base docker-compose.yml plus the docker/gpu.nvidia.yml overlay remain
+# This is equivalent to: docker/compose.yml + docker/gpu.nvidia.yml.
+# The base docker/compose.yml plus the docker/gpu.nvidia.yml overlay remain
 # the source of truth — CLI users should keep using the COMPOSE_FILE overlay
 # workflow. Keep this file in sync with both when either changes.
 #
@@ -13,7 +13,7 @@ services:
   atenea:
     build:
       context: ..
-      dockerfile: docker/Dockerfile.gpu-nvidia
+      dockerfile: docker/Dockerfile
     ports:
       - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7000}:7000"
     volumes:
@@ -80,20 +80,13 @@ services:
       # NVIDIA overlay (from docker/gpu.nvidia.yml).
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia
     depends_on:
       searxng:
         condition: service_healthy
       chromadb:
         condition: service_started
     restart: unless-stopped
-    # NVIDIA overlay (from docker/gpu.nvidia.yml).
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
 
   chromadb:
     image: docker.io/chromadb/chroma:latest

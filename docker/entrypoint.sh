@@ -70,6 +70,16 @@ for cu in \
         break
     fi
 done
+
+# Make pip-installed CUDA runtime libs discoverable by the dynamic linker for
+# llama-cpp-python CUDA wheels (libllama.so -> libcudart.so.12, libcublas.so.12).
+for cudalib in \
+    /app/.local/lib/python*/site-packages/nvidia/cuda_runtime/lib \
+    /app/.local/lib/python*/site-packages/nvidia/cublas/lib; do
+    if [ -d "$cudalib" ]; then
+        export LD_LIBRARY_PATH="$cudalib:${LD_LIBRARY_PATH:-}"
+    fi
+done
 # Disable the FlashInfer JIT sampler unconditionally — it is sampler-only
 # and has no impact on the attention path, but requires nvcc + matching
 # CUDA headers at startup. Without this, vLLM crashes with "Could not find

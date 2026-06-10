@@ -41,7 +41,7 @@ The full license texts are kept in [`licenses/`](licenses/).
 
 ## Bundled via Docker Compose
 
-These services are pulled as images by the project's `docker-compose.yml`
+These services are pulled as images by the project's `docker/compose.yml`
 and run alongside Atenea on `docker compose up`. They are not modified —
 just composed.
 

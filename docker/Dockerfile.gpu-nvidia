@@ -43,9 +43,7 @@ WORKDIR /app
 ARG INSTALL_OPTIONAL=false
 COPY requirements.txt requirements-optional.txt ./
 RUN pip install --no-cache-dir -r requirements.txt \
-    && if [ "$INSTALL_OPTIONAL" = "true" ]; then pip install --no-cache-dir -r requirements-optional.txt; fi \
-    && pip install --no-cache-dir --force-reinstall llama-cpp-python[server] \
-        --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124
+    && if [ "$INSTALL_OPTIONAL" = "true" ]; then pip install --no-cache-dir -r requirements-optional.txt; fi
 
 COPY . .
 
@@ -54,8 +52,15 @@ RUN mkdir -p data logs services/cache/search
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Pre-built llama-server with CUDA support — skips the runtime source build
+# Install CUDA runtime (libcudart.so.12) for GPU-accelerated llama-server
+RUN pip install --no-cache-dir nvidia-cuda-runtime-cu12
+
+# Pre-built llama-server with CUDA support — copy binary and shared libs
 COPY --from=llama-builder /build/llama.cpp/build/bin/llama-server /usr/local/bin/llama-server
+COPY --from=llama-builder /build/llama.cpp/build/lib/*.so* /usr/local/lib/ 2>/dev/null || true
+COPY --from=llama-builder /build/llama.cpp/build/staging/lib/*.so* /usr/local/lib/ 2>/dev/null || true
+COPY --from=llama-builder /build/llama.cpp/build/src/*.so* /usr/local/lib/ 2>/dev/null || true
+RUN find /usr/local/lib -name "*.so*" -exec ldconfig \; 2>/dev/null; ldconfig; /usr/local/bin/llama-server --version
 
 EXPOSE 7000
 

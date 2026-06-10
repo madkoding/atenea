@@ -21,6 +21,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gosu \
     && rm -rf /var/lib/apt/lists/*
 
+# GPU overlays may request supplemental groups by name.
+# Ensure they exist in the base image so compose can start.
+RUN groupadd -f render && groupadd -f video
+
 WORKDIR /app
 
 # Install Python deps first (layer cache). Optional extras (PyMuPDF AGPL, etc.)

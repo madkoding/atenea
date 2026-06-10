@@ -5,9 +5,9 @@
 # Requires ROCm drivers on the host (kfd + DRI devices). The host user
 # running Docker must be in the `video` and `render` groups.
 #
-# This overlay passes the host GPU through to the container and requires
-# Dockerfile.gpu-amd (build: { dockerfile: Dockerfile.gpu-amd }) which
-# pre-compiles llama-server with ROCm/HIP support at image build time.
+# This overlay only exposes host ROCm/KFD/DRI devices to Atenea.
+# Atenea setup then installs/downloads a prebuilt llama.cpp runtime inside
+# the container (ROCm when available, else safe fallback paths).
 services:
   atenea:
     devices:

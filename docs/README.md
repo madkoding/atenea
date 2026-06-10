@@ -173,7 +173,7 @@ Safety notes:
 To enable manually without the script, add this to `.env`:
 
 ```bash
-COMPOSE_FILE=docker-compose.yml:docker/gpu.nvidia.yml
+COMPOSE_FILE=docker/compose.yml:docker/gpu.nvidia.yml
 ```
 
 **AMD / ROCm.** `scripts/check-docker-amd-gpu.sh` diagnoses AMD GPU passthrough
@@ -190,17 +190,20 @@ scripts/check-docker-amd-gpu.sh --enable-amd-overlay
 To enable manually without the script, add this to `.env`:
 
 ```bash
-COMPOSE_FILE=docker-compose.yml:docker/gpu.amd.yml
+COMPOSE_FILE=docker/compose.yml:docker/gpu.amd.yml
 RENDER_GID=989
 ```
 
-**Pre-built GPU llama-server.** Both GPU overlay files (`docker/gpu.nvidia.yml`
-and `docker/gpu.amd.yml`) expect the corresponding `Dockerfile.gpu-*` which
-pre-compiles `llama-server` with CUDA or ROCm/HIP support at image build time.
-This means GPU model serving works without on-the-fly source compilation or
-Cookbook dependency re-installs. The standalone compose files
-(`docker-compose.gpu-nvidia.yml` and `docker-compose.gpu-amd.yml`) already
-reference the correct Dockerfile.
+**Prebuilt llama.cpp runtime (no source build by default).** GPU overlays now
+only expose host GPU runtime/devices to the app container. At startup,
+`app_setup.py` prefers prebuilt llama.cpp runtimes in this order:
+
+- NVIDIA: prebuilt `llama-cpp-python[server]` CUDA wheel, then release assets.
+- AMD ROCm: prebuilt upstream ROCm `llama-server` release asset.
+- CPU/Vulkan fallback: prebuilt release asset or prebuilt CPU wheel.
+
+Only as a last resort (if no prebuilt artifact exists for your Python/platform)
+it can fall back to a regular pip install that may compile.
 
 **Stack-management UIs (Portainer, Coolify, Dockhand, etc.).** These tools
 often accept only a single Compose file and do not reliably honor `COMPOSE_FILE`
@@ -208,13 +211,13 @@ or multiple `-f` overlays. CLI users should keep using the `COMPOSE_FILE`
 overlay workflow above. For stack UIs, point the stack at one of the standalone
 files instead, which bundle the base stack plus the GPU settings:
 
-- `docker-compose.gpu-nvidia.yml` — pre-builds llama-server with CUDA,
+- `docker/compose.gpu-nvidia.yml` — enables NVIDIA runtime in one file,
   requires the NVIDIA Container Toolkit on the host.
-- `docker-compose.gpu-amd.yml` — pre-builds llama-server with ROCm/HIP,
+- `docker/compose.gpu-amd.yml` — enables ROCm/KFD/DRI passthrough in one file,
   requires host ROCm/kfd/DRI setup, the `video`/`render` group membership,
   and `RENDER_GID` when needed.
 
-The base `docker-compose.yml` plus the `docker/gpu.*.yml` overlays remain the
+The base `docker/compose.yml` plus the `docker/gpu.*.yml` overlays remain the
 source of truth; the standalone files mirror them for single-file deployments.
 
 Verify after enabling either overlay:
@@ -224,12 +227,25 @@ docker compose exec atenea nvidia-smi -L   # NVIDIA
 docker compose exec atenea sh -lc 'test -e /dev/kfd && test -d /dev/dri && ls -l /dev/kfd /dev/dri/renderD*'  # AMD
 ```
 
-Check that the pre-built binary detects the GPU:
+Check that the selected runtime detects the GPU:
 
 ```bash
 docker compose exec atenea llama-server --help 2>&1 | grep -i cuda   # NVIDIA
 docker compose exec atenea llama-server --help 2>&1 | grep -i hip    # AMD
 ```
+
+Quick end-to-end verifier from the repo root:
+
+```bash
+scripts/verify-gpu-setup.sh         # auto-detect mode
+scripts/verify-gpu-setup.sh --nvidia
+scripts/verify-gpu-setup.sh --amd
+scripts/verify-gpu-setup.sh --cpu
+```
+
+`--amd` requires AMD device nodes on the host (`/dev/kfd` and
+`/dev/dri/renderD*`). If they are missing, the verifier reports a warning and
+skips AMD container checks instead of failing.
 
 **Ollama with Docker.** If Ollama runs on the host, add this endpoint in
 Settings:

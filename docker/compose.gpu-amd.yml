@@ -2,8 +2,8 @@
 # Coolify, Dockhand, etc.) that accept only a single Compose file and do not
 # reliably honor COMPOSE_FILE or multiple `-f` overlays.
 #
-# This is equivalent to: docker-compose.yml + docker/gpu.amd.yml.
-# The base docker-compose.yml plus the docker/gpu.amd.yml overlay remain the
+# This is equivalent to: docker/compose.yml + docker/gpu.amd.yml.
+# The base docker/compose.yml plus the docker/gpu.amd.yml overlay remain the
 # source of truth — CLI users should keep using the COMPOSE_FILE overlay
 # workflow. Keep this file in sync with both when either changes.
 #
@@ -14,7 +14,7 @@ services:
   atenea:
     build:
       context: ..
-      dockerfile: docker/Dockerfile.gpu-amd
+      dockerfile: docker/Dockerfile
     ports:
       - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7000}:7000"
     volumes:
