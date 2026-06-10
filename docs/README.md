@@ -447,7 +447,7 @@ All user data lives in `data/` (gitignored): `app.db` (sessions, messages, docum
 </a>
 
 ## License
-MIT -- see [LICENSE](LICENSE) and [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md).
+GNU General Public License v3 or later (GPLv3+) -- see [LICENSE](LICENSE) and [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md).
 
 ```
                                   |

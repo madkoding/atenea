@@ -139,23 +139,22 @@ credit:
 
 ### License-compatibility notes (for the repo's own LICENSE choice)
 
-The **core ships fully permissive** (MIT-compatible), so the two copyleft
-concerns from earlier are resolved:
+The project is licensed under **GPLv3+**, a strong-copyleft license. All
+dependencies are compatible with GPLv3:
 
-- **PDF text extraction** now uses **`pypdf`** (BSD-3-Clause) and **encoding
-  detection** uses **`charset-normalizer`** (MIT). chardet (LGPL-2.1) has been
-  removed entirely.
-- **PyMuPDF (AGPL-3.0)** is no longer a core dependency. It is **optional** and
-  used *only* by the PDF form-filling feature (`src/pdf_forms.py` and the form
-  endpoints in `routes/document_routes.py`), lazy-imported and listed in
-  `requirements-optional.txt`. The MIT core runs without it. If you choose to
-  install it, AGPL's network clause then applies to *that feature* for your
-  deployment (Artifex also sells a commercial PyMuPDF license that lifts this).
-- **`caldav`** (Python lib) is **dual-licensed GPL-3.0-or-later OR Apache-2.0**.
-  Atenea uses it under **Apache-2.0**, which is permissive and MIT-compatible.
-- **`markitdown`** (Microsoft) is **MIT** and used only as an *optional* dependency for Office/EPUB text
-  extraction (`src/markitdown_runtime.py`), lazy-imported with graceful fallback — the MIT core runs without
-  it. The cloud `az-doc-intel` extra is deliberately **not** installed, keeping extraction fully local.
+- **Core Python dependencies** (FastAPI, SQLAlchemy, pydantic, etc.) are under
+  **MIT** or **BSD** — both GPL-compatible permissive licenses.
+- **PyMuPDF (AGPL-3.0)** is optional and used *only* by the PDF form-filling
+  feature, lazy-imported and listed in `requirements-optional.txt`. AGPLv3 is
+  GPLv3-compatible.
+- **`caldav`** is **dual-licensed GPL-3.0-or-later OR Apache-2.0**. Under GPLv3
+  project licensing, using it under GPL-3.0-or-later is fully compatible.
+- **`markitdown`** (Microsoft) is **MIT** — GPL-compatible.
+- **JavaScript/CSS dependencies** are all under MIT, BSD, or SIL Open Font
+  License — all GPLv3-compatible.
+- **Docker images** (SearXNG AGPL-3.0, Radicale GPL-3.0, etc.) are used as
+  separate services communicating over the network; their licenses apply to
+  each service independently.
 
 ---
 
