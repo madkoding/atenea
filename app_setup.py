@@ -7,6 +7,7 @@ initial admin user. Safe to re-run (skips what already exists).
 
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -192,6 +193,67 @@ def _has_llama_cpp_python() -> bool:
         return False
 
 
+def _llama_cpp_supports_gpu_offload() -> bool:
+    """True when the installed llama-cpp-python runtime exposes GPU offload."""
+    try:
+        import llama_cpp
+
+        ll = getattr(llama_cpp, "llama_cpp", None)
+        fn = getattr(ll, "llama_supports_gpu_offload", None)
+        if callable(fn):
+            return bool(fn())
+    except Exception:
+        return False
+    return False
+
+
+def _find_cudart_paths() -> list[str]:
+    """Best-effort list of libcudart candidate paths."""
+    candidates: list[str] = []
+    candidates.extend(sorted(glob.glob(os.path.expanduser(
+        "~/.local/lib/python*/site-packages/nvidia/cuda_runtime/lib/libcudart.so*"
+    ))))
+    candidates.extend(sorted(glob.glob("/usr/local/cuda/lib64/libcudart.so*")))
+    candidates.extend(sorted(glob.glob("/usr/lib*/libcudart.so*")))
+    seen: set[str] = set()
+    out: list[str] = []
+    for path in candidates:
+        if path in seen:
+            continue
+        seen.add(path)
+        out.append(path)
+    return out
+
+
+def _has_visible_cudart() -> bool:
+    """Return True if libcudart can be loaded in the current process."""
+    try:
+        ctypes.CDLL("libcudart.so", mode=getattr(ctypes, "RTLD_GLOBAL", 0))
+        return True
+    except Exception:
+        pass
+    for so in _find_cudart_paths():
+        try:
+            ctypes.CDLL(so, mode=getattr(ctypes, "RTLD_GLOBAL", 0))
+            return True
+        except Exception:
+            continue
+    return False
+
+
+def _llama_server_supports_gpu_backend(path: str | None = None) -> bool:
+    """Return True if llama-server advertises a GPU backend in --help."""
+    exe = path or shutil.which("llama-server")
+    if not exe:
+        return False
+    try:
+        r = subprocess.run([exe, "--help"], capture_output=True, text=True, timeout=10)
+    except Exception:
+        return False
+    text = ((r.stdout or "") + "\n" + (r.stderr or "")).lower()
+    return bool(re.search(r"\b(cuda|hip|vulkan|metal|sycl)\b", text))
+
+
 def _pip_install(*args: str, user: bool = False) -> subprocess.CompletedProcess:
     cmd = [sys.executable, "-m", "pip", "install", "--upgrade"]
     if user:
@@ -314,7 +376,7 @@ def _ensure_cuda_wheel():
     """Install the prebuilt CUDA llama-cpp-python wheel (no source build)."""
     marker = os.path.join(DATA_DIR, ".cuda-wheel-installed")
     if os.path.exists(marker):
-        if _has_llama_cpp_python():
+        if _has_llama_cpp_python() and _llama_cpp_supports_gpu_offload():
             return True
         try:
             os.remove(marker)
@@ -327,10 +389,12 @@ def _ensure_cuda_wheel():
     if _pip_install_prebuilt(
         "llama-cpp-python[server]",
         "https://abetlen.github.io/llama-cpp-python/whl/cu124",
-    ):
+    ) and _llama_cpp_supports_gpu_offload():
         open(marker, "w").close()
         print("  [ok] llama-cpp-python with CUDA installed")
         return True
+    if _has_llama_cpp_python() and not _llama_cpp_supports_gpu_offload():
+        print("  [warn] llama-cpp-python is installed but GPU offload is not available (CPU-only runtime)")
     print("  [warn] CUDA wheel not available for this Python version")
     return False
 
@@ -360,12 +424,23 @@ def _ensure_cpu_wheel():
 def setup_llamacpp():
     """Auto-detect hardware and install prebuilt llama.cpp binaries/wheels."""
     existing = shutil.which("llama-server")
+    backend = _detect_gpu_backend()
     while existing:
         try:
             r = subprocess.run([existing, "--version"], capture_output=True, text=True, timeout=10)
             if r.returncode == 0:
+                if backend == "cuda" and not _llama_server_supports_gpu_backend(existing):
+                    print("  [warn] llama-server is installed but appears CPU-only on a CUDA host; replacing it")
+                    try:
+                        os.remove(existing)
+                    except OSError:
+                        pass
+                    existing = shutil.which("llama-server")
+                    continue
                 print("  [ok] llama-server already installed")
-                if _IN_DOCKER and _detect_gpu_backend() == "cuda":
+                if _IN_DOCKER and backend == "cuda":
+                    if not _has_visible_cudart():
+                        print("  [warn] libcudart not visible; installing CUDA runtime Python packages")
                     _ensure_cuda_wheel()
                 return
         except: pass
@@ -373,12 +448,12 @@ def setup_llamacpp():
         os.remove(existing)
         existing = shutil.which("llama-server")
 
-    backend = _detect_gpu_backend()
-
     try:
         __import__("llama_cpp")
         print("  [ok] llama-cpp-python already installed")
         if backend == "cuda":
+            if not _has_visible_cudart():
+                print("  [warn] libcudart not visible; installing CUDA runtime Python packages")
             _ensure_cuda_wheel()
         return
     except (ImportError, RuntimeError) as e:
