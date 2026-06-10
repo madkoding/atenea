@@ -4,8 +4,8 @@ services:
     ports:
       - "7860:7860"
     volumes:
-      - ./data/a1111/models:/workspace/stable-diffusion-webui/models
-      - ./data/a1111/outputs:/workspace/stable-diffusion-webui/outputs
+      - ../data/a1111/models:/workspace/stable-diffusion-webui/models
+      - ../data/a1111/outputs:/workspace/stable-diffusion-webui/outputs
     environment:
       - WEBUI_ARGS=--api --xformers --no-half-vae --listen --port 7860
       - CUDA_VISIBLE_DEVICES=all

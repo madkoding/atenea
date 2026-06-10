@@ -49,7 +49,7 @@ Read-only diagnostic (default — safe to run at any time, installs nothing):
                                 Docker AMD device passthrough.
 
 Opt-in .env update (requires .env or .env.example in the repo root):
-  --enable-amd-overlay          Write COMPOSE_FILE=docker-compose.yml:docker/gpu.amd.yml
+  --enable-amd-overlay          Write COMPOSE_FILE=docker/compose.yml:docker/gpu.amd.yml
                                 and RENDER_GID=<detected> into .env. Creates a
                                 timestamped backup first. Blocked if passthrough
                                 is not working.
@@ -265,7 +265,7 @@ _enable_amd_overlay() {
     if [ "${_already}" -eq 0 ]; then
         local _new_cf=""
         if [ -z "${_current_cf}" ]; then
-            _new_cf="docker-compose.yml:${_overlay_fragment}"
+            _new_cf="docker/compose.yml:${_overlay_fragment}"
             if ! printf '\nCOMPOSE_FILE=%s\n' "${_new_cf}" >> "${_env_file}"; then
                 _fail "Failed to write COMPOSE_FILE to .env."
                 return 1

@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+COMPOSE_BASE="docker/compose.yml"
+COMPOSE_NVIDIA="docker/compose.gpu-nvidia.yml"
+COMPOSE_AMD="docker/compose.gpu-amd.yml"
+
+# ─── helpers ───────────────────────────────────────────────────────────────────
+_info()  { printf '\033[34m[INFO]\033[0m %s\n' "$*"; }
+_ok()    { printf '\033[32m[ OK ]\033[0m %s\n' "$*"; }
+_warn()  { printf '\033[33m[WARN]\033[0m %s\n' "$*"; }
+_fail()  { printf '\033[31m[FAIL]\033[0m %s\n' "$*"; }
+_step()  { printf '\033[36m[STEP]\033[0m %s\n' "$*"; }
+
+_detect_gpu() {
+    if command -v nvidia-smi &>/dev/null && nvidia-smi &>/dev/null; then
+        echo "nvidia"
+    elif [ -e /dev/kfd ]; then
+        echo "amd"
+    else
+        echo "cpu"
+    fi
+}
+
+_ensure_env() {
+    if [ ! -f "${REPO_ROOT}/.env" ]; then
+        _step "No .env found — copying from .env.example"
+        cp "${REPO_ROOT}/.env.example" "${REPO_ROOT}/.env"
+        _ok "Created .env — edit it to configure your instance"
+    fi
+}
+
+_compose_cmd() {
+    # $1 = "up", "down", "logs", "ps", "exec", etc. Remaining args forwarded.
+    local action="$1"; shift
+    local gpu
+    gpu="$(_detect_gpu)"
+    local compose_args=()
+
+    _ensure_env
+
+    case "${GPU_MODE:-$gpu}" in
+        nvidia)
+            _info "GPU mode: NVIDIA"
+            compose_args+=(-f "${COMPOSE_NVIDIA}")
+            ;;
+        amd)
+            _info "GPU mode: AMD"
+            compose_args+=(-f "${COMPOSE_AMD}")
+            ;;
+        cpu)
+            _info "GPU mode: CPU"
+            compose_args+=(-f "${COMPOSE_BASE}")
+            ;;
+        *)
+            _fail "Unknown GPU_MODE: ${GPU_MODE:-auto}. Use nvidia, amd, or cpu."
+            return 1
+            ;;
+    esac
+
+    (cd "${REPO_ROOT}" && docker compose "${compose_args[@]}" "$action" "$@")
+}
+
+# ─── subcommands ───────────────────────────────────────────────────────────────
+
+_setup() {
+    _step "Atenea first-time setup"
+    _ensure_env
+
+    if [ ! -d "${REPO_ROOT}/.venv" ]; then
+        _step "Creating Python virtual environment"
+        python3 -m venv "${REPO_ROOT}/.venv"
+        _ok "Virtual environment created"
+    fi
+
+    _step "Installing Python dependencies"
+    "${REPO_ROOT}/.venv/bin/pip" install --upgrade pip -q
+    "${REPO_ROOT}/.venv/bin/pip" install -r "${REPO_ROOT}/requirements.txt" -q
+    _ok "Dependencies installed"
+
+    mkdir -p "${REPO_ROOT}/data" "${REPO_ROOT}/logs"
+
+    _ok "Setup complete"
+    _info "Run  ./atenea up  to start (auto-detects GPU)"
+    _info "Run  ./atenea up --native  to run without Docker"
+    _info "Run  ./atenea up --nvidia  to force NVIDIA GPU mode"
+}
+
+_up() {
+    local native=0
+    local build=0
+    local gpu_mode=""
+    local args=()
+
+    for arg in "$@"; do
+        case "$arg" in
+            --native)  native=1 ;;
+            --build)   build=1 ;;
+            --nvidia)  gpu_mode="nvidia" ;;
+            --amd)     gpu_mode="amd" ;;
+            --cpu)     gpu_mode="cpu" ;;
+            *)         args+=("$arg") ;;
+        esac
+    done
+
+    if [ "$native" -eq 1 ]; then
+        _info "Starting Atenea natively (no Docker)"
+        _step "Checking virtual environment"
+        if [ ! -d "${REPO_ROOT}/.venv" ]; then
+            _setup
+        fi
+        exec "${REPO_ROOT}/.venv/bin/uvicorn" app:app --host 0.0.0.0 --port "${APP_PORT:-7000}" "${args[@]}"
+        return
+    fi
+
+    [ "$build" -eq 1 ] && args+=(--build)
+    GPU_MODE="$gpu_mode" _compose_cmd up -d "${args[@]}"
+
+    _info "Atenea is running"
+    _info "Open  http://localhost:${APP_PORT:-7000}  in your browser"
+    _info "Run  ./atenea logs  to follow output"
+}
+
+_usage() {
+    cat <<'USAGE'
+Usage: ./atenea <command> [options]
+
+Commands:
+  setup                  First-time setup (venv, .env, deps)
+  up [options]           Start Atenea (auto-detects GPU)
+    --native               Run directly on host (no Docker)
+    --build                Rebuild Docker image before starting
+    --nvidia | --amd | --cpu   Force GPU mode (override auto-detect)
+  down                   Stop all containers
+  logs [options]         Follow container logs
+  shell                  Open a shell in the running container
+  exec <cmd...>          Run a command in the running container
+  ps                     List running containers
+  help                   Show this help
+
+GPU auto-detection checks nvidia-smi (NVIDIA) and /dev/kfd (AMD).
+Set GPU_MODE=nvidia|amd|cpu in .env to pin the mode.
+USAGE
+}
+
+# ─── main dispatch ─────────────────────────────────────────────────────────────
+
+cmd="${1:-help}"
+shift 2>/dev/null || true
+
+case "$cmd" in
+    setup)             _setup "$@" ;;
+    up)                _up "$@" ;;
+    down|stop)         _compose_cmd down "$@" ;;
+    logs)              _compose_cmd logs -f "$@" ;;
+    shell)             _compose_cmd exec atenea bash "$@" ;;
+    exec)              _compose_cmd exec atenea "$@" ;;
+    ps)                _compose_cmd ps "$@" ;;
+    help|--help|-h)    _usage ;;
+    *)                 _fail "Unknown command: $cmd"; _usage; exit 1 ;;
+esac

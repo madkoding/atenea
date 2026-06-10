@@ -60,7 +60,7 @@ Informational:
   --help                        Show this help.
 
 Opt-in .env update (requires .env or .env.example in the repo root):
-  --enable-nvidia-overlay       Write COMPOSE_FILE=docker-compose.yml:docker/gpu.nvidia.yml
+  --enable-nvidia-overlay       Write COMPOSE_FILE=docker/compose.yml:docker/gpu.nvidia.yml
                                 into .env. Creates a timestamped backup first.
                                 Blocked if GPU passthrough is not working — fix
                                 passthrough first, then re-run. --yes does not
@@ -343,7 +343,7 @@ _enable_nvidia_overlay() {
     local _new_cf=""
     if [ -z "${_current_cf}" ]; then
         # No active COMPOSE_FILE line — append one
-        _new_cf="docker-compose.yml:${_overlay_fragment}"
+        _new_cf="docker/compose.yml:${_overlay_fragment}"
         if ! printf '\nCOMPOSE_FILE=%s\n' "${_new_cf}" >> "${_env_file}"; then
             _fail "Failed to write COMPOSE_FILE to .env."
             return 1
