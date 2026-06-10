@@ -163,6 +163,14 @@ def check_deps():
     else:
         print("  [ok] All core dependencies installed")
 
+    try:
+        __import__("llama_cpp")
+    except ImportError:
+        print('\n  [warn] llama-cpp-python server is not installed.')
+        print('         Run: pip install "llama-cpp-python[server]"')
+    else:
+        print("  [ok] llama-cpp-python server installed")
+
     if os.name != "nt" and shutil.which("tmux") is None:
         print("\n  [warn] tmux not found")
         print("         Cookbook uses tmux for background downloads and model serves.")
