@@ -80,9 +80,14 @@ _setup() {
     # 2. .env
     _ensure_env
 
-    # 3. Virtual environment
+    # 3. Virtual environment (rebuild if broken)
     VENV_PY="${REPO_ROOT}/.venv/bin/python3"
-    if [ ! -d "${REPO_ROOT}/.venv" ]; then
+    VENV_PIP="${REPO_ROOT}/.venv/bin/pip"
+    if [ ! -f "$VENV_PIP" ] || [ ! -f "$VENV_PY" ]; then
+        if [ -d "${REPO_ROOT}/.venv" ]; then
+            _warn "Virtual environment is broken — rebuilding"
+            rm -rf "${REPO_ROOT}/.venv"
+        fi
         _step "Creating Python virtual environment"
         python3 -m venv "${REPO_ROOT}/.venv"
         _ok "Virtual environment created"
@@ -136,9 +141,7 @@ _up() {
 
     if [ "$native" -eq 1 ]; then
         _info "Starting Atenea natively (no Docker)"
-        if [ ! -d "${REPO_ROOT}/.venv" ]; then
-            _setup
-        fi
+        _setup
         exec "${REPO_ROOT}/.venv/bin/uvicorn" app:app --host 0.0.0.0 --port "${APP_PORT:-7000}" "${args[@]}"
         return
     fi
