@@ -64,6 +64,39 @@ _compose_cmd() {
 
 # ─── subcommands ───────────────────────────────────────────────────────────────
 
+_ensure_sysdeps() {
+    local pkgs=()
+    if ! python3 -m venv --help &>/dev/null; then
+        pkgs+=(python3-venv)
+    fi
+    if ! python3-config --include &>/dev/null 2>&1; then
+        pkgs+=(python3-dev)
+    fi
+    if ! command -v gcc &>/dev/null; then
+        pkgs+=(build-essential)
+    fi
+    if ! command -v git &>/dev/null; then
+        pkgs+=(git)
+    fi
+    [ ${#pkgs[@]} -eq 0 ] && return
+
+    _step "Installing system dependencies: ${pkgs[*]}"
+    if command -v apt-get &>/dev/null; then
+        sudo apt-get update -qq && sudo apt-get install -y -qq "${pkgs[@]}"
+    elif command -v dnf &>/dev/null; then
+        sudo dnf install -y -q "${pkgs[@]}"
+    elif command -v pacman &>/dev/null; then
+        sudo pacman -S --noconfirm "${pkgs[@]}"
+    elif command -v zypper &>/dev/null; then
+        sudo zypper install -y "${pkgs[@]}"
+    elif command -v brew &>/dev/null; then
+        brew install "${pkgs[@]}"
+    else
+        _warn "Unknown package manager — install manually: ${pkgs[*]}"
+    fi
+    _ok "System dependencies installed"
+}
+
 _setup() {
     _step "Atenea first-time setup"
 
@@ -77,10 +110,13 @@ _setup() {
         _warn "Python 3.12 recommended (found $py_version) — continuing anyway"
     fi
 
-    # 2. .env
+    # 2. System dependencies (python3-venv, build-essential, etc.)
+    _ensure_sysdeps
+
+    # 3. .env
     _ensure_env
 
-    # 3. Virtual environment (rebuild if broken)
+    # 4. Virtual environment (rebuild if broken)
     VENV_PY="${REPO_ROOT}/.venv/bin/python3"
     VENV_PIP="${REPO_ROOT}/.venv/bin/pip"
     if [ ! -f "$VENV_PIP" ] || [ ! -f "$VENV_PY" ]; then
@@ -93,25 +129,21 @@ _setup() {
         _ok "Virtual environment created"
     fi
 
-    # 4. Core dependencies
-    _step "Installing core Python dependencies"
+    # 5. Python dependencies
+    _step "Installing Python dependencies"
     "${REPO_ROOT}/.venv/bin/pip" install --upgrade pip -q
     "${REPO_ROOT}/.venv/bin/pip" install -r "${REPO_ROOT}/requirements.txt" -q
-    _ok "Core dependencies installed"
-
-    # 5. Optional dependencies
     if [ -f "${REPO_ROOT}/requirements-optional.txt" ]; then
-        _step "Installing optional Python dependencies"
         "${REPO_ROOT}/.venv/bin/pip" install -r "${REPO_ROOT}/requirements-optional.txt" -q
-        _ok "Optional dependencies installed"
     fi
+    _ok "Python dependencies installed"
 
     # 6. Install project in dev mode
     _step "Installing project in development mode"
     "${REPO_ROOT}/.venv/bin/pip" install -e "${REPO_ROOT}" -q
     _ok "Project installed"
 
-    # 7. Run setup.py (db init, admin user, directories)
+    # 7. Application setup (db init, admin user, directories)
     _step "Running application setup"
     ATENEA_SKIP_RUN_HINT=1 "${VENV_PY}" "${REPO_ROOT}/setup.py"
     _ok "Application setup complete"
