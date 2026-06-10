@@ -472,6 +472,16 @@ def test_validate_serve_cmd_accepts_windows_printf_format():
     assert _validate_serve_cmd(cmd) == cmd
 
 
+def test_serve_runner_blocks_gpu_request_when_llama_server_has_no_gpu_backend():
+    import pathlib
+
+    src = (pathlib.Path(__file__).resolve().parent.parent
+        / "routes" / "cookbook_routes.py").read_text(encoding="utf-8")
+
+    assert "llama-server --help 2>&1 | grep -Eiq \"cuda|hip|vulkan|metal|sycl\"" in src
+    assert "but GPU layers were requested" in src
+
+
 def test_ollama_serve_defaults_to_loopback_bind():
     assert _ollama_bind_from_cmd("ollama serve") == ("127.0.0.1", "11434")
     assert _ollama_bind_from_cmd("ollama run qwen2.5:0.5b") == ("127.0.0.1", "11434")

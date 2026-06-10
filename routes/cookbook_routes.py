@@ -1088,6 +1088,21 @@ def setup_cookbook_routes() -> APIRouter:
                     runner_lines.append('    ATENEA_PREFLIGHT_EXIT=127')
                     runner_lines.append('  fi')
                     runner_lines.append('fi')
+
+                _gpu_layers_requested = bool(re.search(r"(?:^|\\s)-ngl\\s+[1-9]\\d*", req.cmd) or re.search(r"--n_gpu_layers\\s+[1-9]\\d*", req.cmd))
+                _llama_gpu_requested = bool(
+                    (req.gpus or "").strip()
+                    or "CUDA_VISIBLE_DEVICES=" in req.cmd
+                    or _gpu_layers_requested
+                )
+                if _llama_gpu_requested:
+                    runner_lines.append('if command -v llama-server &>/dev/null; then')
+                    runner_lines.append('  if ! llama-server --help 2>&1 | grep -Eiq "cuda|hip|vulkan|metal|sycl"; then')
+                    runner_lines.append('    echo "ERROR: llama-server on this host does not expose a GPU backend (CUDA/HIP/Vulkan/Metal/SYCL), but GPU layers were requested."')
+                    runner_lines.append('    echo "Hint: install a GPU-enabled llama.cpp runtime (or use a host/backend that has it), then relaunch."')
+                    runner_lines.append('    ATENEA_PREFLIGHT_EXIT=127')
+                    runner_lines.append('  fi')
+                    runner_lines.append('fi')
             elif "ollama" in req.cmd:
                 handled_ollama_serve = True
                 _ollama_default_host = "0.0.0.0" if remote else "127.0.0.1"
