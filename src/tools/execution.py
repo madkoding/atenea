@@ -629,6 +629,53 @@ def _promote_image_fields(result: dict) -> None:
 _BG_MARKERS = {"#!bg", "#bg", "# bg", "#background", "# background", "@background", "# @background"}
 
 
+_WORKSPACE_QUERY_HINTS = (
+    "repo", "repository", "codebase", "workspace", "project", "bug", "traceback",
+    "stack trace", "unit test", "pytest", "docker", "compose", "endpoint",
+    "localhost", "127.0.0.1", "host.docker.internal", "/home/", "./", "../",
+    "src/", "tests/", "package.json", "pyproject.toml", "requirements.txt",
+    "archivo", "fichero", "carpeta", "directorio", "codigo", "c\u00f3digo", "repositorio",
+)
+
+_WEB_QUERY_HINTS = (
+    "news", "latest news", "breaking", "today", "weather", "wikipedia", "web",
+    "online", "internet", "look up", "search online", "busca en web", "en internet",
+)
+
+
+def _looks_like_workspace_query(text: str) -> bool:
+    q = (text or "").strip().lower()
+    if not q:
+        return False
+    if any(h in q for h in _WORKSPACE_QUERY_HINTS):
+        return True
+    if re.search(r"\b[a-z0-9_\-]+\.(py|js|ts|tsx|jsx|json|yml|yaml|toml|md|sh|sql)\b", q):
+        return True
+    if re.search(r"\b[a-z0-9_\-]+/[a-z0-9_\-./]+", q):
+        return True
+    return False
+
+
+def _looks_explicitly_web_query(text: str) -> bool:
+    q = (text or "").strip().lower()
+    if not q:
+        return False
+    if "http://" in q or "https://" in q:
+        return True
+    if any(h in q for h in _WEB_QUERY_HINTS):
+        return True
+    return False
+
+
+def _should_block_web_lookup_for_workspace(tool: str, content: str) -> bool:
+    if tool not in {"web_search", "web_fetch"}:
+        return False
+    text = (content or "").strip()
+    if not text:
+        return False
+    return _looks_like_workspace_query(text) and not _looks_explicitly_web_query(text)
+
+
 def _split_bg_marker(content: str):
     """If the bash content's first non-empty line is a background marker
     (e.g. `#!bg`), return (True, command_without_marker); else (False, content)."""
@@ -1215,6 +1262,19 @@ async def execute_tool_block(
             "exit_code": 1,
         }
         logger.warning("Public tool policy blocked owner=%r tool=%s", owner, tool)
+        return desc, result
+
+    if _should_block_web_lookup_for_workspace(tool, content):
+        desc = f"{tool}: BLOCKED"
+        result = {
+            "error": (
+                "This looks like a local coding/workspace task. Use workspace tools "
+                "(`bash`, `read_file`, `write_file`, `edit_file`, `grep`, `glob`, `ls`) "
+                "instead of web lookup."
+            ),
+            "exit_code": 1,
+        }
+        logger.info("Blocked %s for workspace-like query", tool)
         return desc, result
 
     # ask_user: the agent poses a multiple-choice question to the user to get a

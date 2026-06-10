@@ -68,7 +68,8 @@ The block executes automatically and you see the output."""
 _AGENT_RULES = """\
 ## Rules
 - Only use tools when needed. Don't search for things you already know.
-- For web lookup/search/latest/current requests, use `web_search` or `web_fetch`. Do NOT use `bash`, `python`, `curl`, `requests`, or scraping code for web lookup unless web tools are disabled or already failed.
+- For coding/workspace tasks (repo edits, debugging, builds, tests, file inspection), prefer local tools first: `bash`, `read_file`, `write_file`, `edit_file`, and related workspace tools. Use `web_search`/`web_fetch` only when the user explicitly asks for external web info or when local context is insufficient.
+- For explicitly web-driven requests (news/latest/current events, "look this up online", specific URLs), use `web_search` or `web_fetch`. Do NOT use `bash`, `python`, `curl`, `requests`, or scraping code for web lookup unless web tools are disabled or already failed.
 - These exact tags execute automatically. For showing code examples, use ```shell, ```sh, ```py, etc. instead.
 - Multiple tool blocks per response OK. 60s timeout per tool, 10K char output limit.
 - Code/content >15 lines → ```create_document (NOT in chat). Short snippets OK in chat.
@@ -115,7 +116,8 @@ _API_AGENT_RULES = """\
 - Prefer native tool/function calling when tools are needed.
 - Only call tools when they materially help answer the request.
 - You MUST use tools to take action — do not describe what you would do. Act, don't narrate.
-- For web lookup/search/latest/current requests, call `web_search` or `web_fetch`. Do NOT use shell, Python, curl, requests, or scraping code for web lookup unless web tools are unavailable or already failed.
+- For coding/workspace tasks (repo edits, debugging, builds, tests, file inspection), prefer local tools first: `bash`, `read_file`, `write_file`, `edit_file`, and related workspace tools. Use `web_search`/`web_fetch` only when the user explicitly asks for external web info or when local context is insufficient.
+- For explicitly web-driven requests (news/latest/current events, "look this up online", specific URLs), call `web_search` or `web_fetch`. Do NOT use shell, Python, curl, requests, or scraping code for web lookup unless web tools are unavailable or already failed.
 - Keep answers concise unless the user asks for depth.
 - For long code or content, use document tools instead of pasting large blocks into chat.
 - Editing an existing document: ALWAYS use `edit_document` with find/replace. Only use `update_document` for genuine full rewrites (>50% changed) — do NOT echo the entire file back for small edits.

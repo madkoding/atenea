@@ -86,6 +86,86 @@ def test_executor_policy_backstop_blocks_tools():
     assert "forbade" in result["error"]
 
 
+def test_workspace_like_web_search_is_blocked_by_runtime_guard():
+    desc, result = asyncio.run(
+        execute_tool_block(
+            ToolBlock("web_search", "fix failing pytest in tests/test_api.py"),
+        )
+    )
+    assert desc == "web_search: BLOCKED"
+    assert result["exit_code"] == 1
+    assert "local coding/workspace task" in result["error"]
+
+
+def test_workspace_like_web_fetch_is_blocked_by_runtime_guard():
+    desc, result = asyncio.run(
+        execute_tool_block(
+            ToolBlock("web_fetch", "http://host.docker.internal:8080"),
+        )
+    )
+    assert desc == "web_fetch: BLOCKED"
+    assert result["exit_code"] == 1
+    assert "workspace tools" in result["error"]
+
+
+def test_explicit_web_query_not_blocked_by_workspace_guard(monkeypatch):
+    from src.tools import execution as te
+
+    async def _fake_call_mcp_tool(tool, content, progress_cb=None, workspace=None):
+        return {"output": f"ok:{tool}", "exit_code": 0}
+
+    monkeypatch.setattr(te, "_call_mcp_tool", _fake_call_mcp_tool)
+
+    desc, result = asyncio.run(
+        execute_tool_block(
+            ToolBlock("web_search", "latest news about python releases"),
+        )
+    )
+    assert desc.startswith("web_search:")
+    assert result["exit_code"] == 0
+
+
+def test_agent_loop_surfaces_workspace_guard_then_continues(monkeypatch):
+    _patch_loop_basics(monkeypatch)
+    calls = 0
+
+    async def _fake_stream(_candidates, messages, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            yield _delta_chunk("```web_search\nfix failing pytest in tests/test_api.py\n```")
+        else:
+            yield _delta_chunk("```bash\necho local-check\n```")
+        yield "data: [DONE]\n\n"
+
+    from src.tools.execution import execute_tool_block as _real_exec
+
+    async def _dispatch_exec(block, **kwargs):
+        if block.tool_type == "bash":
+            return ("bash: echo local-check", {"output": "local-check", "exit_code": 0})
+        return await _real_exec(block, **kwargs)
+
+    monkeypatch.setattr(al, "stream_llm_with_fallback", _fake_stream, raising=False)
+    monkeypatch.setattr(al, "execute_tool_block", _dispatch_exec, raising=False)
+
+    chunks = _collect(
+        al.stream_agent_loop(
+            "http://local.test/v1",
+            "local-model",
+            [{"role": "user", "content": "arregla el test roto en el repo"}],
+            max_rounds=2,
+            relevant_tools={"web_search", "bash", "read_file", "write_file", "edit_file", "grep", "glob", "ls"},
+            tool_policy=build_effective_tool_policy(last_user_message="arregla el test roto en el repo"),
+        )
+    )
+    events = _events(chunks)
+    outputs = [e for e in events if e.get("type") == "tool_output"]
+
+    assert calls == 2
+    assert any(e.get("tool") == "web_search" and e.get("exit_code") == 1 and "local coding/workspace task" in (e.get("output") or "") for e in outputs)
+    assert any(e.get("tool") == "bash" and e.get("exit_code") == 0 for e in outputs)
+
+
 def test_agent_loop_blocks_guide_only_fenced_tool_before_start(monkeypatch):
     _patch_loop_basics(monkeypatch)
     called = False
