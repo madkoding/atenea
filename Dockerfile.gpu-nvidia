@@ -11,12 +11,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp /build/llama.cpp
 
 WORKDIR /build/llama.cpp
+RUN cp /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so
 RUN --mount=type=cache,target=/root/.ccache \
     cmake -B build -DCMAKE_BUILD_TYPE=Release \
     -DGGML_CUDA=ON \
     -DCMAKE_CUDA_ARCHITECTURES=75 \
-    -DCMAKE_EXE_LINKER_FLAGS="-L/usr/local/cuda/lib64/stubs" \
-    -DCMAKE_SHARED_LINKER_FLAGS="-L/usr/local/cuda/lib64/stubs" \
     -DCMAKE_C_COMPILER_LAUNCHER=ccache \
     -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
     -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache \
