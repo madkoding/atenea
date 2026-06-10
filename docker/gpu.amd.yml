@@ -5,10 +5,9 @@
 # Requires ROCm drivers on the host (kfd + DRI devices). The host user
 # running Docker must be in the `video` and `render` groups.
 #
-# This overlay only passes the host GPU through to the container.
-# The slim Atenea image does not bundle ROCm userspace or inference
-# engines — install ROCm-compatible builds of vLLM / llama-cpp-python
-# via Cookbook -> Dependencies (or pip) before serving GPU models.
+# This overlay passes the host GPU through to the container and requires
+# Dockerfile.gpu-amd (build: { dockerfile: Dockerfile.gpu-amd }) which
+# pre-compiles llama-server with ROCm/HIP support at image build time.
 services:
   atenea:
     devices:
