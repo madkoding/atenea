@@ -176,21 +176,31 @@ To enable manually without the script, add this to `.env`:
 COMPOSE_FILE=docker-compose.yml:docker/gpu.nvidia.yml
 ```
 
-**AMD / ROCm.** AMD setup is read-only diagnostic plus manual `.env` edit. Run:
+**AMD / ROCm.** `scripts/check-docker-amd-gpu.sh` diagnoses AMD GPU passthrough
+and can optionally update `.env`:
 
 ```bash
+# Read-only diagnostic (default — installs nothing, never edits .env):
 scripts/check-docker-amd-gpu.sh
+
+# Write COMPOSE_FILE + RENDER_GID to .env (only when passthrough is confirmed):
+scripts/check-docker-amd-gpu.sh --enable-amd-overlay
 ```
 
-Then add the reported values to `.env`, replacing `RENDER_GID` with your host's
-numeric render group id:
+To enable manually without the script, add this to `.env`:
 
 ```bash
 COMPOSE_FILE=docker-compose.yml:docker/gpu.amd.yml
 RENDER_GID=989
 ```
 
-For NVIDIA/AMD GPU support, also read the comments in the selected overlay file: docker/gpu.nvidia.yml or docker/gpu.amd.yml.
+**Pre-built GPU llama-server.** Both GPU overlay files (`docker/gpu.nvidia.yml`
+and `docker/gpu.amd.yml`) expect the corresponding `Dockerfile.gpu-*` which
+pre-compiles `llama-server` with CUDA or ROCm/HIP support at image build time.
+This means GPU model serving works without on-the-fly source compilation or
+Cookbook dependency re-installs. The standalone compose files
+(`docker-compose.gpu-nvidia.yml` and `docker-compose.gpu-amd.yml`) already
+reference the correct Dockerfile.
 
 **Stack-management UIs (Portainer, Coolify, Dockhand, etc.).** These tools
 often accept only a single Compose file and do not reliably honor `COMPOSE_FILE`
@@ -198,10 +208,11 @@ or multiple `-f` overlays. CLI users should keep using the `COMPOSE_FILE`
 overlay workflow above. For stack UIs, point the stack at one of the standalone
 files instead, which bundle the base stack plus the GPU settings:
 
-- `docker-compose.gpu-nvidia.yml` — still requires the NVIDIA Container Toolkit
-  on the host.
-- `docker-compose.gpu-amd.yml` — still requires host ROCm/kfd/DRI setup, the
-  `video`/`render` group membership, and `RENDER_GID` when needed.
+- `docker-compose.gpu-nvidia.yml` — pre-builds llama-server with CUDA,
+  requires the NVIDIA Container Toolkit on the host.
+- `docker-compose.gpu-amd.yml` — pre-builds llama-server with ROCm/HIP,
+  requires host ROCm/kfd/DRI setup, the `video`/`render` group membership,
+  and `RENDER_GID` when needed.
 
 The base `docker-compose.yml` plus the `docker/gpu.*.yml` overlays remain the
 source of truth; the standalone files mirror them for single-file deployments.
@@ -213,18 +224,12 @@ docker compose exec atenea nvidia-smi -L   # NVIDIA
 docker compose exec atenea sh -lc 'test -e /dev/kfd && test -d /dev/dri && ls -l /dev/kfd /dev/dri/renderD*'  # AMD
 ```
 
-> **GPU passthrough ≠ llama.cpp CUDA.** `nvidia-smi` passing inside the
-> container confirms Docker GPU access, but llama.cpp also needs `cudart` and
-> the CUDA Toolkit at runtime. If Cookbook logs show `Unable to find cudart
-> library`, `Could NOT find CUDAToolkit`, `CUDA Toolkit not found`, or
-> tensors/layers assigned to CPU, that is a Cookbook/llama.cpp build issue —
-> not a Docker passthrough failure. Re-install the serve engine via
-> **Cookbook → Dependencies** to get a CUDA-enabled build.
->
-> The same split applies to AMD/ROCm: seeing `/dev/kfd` and `/dev/dri` inside
-> the container confirms device passthrough, not ROCm userspace or a
-> ROCm-enabled vLLM/llama.cpp build. `rocm-smi` and `rocminfo` are not expected
-> inside the slim Atenea image.
+Check that the pre-built binary detects the GPU:
+
+```bash
+docker compose exec atenea llama-server --help 2>&1 | grep -i cuda   # NVIDIA
+docker compose exec atenea llama-server --help 2>&1 | grep -i hip    # AMD
+```
 
 **Ollama with Docker.** If Ollama runs on the host, add this endpoint in
 Settings:
