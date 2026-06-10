@@ -709,9 +709,9 @@ function _rerenderCachedModels() {
       panelHtml += `</div>`;
       // Row 2d: Auto profiles — computed from detected hardware (see profiles.py).
       // Buttons are injected after the panel mounts (needs an async fetch).
-      panelHtml += `<div class="hwfit-serve-row hwfit-backend-llamacpp hwfit-serve-profiles" style="align-items:center;gap:8px;">`;
-      panelHtml += `<span style="opacity:0.7;font-size:11px;">Auto profiles:</span>`;
-      panelHtml += `<span class="hwfit-profile-btns" style="display:flex;gap:6px;flex-wrap:wrap;"><span style="opacity:0.5;font-size:11px;">computing…</span></span>`;
+      panelHtml += `<div class="hwfit-backend-llamacpp hwfit-serve-profiles" style="display:flex;align-items:center;gap:8px;width:100%;margin-bottom:6px;">`;
+      panelHtml += `<span style="opacity:0.7;font-size:11px;white-space:nowrap;flex-shrink:0;">Auto profiles:</span>`;
+      panelHtml += `<span class="hwfit-profile-btns" style="display:flex;gap:4px;flex-wrap:wrap;flex:1;"><span style="opacity:0.5;font-size:11px;">computing…</span></span>`;
       panelHtml += `</div>`;
       // Live VRAM / RAM-spillover monitor for the serve target's GPU. Polls
       // /api/cookbook/gpus while the panel is open so you can SEE whether the
@@ -925,7 +925,7 @@ function _rerenderCachedModels() {
             const b = document.createElement('button');
             b.type = 'button';
             b.className = 'cookbook-btn hwfit-profile-chip';
-            b.style.cssText = 'height:24px;padding:0 9px;font-size:11px;';
+            b.style.cssText = 'height:24px;padding:0 14px;font-size:11px;flex-shrink:0;';
             const off = p.offloads ? `, ncm${p.n_cpu_moe}` : ', all-GPU';
             b.textContent = `${p.label} · ${p.quant} · ${Math.round(p.ctx/1024)}k${off}`;
             b.title = `${p.note}\nKV ${p.cache_type}, ~${p.est_vram_gb} GB VRAM`;

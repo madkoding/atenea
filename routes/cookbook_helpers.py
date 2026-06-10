@@ -743,60 +743,62 @@ def _append_serve_exit_code_lines(
         runner_lines.append('exit "$ATENEA_CMD_EXIT"')
 
 
-def _append_llama_cpp_linux_accel_build_lines(runner_lines: list[str]) -> None:
+def _append_llama_cpp_linux_accel_build_lines(runner_lines: list[str], indent: str = '    ') -> None:
     """Append Linux llama.cpp build lines that prefer ROCm/HIP when available.
 
     Cookbook already detects AMD GPUs elsewhere, but the llama.cpp bootstrap used
     to hard-wire CUDA on Linux. That made ROCm hosts attempt a CUDA configure and
     fail with "CUDA Toolkit not found" instead of building with HIP.
     """
+    i2 = indent + '  '
+    i3 = indent + '    '
     # Detect pip-installed nvcc (from vLLM/nvidia CUDA wheels) and put it on PATH
     # so cmake's CUDA configure can find it. We keep this after the ROCm/HIP
     # check — a machine with both stacks should honor the native HIP toolchain on
     # AMD hosts instead of accidentally preferring a stray nvcc wheel.
-    runner_lines.append('    for _cudir in ~/.local/lib/python*/site-packages/nvidia/cu13 ~/.local/lib/python*/site-packages/nvidia/cu12 ~/.local/lib/python*/site-packages/nvidia/cuda_nvcc; do')
-    runner_lines.append('      [ -x "$_cudir/bin/nvcc" ] && export CUDA_HOME="$_cudir" && export PATH="$_cudir/bin:$PATH" && break')
-    runner_lines.append('    done')
+    runner_lines.append(f'{indent}for _cudir in ~/.local/lib/python*/site-packages/nvidia/cu13 ~/.local/lib/python*/site-packages/nvidia/cu12 ~/.local/lib/python*/site-packages/nvidia/cuda_nvcc; do')
+    runner_lines.append(f'{i2}[ -x "$_cudir/bin/nvcc" ] && export CUDA_HOME="$_cudir" && export PATH="$_cudir/bin:$PATH" && break')
+    runner_lines.append(f'{indent}done')
     # rm -rf build so a prior poisoned CMakeCache.txt (e.g. from a failed CUDA
     # or HIP attempt) doesn't cause the next configure to reuse stale settings.
-    runner_lines.append('    cd ~/llama.cpp && rm -rf build')
-    runner_lines.append('    if command -v hipconfig &>/dev/null || [ -d /opt/rocm ] || [ -n "$ROCM_PATH" ] || [ -n "$HIP_PATH" ]; then')
-    runner_lines.append('      if command -v hipconfig &>/dev/null; then')
-    runner_lines.append('        export HIPCXX="${HIPCXX:-$(hipconfig -l)/clang}"')
-    runner_lines.append('        export HIP_PATH="${HIP_PATH:-$(hipconfig -R)}"')
-    runner_lines.append('      fi')
-    runner_lines.append('      echo "[atenea] ROCm/HIP detected — building llama-server with HIP support..."')
-    runner_lines.append('      cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_HIP=ON && cmake --build build -j"$NPROC" --target llama-server && ln -sf ~/llama.cpp/build/bin/llama-server ~/bin/llama-server')
-    runner_lines.append('    elif command -v nvcc &>/dev/null; then')
+    runner_lines.append(f'{indent}cd ~/llama.cpp && rm -rf build')
+    runner_lines.append(f'{indent}if command -v hipconfig &>/dev/null || [ -d /opt/rocm ] || [ -n "$ROCM_PATH" ] || [ -n "$HIP_PATH" ]; then')
+    runner_lines.append(f'{i2}if command -v hipconfig &>/dev/null; then')
+    runner_lines.append(f'{i3}export HIPCXX="${{HIPCXX:-$(hipconfig -l)/clang}}"')
+    runner_lines.append(f'{i3}export HIP_PATH="${{HIP_PATH:-$(hipconfig -R)}}"')
+    runner_lines.append(f'{i2}fi')
+    runner_lines.append(f'{i2}echo "[atenea] ROCm/HIP detected — building llama-server with HIP support..."')
+    runner_lines.append(f'{i2}cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_HIP=ON && cmake --build build -j"$NPROC" --target llama-server && ln -sf ~/llama.cpp/build/bin/llama-server ~/bin/llama-server')
+    runner_lines.append(f'{indent}elif command -v nvcc &>/dev/null; then')
     # nvcc alone is not sufficient — pip-installed CUDA wheels or incomplete
     # tooling can expose nvcc without shipping libcudart, causing cmake to fail
     # mid-build with "CUDA runtime library not found". Check cudart explicitly
     # via a small helper so the guard stays readable.
-    runner_lines.append('      _atenea_has_cudart() {')
-    runner_lines.append('        ldconfig -p 2>/dev/null | grep -q \'libcudart\\.so\' && return 0')
-    runner_lines.append('        local _cuh="${CUDA_HOME:-/usr/local/cuda}"')
-    runner_lines.append('        ls "$_cuh/lib64/libcudart.so"* &>/dev/null && return 0')
-    runner_lines.append('        ls "$_cuh/lib/libcudart.so"* &>/dev/null && return 0')
-    runner_lines.append('        ls /usr/local/cuda/lib64/libcudart.so* &>/dev/null && return 0')
-    runner_lines.append('        ls /usr/local/cuda/lib/libcudart.so* &>/dev/null && return 0')
-    runner_lines.append('        ls "${_cuh%/cuda_nvcc}/cuda_runtime/lib/libcudart.so"* &>/dev/null && return 0')
-    runner_lines.append('        return 1')
-    runner_lines.append('      }')
-    runner_lines.append('      if _atenea_has_cudart; then')
-    runner_lines.append('        echo "[atenea] CUDA nvcc + cudart found — building llama-server with CUDA (GPU) support..."')
-    runner_lines.append('        cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON && cmake --build build -j"$NPROC" --target llama-server && ln -sf ~/llama.cpp/build/bin/llama-server ~/bin/llama-server')
-    runner_lines.append('      else')
-    runner_lines.append('        echo "[atenea] WARNING: nvcc found but CUDA runtime (libcudart.so) is not visible — building llama-server for CPU only."')
-    runner_lines.append('        echo "[atenea]   GPU inference will not be available for this llama.cpp build."')
-    runner_lines.append('        echo "[atenea]   Ensure libcudart is installed (e.g. cuda-runtime package) and visible via ldconfig or CUDA_HOME."')
-    runner_lines.append('        cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j"$NPROC" --target llama-server && ln -sf ~/llama.cpp/build/bin/llama-server ~/bin/llama-server')
-    runner_lines.append('      fi')
-    runner_lines.append('    else')
-    runner_lines.append('      echo "[atenea] WARNING: no HIP/CUDA toolchain found — building llama-server for CPU only."')
-    runner_lines.append('      echo "[atenea]   GPU inference will not be available for this llama.cpp build."')
-    runner_lines.append('      echo "[atenea]   Install ROCm for AMD GPUs or vLLM/CUDA tooling for NVIDIA, then re-launch this serve task."')
-    runner_lines.append('      cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j"$NPROC" --target llama-server && ln -sf ~/llama.cpp/build/bin/llama-server ~/bin/llama-server')
-    runner_lines.append('    fi')
+    runner_lines.append(f'{i2}_atenea_has_cudart() {{')
+    runner_lines.append(f'{i3}ldconfig -p 2>/dev/null | grep -q \'libcudart\\.so\' && return 0')
+    runner_lines.append(f'{i3}local _cuh="${{CUDA_HOME:-/usr/local/cuda}}"')
+    runner_lines.append(f'{i3}ls "$_cuh/lib64/libcudart.so"* &>/dev/null && return 0')
+    runner_lines.append(f'{i3}ls "$_cuh/lib/libcudart.so"* &>/dev/null && return 0')
+    runner_lines.append(f'{i3}ls /usr/local/cuda/lib64/libcudart.so* &>/dev/null && return 0')
+    runner_lines.append(f'{i3}ls /usr/local/cuda/lib/libcudart.so* &>/dev/null && return 0')
+    runner_lines.append(f'{i3}ls "${{_cuh%/cuda_nvcc}}/cuda_runtime/lib/libcudart.so"* &>/dev/null && return 0')
+    runner_lines.append(f'{i3}return 1')
+    runner_lines.append(f'{i2}' + '}')
+    runner_lines.append(f'{i2}if _atenea_has_cudart; then')
+    runner_lines.append(f'{i2}  echo "[atenea] CUDA nvcc + cudart found — building llama-server with CUDA (GPU) support..."')
+    runner_lines.append(f'{i2}  cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON && cmake --build build -j"$NPROC" --target llama-server && ln -sf ~/llama.cpp/build/bin/llama-server ~/bin/llama-server')
+    runner_lines.append(f'{i2}else')
+    runner_lines.append(f'{i2}  echo "[atenea] WARNING: nvcc found but CUDA runtime (libcudart.so) is not visible — building llama-server for CPU only."')
+    runner_lines.append(f'{i2}  echo "[atenea]   GPU inference will not be available for this llama.cpp build."')
+    runner_lines.append(f'{i2}  echo "[atenea]   Ensure libcudart is installed (e.g. cuda-runtime package) and visible via ldconfig or CUDA_HOME."')
+    runner_lines.append(f'{i2}  cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j"$NPROC" --target llama-server && ln -sf ~/llama.cpp/build/bin/llama-server ~/bin/llama-server')
+    runner_lines.append(f'{i2}fi')
+    runner_lines.append(f'{indent}else')
+    runner_lines.append(f'{i2}echo "[atenea] WARNING: no HIP/CUDA toolchain found — building llama-server for CPU only."')
+    runner_lines.append(f'{i2}echo "[atenea]   GPU inference will not be available for this llama.cpp build."')
+    runner_lines.append(f'{i2}echo "[atenea]   Install ROCm for AMD GPUs or vLLM/CUDA tooling for NVIDIA, then re-launch this serve task."')
+    runner_lines.append(f'{i2}cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j"$NPROC" --target llama-server && ln -sf ~/llama.cpp/build/bin/llama-server ~/bin/llama-server')
+    runner_lines.append(f'{indent}fi')
 
 
 def _llama_cpp_rebuild_cmd() -> str:
