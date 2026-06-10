@@ -13,6 +13,10 @@ import subprocess
 import sys
 import glob
 import ctypes
+import site
+import importlib.util
+import time
+from urllib.parse import urlparse
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
@@ -177,15 +181,7 @@ def _detect_gpu_backend() -> str:
 
 
 def _has_llama_cpp_python() -> bool:
-    cudart_candidates = sorted(glob.glob(os.path.expanduser(
-        "~/.local/lib/python*/site-packages/nvidia/cuda_runtime/lib/libcudart.so*"
-    )))
-    for so in cudart_candidates:
-        try:
-            ctypes.CDLL(so, mode=getattr(ctypes, "RTLD_GLOBAL", 0))
-            break
-        except Exception:
-            continue
+    _activate_cuda_runtime_libs()
     try:
         __import__("llama_cpp")
         return True
@@ -193,23 +189,95 @@ def _has_llama_cpp_python() -> bool:
         return False
 
 
-def _llama_cpp_supports_gpu_offload() -> bool:
-    """True when the installed llama-cpp-python runtime exposes GPU offload."""
+def _site_packages_roots() -> list[str]:
+    roots: list[str] = []
+    roots.extend([p for p in site.getsitepackages() if isinstance(p, str)])
     try:
-        import llama_cpp
+        roots.append(site.getusersitepackages())
+    except Exception:
+        pass
+    roots.extend([p for p in sys.path if isinstance(p, str) and "site-packages" in p])
+    seen: set[str] = set()
+    out: list[str] = []
+    for path in roots:
+        if not path or path in seen:
+            continue
+        seen.add(path)
+        out.append(path)
+    return out
 
-        ll = getattr(llama_cpp, "llama_cpp", None)
-        fn = getattr(ll, "llama_supports_gpu_offload", None)
-        if callable(fn):
-            return bool(fn())
+
+def _nvidia_lib_dirs() -> list[str]:
+    dirs: list[str] = []
+    for root in _site_packages_roots():
+        dirs.append(os.path.join(root, "nvidia", "cuda_runtime", "lib"))
+        dirs.append(os.path.join(root, "nvidia", "cublas", "lib"))
+    out: list[str] = []
+    seen: set[str] = set()
+    for path in dirs:
+        if not os.path.isdir(path) or path in seen:
+            continue
+        seen.add(path)
+        out.append(path)
+    return out
+
+
+def _prepend_ld_library_path(paths: list[str]) -> None:
+    if not paths:
+        return
+    current = os.environ.get("LD_LIBRARY_PATH", "")
+    existing = [p for p in current.split(":") if p]
+    merged = existing[:]
+    for path in reversed(paths):
+        if path not in merged:
+            merged.insert(0, path)
+    os.environ["LD_LIBRARY_PATH"] = ":".join(merged)
+
+
+def _activate_cuda_runtime_libs() -> None:
+    lib_dirs = _nvidia_lib_dirs()
+    _prepend_ld_library_path(lib_dirs)
+    for lib_dir in lib_dirs:
+        for name in ("libcudart.so.12", "libcublas.so.12"):
+            path = os.path.join(lib_dir, name)
+            if not os.path.exists(path):
+                continue
+            try:
+                ctypes.CDLL(path, mode=getattr(ctypes, "RTLD_GLOBAL", 0))
+            except Exception:
+                continue
+
+
+def _llama_cpp_supports_gpu_offload() -> bool:
+    """Best-effort True when installed llama-cpp-python is CUDA-capable."""
+    try:
+        _activate_cuda_runtime_libs()
+        spec = importlib.util.find_spec("llama_cpp")
+        if spec is None or not spec.origin:
+            return False
+        pkg_dir = os.path.dirname(spec.origin)
+        lib_dir = os.path.join(pkg_dir, "lib")
+        has_cuda_backend = bool(glob.glob(os.path.join(lib_dir, "libggml-cuda.so*")))
+        if not has_cuda_backend:
+            return False
+
+        r = subprocess.run(
+            [sys.executable, "-c", "import llama_cpp"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            env=os.environ.copy(),
+        )
+        return r.returncode == 0 and _has_visible_cudart()
     except Exception:
         return False
-    return False
 
 
 def _find_cudart_paths() -> list[str]:
     """Best-effort list of libcudart candidate paths."""
     candidates: list[str] = []
+    for lib_dir in _nvidia_lib_dirs():
+        candidates.extend(sorted(glob.glob(os.path.join(lib_dir, "libcudart.so*"))))
     candidates.extend(sorted(glob.glob(os.path.expanduser(
         "~/.local/lib/python*/site-packages/nvidia/cuda_runtime/lib/libcudart.so*"
     ))))
@@ -227,6 +295,7 @@ def _find_cudart_paths() -> list[str]:
 
 def _has_visible_cudart() -> bool:
     """Return True if libcudart can be loaded in the current process."""
+    _activate_cuda_runtime_libs()
     try:
         ctypes.CDLL("libcudart.so", mode=getattr(ctypes, "RTLD_GLOBAL", 0))
         return True
@@ -284,15 +353,17 @@ def _pip_install(*args: str, user: bool = False) -> subprocess.CompletedProcess:
     )
 
 
-def _pip_install_prebuilt(package: str, extra_index: str) -> bool:
+def _pip_install_prebuilt(package: str, extra_index: str, force_reinstall: bool = False) -> bool:
     """Install a prebuilt wheel only; never fall back to source build."""
-    r = _pip_install(
+    args = [
         "--only-binary=:all:",
         package,
         "--extra-index-url",
         extra_index,
-        user=_IN_DOCKER,
-    )
+    ]
+    if force_reinstall:
+        args.extend(["--force-reinstall", "--no-cache-dir"])
+    r = _pip_install(*args, user=_IN_DOCKER)
     if r.returncode != 0:
         return False
     return _has_llama_cpp_python()
@@ -409,6 +480,7 @@ def _ensure_cuda_wheel():
     if _pip_install_prebuilt(
         "llama-cpp-python[server]",
         "https://abetlen.github.io/llama-cpp-python/whl/cu124",
+        force_reinstall=True,
     ) and _llama_cpp_supports_gpu_offload():
         open(marker, "w").close()
         print("  [ok] llama-cpp-python with CUDA installed")
@@ -592,6 +664,317 @@ def setup_llamacpp() -> bool:
     return False
 
 
+def _json_get(url: str, timeout: int = 2) -> dict | None:
+    import urllib.request, json
+
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "atenea-setup"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            if resp.status < 200 or resp.status >= 300:
+                return None
+            payload = json.loads(resp.read())
+            if isinstance(payload, dict):
+                return payload
+    except Exception:
+        return None
+    return None
+
+
+def _local_llm_hosts() -> list[str]:
+    hosts = ["127.0.0.1", "localhost"]
+
+    for key in ("LLM_HOST",):
+        val = os.getenv(key, "").strip()
+        if val and val not in hosts:
+            hosts.append(val)
+
+    for key in ("OLLAMA_BASE_URL", "OLLAMA_URL", "LM_STUDIO_URL"):
+        raw = os.getenv(key, "").strip()
+        if not raw:
+            continue
+        try:
+            parsed = urlparse(raw if "://" in raw else f"http://{raw}")
+            host = (parsed.hostname or "").strip()
+            if host and host not in hosts:
+                hosts.append(host)
+        except Exception:
+            continue
+
+    if _IN_DOCKER and "host.docker.internal" not in hosts:
+        hosts.append("host.docker.internal")
+    return hosts
+
+
+def detect_running_local_models() -> list[dict[str, str]]:
+    """Detect running local inference backends with at least one model available."""
+    found: list[dict[str, str]] = []
+    seen_urls: set[str] = set()
+    hosts = _local_llm_hosts()
+
+    def _add(backend: str, url: str, models: int) -> None:
+        if url in seen_urls:
+            return
+        seen_urls.add(url)
+        found.append({"backend": backend, "url": url, "models": str(models)})
+
+    # OpenAI-compatible endpoints (vLLM, llama.cpp server, LM Studio, others)
+    openai_ports = [8000, 8080, 1234, 8010] + list(range(8001, 8021))
+    for host in hosts:
+        for port in openai_ports:
+            base = f"http://{host}:{port}"
+            data = _json_get(f"{base}/v1/models", timeout=1)
+            if not data:
+                continue
+            items = data.get("data")
+            if isinstance(items, list) and items:
+                _add("openai-compatible", f"{base}/v1", len(items))
+
+    # Ollama native API
+    for host in hosts:
+        base = f"http://{host}:11434"
+        data = _json_get(f"{base}/api/tags", timeout=1)
+        if not data:
+            continue
+        models = data.get("models")
+        if isinstance(models, list) and models:
+            _add("ollama", f"{base}", len(models))
+
+    return found
+
+
+def _can_prompt_inference_choice() -> bool:
+    if os.getenv("ATENEA_INFERENCE_NONINTERACTIVE", "").strip().lower() in ("1", "true", "yes"):
+        return False
+    return bool(sys.stdin.isatty())
+
+
+def _auto_inference_backend_choice() -> str:
+    # Keep default simple and reliable for first-time local setups.
+    backend = _detect_gpu_backend()
+    if backend == "cuda" and platform.system().lower() == "linux":
+        return "vllm"
+    return "ollama"
+
+
+def _prompt_inference_backend_choice() -> str:
+    options = [
+        ("ollama", "Ollama (Recommended)"),
+        ("llamacpp", "llama.cpp"),
+        ("vllm", "vLLM (Linux + NVIDIA CUDA)"),
+        ("hf-local", "Hugging Face local (Transformers)"),
+        ("skip", "Skip for now"),
+    ]
+    print("  No running local model server was detected.")
+    print("  Choose a local backend to install:")
+    for idx, (_key, label) in enumerate(options, start=1):
+        print(f"    {idx}) {label}")
+    default_choice = 1
+    try:
+        raw = input(f"  Select backend [{default_choice}]: ").strip()
+    except EOFError:
+        raw = ""
+    if not raw:
+        return options[default_choice - 1][0]
+    if raw.isdigit():
+        pick = int(raw)
+        if 1 <= pick <= len(options):
+            return options[pick - 1][0]
+    raw = raw.lower()
+    for key, _label in options:
+        if raw == key:
+            return key
+    print("  [warn] Invalid selection. Falling back to Ollama.")
+    return "ollama"
+
+
+def _setup_ollama_local() -> bool:
+    if shutil.which("ollama"):
+        print("  [ok] Ollama already installed")
+        return True
+
+    system = platform.system().lower()
+    if system == "linux":
+        if not shutil.which("curl"):
+            print("  [warn] curl is required to auto-install Ollama on Linux")
+            print("         Install manually: https://ollama.com/download")
+            return False
+        print("  [info] Installing Ollama...")
+        r = subprocess.run("curl -fsSL https://ollama.com/install.sh | sh", shell=True, capture_output=True, text=True)
+        if r.returncode == 0 and shutil.which("ollama"):
+            print("  [ok] Ollama installed")
+            return True
+        print("  [warn] Ollama installation failed")
+        return False
+
+    if system == "darwin":
+        if shutil.which("brew"):
+            print("  [info] Installing Ollama via Homebrew...")
+            r = subprocess.run(["brew", "install", "ollama"], capture_output=True, text=True)
+            if r.returncode == 0 and shutil.which("ollama"):
+                print("  [ok] Ollama installed")
+                return True
+        print("  [warn] Could not auto-install Ollama on macOS")
+        print("         Install manually from https://ollama.com/download")
+        return False
+
+    print("  [warn] Ollama auto-install is not available on this OS")
+    print("         Install manually from https://ollama.com/download")
+    return False
+
+
+def _setup_vllm_local() -> bool:
+    if platform.system().lower() != "linux":
+        print("  [warn] vLLM setup is currently supported only on Linux")
+        return False
+    if _detect_gpu_backend() != "cuda":
+        print("  [warn] vLLM requires an NVIDIA CUDA runtime")
+        return False
+    print("  [info] Installing vLLM...")
+    r = _pip_install("vllm", user=_IN_DOCKER)
+    if r.returncode != 0:
+        print("  [warn] vLLM installation failed")
+        return False
+    check = subprocess.run([sys.executable, "-c", "import vllm"], capture_output=True, text=True)
+    if check.returncode == 0:
+        print("  [ok] vLLM installed")
+        return True
+    print("  [warn] vLLM install completed but import check failed")
+    return False
+
+
+def _setup_hf_local() -> bool:
+    print("  [info] Installing local Hugging Face runtime (Transformers)...")
+    r = _pip_install("torch", "transformers", "accelerate", "safetensors", "sentencepiece", user=_IN_DOCKER)
+    if r.returncode != 0:
+        print("  [warn] Hugging Face local runtime installation failed")
+        return False
+    check = subprocess.run(
+        [sys.executable, "-c", "import torch, transformers, accelerate"],
+        capture_output=True,
+        text=True,
+    )
+    if check.returncode == 0:
+        print("  [ok] Hugging Face local runtime installed")
+    else:
+        print("  [warn] Hugging Face runtime install completed but import check failed")
+        return False
+
+    host = os.getenv("ATENEA_HF_LOCAL_HOST", "127.0.0.1").strip() or "127.0.0.1"
+    try:
+        port = int(os.getenv("ATENEA_HF_LOCAL_PORT", "8010"))
+    except ValueError:
+        port = 8010
+    model_id = os.getenv("ATENEA_HF_LOCAL_MODEL", "sshleifer/tiny-gpt2").strip() or "sshleifer/tiny-gpt2"
+    script_path = os.path.join(BASE_DIR, "scripts", "hf_local_openai_server.py")
+    if not os.path.exists(script_path):
+        print("  [warn] hf-local server script not found")
+        return True
+
+    running = _json_get(f"http://{host}:{port}/v1/models", timeout=1)
+    if running and isinstance(running.get("data"), list) and running.get("data"):
+        print(f"  [ok] hf-local OpenAI endpoint already running at http://{host}:{port}/v1")
+        return True
+
+    print(f"  [info] Starting hf-local OpenAI endpoint on http://{host}:{port}/v1 ...")
+    log_dir = os.path.join(DATA_DIR, "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, "hf-local-server.log")
+    try:
+        with open(log_file, "a", encoding="utf-8") as log:
+            subprocess.Popen(
+                [
+                    sys.executable,
+                    script_path,
+                    "--model",
+                    model_id,
+                    "--host",
+                    host,
+                    "--port",
+                    str(port),
+                ],
+                stdout=log,
+                stderr=log,
+                start_new_session=True,
+            )
+    except Exception as e:
+        print(f"  [warn] Could not start hf-local server automatically: {e}")
+        return True
+
+    for _ in range(15):
+        probe = _json_get(f"http://{host}:{port}/v1/models", timeout=1)
+        if probe and isinstance(probe.get("data"), list) and probe.get("data"):
+            print(f"  [ok] hf-local endpoint is up at http://{host}:{port}/v1")
+            return True
+        time.sleep(1)
+
+    print("  [warn] hf-local server process started but endpoint is not ready yet")
+    print(f"         Check log: {log_file}")
+    return True
+
+
+def _setup_selected_inference_backend(choice: str) -> bool:
+    choice = (choice or "").strip().lower()
+    if choice == "skip":
+        print("  [skip] Skipping local inference backend installation")
+        return True
+    if choice == "ollama":
+        return _setup_ollama_local()
+    if choice == "llamacpp":
+        return setup_llamacpp()
+    if choice == "vllm":
+        return _setup_vllm_local()
+    if choice == "hf-local":
+        return _setup_hf_local()
+    print(f"  [warn] Unknown inference backend choice: {choice}")
+    return False
+
+
+def setup_local_inference_backend() -> bool:
+    running = detect_running_local_models()
+    if running:
+        print("  [ok] Local inference backend already running:")
+        for item in running:
+            print(f"       - {item['backend']} at {item['url']} ({item['models']} model(s))")
+        return True
+
+    mode = os.getenv("ATENEA_INFERENCE_SETUP", "").strip().lower()
+    if mode not in ("prompt", "auto", "skip"):
+        mode = "auto" if _IN_DOCKER else "prompt"
+
+    if mode == "skip":
+        print("  [skip] Local inference backend setup skipped by ATENEA_INFERENCE_SETUP=skip")
+        return True
+
+    chosen = os.getenv("ATENEA_INFERENCE_BACKEND", "").strip().lower()
+    if not chosen:
+        if mode == "prompt" and _can_prompt_inference_choice():
+            chosen = _prompt_inference_backend_choice()
+        else:
+            chosen = _auto_inference_backend_choice()
+            print(f"  [info] No running local model detected; auto-selecting backend: {chosen}")
+
+    ok = _setup_selected_inference_backend(chosen)
+    if not ok:
+        print("  [warn] Selected local backend could not be installed automatically")
+        return False
+
+    running_after = detect_running_local_models()
+    if running_after:
+        print("  [ok] Local model backend is running")
+        return True
+
+    print("  [warn] Backend installed, but no local model server is running yet.")
+    print("         Start your backend and load/pull a model, then run setup again.")
+    if chosen == "ollama":
+        print("         Example: ollama serve    (in another terminal)")
+        print("                  ollama pull llama3.2:3b")
+    elif chosen == "vllm":
+        print("         Example: vllm serve Qwen/Qwen2.5-1.5B-Instruct")
+    elif chosen == "hf-local":
+        print("         Example: run a local Transformers server and expose /v1/models")
+    return True
+
+
 def check_deps():
     """Check for common missing dependencies."""
     missing = []
@@ -606,9 +989,10 @@ def check_deps():
     else:
         print("  [ok] All core dependencies installed")
 
-    print("\n6. llama.cpp inference server...")
-    if not setup_llamacpp():
-        print("  [warn] llama.cpp setup did not reach a usable GPU runtime on this host.")
+    print("\n6. Local inference backend...")
+    if not setup_local_inference_backend():
+        print("  [warn] No local backend was fully configured automatically.")
+        print("         You can continue setup and configure it later.")
 
     if os.name != "nt" and shutil.which("tmux") is None:
         print("\n  [warn] tmux not found")
@@ -726,8 +1110,8 @@ def _run_container_setup():
     init_database()
     print("  [setup] Admin account...")
     create_default_admin()
-    print("  [setup] LLM backend...")
-    setup_llamacpp()
+    print("  [setup] Local inference backend...")
+    setup_local_inference_backend()
 
 
 def main():

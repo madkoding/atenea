@@ -170,6 +170,24 @@ _ensure_env() {
     fi
 }
 
+_prepend_ld_path() {
+    local path="$1"
+    [ -d "$path" ] || return 0
+    local current=":${LD_LIBRARY_PATH:-}:"
+    if [[ "$current" != *":$path:"* ]]; then
+        export LD_LIBRARY_PATH="$path${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    fi
+}
+
+_export_venv_cuda_libs() {
+    local pyver libbase
+    pyver="$(${REPO_ROOT}/.venv/bin/python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || true)"
+    [ -n "$pyver" ] || return 0
+    libbase="${REPO_ROOT}/.venv/lib/python${pyver}/site-packages/nvidia"
+    _prepend_ld_path "${libbase}/cuda_runtime/lib"
+    _prepend_ld_path "${libbase}/cublas/lib"
+}
+
 _compose_cmd() {
     local action="$1"; shift
     local gpu
@@ -286,6 +304,7 @@ _setup() {
 
     # ── 6. Application setup ──────────────────────────────────────────────────
     _step "6/7  Application setup"
+    _export_venv_cuda_libs
     if ATENEA_SKIP_RUN_HINT=1 "${VENV_PY}" "${REPO_ROOT}/app_setup.py"; then
         _ok "Application setup complete"
     else
@@ -334,6 +353,7 @@ _up() {
     if [ "$native" -eq 1 ]; then
         _step "Starting Atenea natively"
         _setup
+        _export_venv_cuda_libs
         exec "${REPO_ROOT}/.venv/bin/uvicorn" app:app --host 0.0.0.0 --port "${APP_PORT:-7000}" "${args[@]}"
         return
     fi
