@@ -144,7 +144,7 @@ _setup() {
     _sep
 
     # ── 1. Python version ─────────────────────────────────────────────────────
-    _step "1/6  Checking Python"
+    _step "1/7  Checking Python"
     if ! command -v python3 &>/dev/null; then
         _fail "python3 not found — install Python 3.12 first"
         exit 1
@@ -157,17 +157,17 @@ _setup() {
     fi
 
     # ── 2. System dependencies ────────────────────────────────────────────────
-    _step "2/6  System dependencies"
+    _step "2/7  System dependencies"
     _ensure_sysdeps
     _ok "System dependencies ready"
 
     # ── 3. Environment file ───────────────────────────────────────────────────
-    _step "3/6  Environment file"
+    _step "3/7  Environment file"
     _ensure_env
     _ok "Environment ready"
 
     # ── 4. Virtual environment ────────────────────────────────────────────────
-    _step "4/6  Python virtual environment"
+    _step "4/7  Python virtual environment"
     VENV_PY="${REPO_ROOT}/.venv/bin/python3"
     VENV_PIP="${REPO_ROOT}/.venv/bin/pip"
     if [ ! -f "$VENV_PIP" ] || [ ! -f "$VENV_PY" ]; then
@@ -181,7 +181,7 @@ _setup() {
     fi
 
     # ── 5. Python dependencies ────────────────────────────────────────────────
-    _step "5/6  Python dependencies"
+    _step "5/7  Python dependencies"
     _spin "Upgrading pip" "${VENV_PIP}" install --upgrade pip -q
     _spin "Installing core dependencies" "${VENV_PIP}" install -r "${REPO_ROOT}/requirements.txt" -q
     if [ -f "${REPO_ROOT}/requirements-optional.txt" ]; then
@@ -190,7 +190,7 @@ _setup() {
     _spin "Installing project in dev mode" "${VENV_PIP}" install -e "${REPO_ROOT}" -q
 
     # ── 6. Application setup ──────────────────────────────────────────────────
-    _step "6/6  Application setup"
+    _step "6/7  Application setup"
     if ATENEA_SKIP_RUN_HINT=1 "${VENV_PY}" "${REPO_ROOT}/app_setup.py"; then
         _ok "Application setup complete"
     else
@@ -198,14 +198,9 @@ _setup() {
         return 1
     fi
 
-    # ── done ──────────────────────────────────────────────────────────────────
-    _sep
-    _ok "Setup complete"
-    _sep
-    _info "Start the server:"
-    _dim "  ./atenea up              (Docker, auto-detects GPU)"
-    _dim "  ./atenea up --native     (directly on host)"
-    echo
+    # ── 7. Auto-start ─────────────────────────────────────────────────────────
+    _step "7/7  Starting Atenea"
+    _up --build
 }
 
 _wait_for_ready() {

@@ -13,6 +13,8 @@ import sys
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
+
+_IN_DOCKER = os.path.exists("/.dockerenv")
 from src.constants import (
     DATA_DIR, AUTH_FILE, UPLOAD_DIR, PERSONAL_DIR, PERSONAL_UPLOADS_DIR,
     TTS_CACHE_DIR, GENERATED_IMAGES_DIR, DEEP_RESEARCH_DIR, CHROMA_DIR,
@@ -149,6 +151,189 @@ def create_env():
         print("  [warn] .env.example not found — create .env manually")
 
 
+def _detect_gpu_backend() -> str:
+    """Detect available GPU compute backend: cuda, rocm, vulkan, or cpu."""
+    try:
+        r = subprocess.run(["nvidia-smi"], capture_output=True, text=True, timeout=5)
+        if r.returncode == 0:
+            return "cuda"
+    except: pass
+    if os.path.isdir("/opt/rocm") or os.environ.get("ROCM_PATH") or os.environ.get("HIP_PATH"):
+        return "rocm"
+    try:
+        r = subprocess.run(["hipconfig"], capture_output=True, text=True, timeout=5)
+        if r.returncode == 0:
+            return "rocm"
+    except: pass
+    try:
+        r = subprocess.run(["vulkaninfo"], capture_output=True, text=True, timeout=5)
+        if r.returncode == 0:
+            return "vulkan"
+    except: pass
+    return "cpu"
+
+
+def _pip_install(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, "-m", "pip", "install", "--upgrade"] + list(args),
+        capture_output=True, text=True,
+    )
+
+
+def _download_release_asset(tag: str, asset_name: str, dest: str) -> str | None:
+    """Download a GitHub release tarball and extract llama-server to dest. Returns the binary path."""
+    import urllib.request, tarfile, io, tempfile
+    url = f"https://github.com/ggml-org/llama.cpp/releases/download/{tag}/{asset_name}"
+    print(f"     Downloading {asset_name} ({tag})...")
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "atenea-setup"})
+        data = urllib.request.urlopen(req, timeout=180).read()
+        tmp = tempfile.mkdtemp()
+        with tarfile.open(fileobj=io.BytesIO(data)) as tar:
+            tar.extractall(tmp, filter="data")
+        for root, _dirs, files in os.walk(tmp):
+            if "llama-server" in files:
+                src = os.path.join(root, "llama-server")
+                dst = os.path.join(dest, "llama-server")
+                shutil.move(src, dst)
+                os.chmod(dst, 0o755)
+                shutil.rmtree(tmp, ignore_errors=True)
+                return dst
+        shutil.rmtree(tmp, ignore_errors=True)
+    except Exception as e:
+        print(f"     Download failed: {e}")
+    return None
+
+
+def _latest_llama_release_tag() -> str:
+    """Fetch the latest llama.cpp release tag from GitHub."""
+    import urllib.request, json
+    try:
+        req = urllib.request.Request(
+            "https://api.github.com/repos/ggml-org/llama.cpp/releases/latest",
+            headers={"Accept": "application/json", "User-Agent": "atenea-setup"},
+        )
+        resp = urllib.request.urlopen(req, timeout=15)
+        return json.loads(resp.read())["tag_name"]
+    except Exception as e:
+        print(f"  [warn] Could not fetch latest release: {e}")
+        return "b9585"
+
+
+def _ensure_cuda_wheel():
+    """Force-install the CUDA wheel for llama-cpp-python inside a GPU-capable container."""
+    marker = os.path.join(DATA_DIR, ".cuda-wheel-installed")
+    if os.path.exists(marker):
+        return True
+    print("  [info] Installing CUDA wheel for llama-cpp-python...")
+    r = _pip_install("--force-reinstall", "llama-cpp-python[server]",
+                     "--extra-index-url", "https://abetlen.github.io/llama-cpp-python/whl/cu124")
+    if r.returncode == 0:
+        open(marker, "w").close()
+        print("  [ok] llama-cpp-python with CUDA installed")
+        return True
+    print("  [warn] CUDA wheel not available for this Python version")
+    return False
+
+
+def setup_llamacpp():
+    """Auto-detect hardware and install pre-built llama-server or CUDA wheel."""
+    existing = shutil.which("llama-server")
+    while existing:
+        try:
+            r = subprocess.run([existing, "--version"], capture_output=True, text=True, timeout=10)
+            if r.returncode == 0:
+                print("  [ok] llama-server already installed")
+                if _IN_DOCKER and _detect_gpu_backend() == "cuda":
+                    _ensure_cuda_wheel()
+                return
+        except: pass
+        print(f"  [warn] Removing broken llama-server at {existing}")
+        os.remove(existing)
+        existing = shutil.which("llama-server")
+
+    try:
+        __import__("llama_cpp")
+        print("  [ok] llama-cpp-python already installed")
+        if _IN_DOCKER and _detect_gpu_backend() == "cuda":
+            _ensure_cuda_wheel()
+        return
+    except (ImportError, RuntimeError) as e:
+        if isinstance(e, RuntimeError):
+            print(f"  [warn] llama-cpp-python is installed but broken: {e}")
+
+    machine = platform.machine()
+    system = platform.system().lower()
+    install_dir = os.path.expanduser("~/.local/bin")
+    os.makedirs(install_dir, exist_ok=True)
+
+    if system == "darwin":
+        if shutil.which("brew"):
+            print("  Installing llama-server via Homebrew...")
+            r = subprocess.run(["brew", "install", "llama.cpp"], capture_output=True, text=True)
+            if r.returncode == 0:
+                print("  [ok] llama-server installed via Homebrew")
+                return
+        arch = "arm64" if machine == "arm64" else "x64"
+        tag = _latest_llama_release_tag()
+        asset = f"llama-{tag}-bin-macos-{arch}.tar.gz"
+        print(f"  Downloading pre-built llama-server ({tag})...")
+        if _download_release_asset(tag, asset, install_dir):
+            print(f"  [ok] llama-server installed in {install_dir}")
+            return
+    else:
+        backend = _detect_gpu_backend()
+        if backend == "cuda":
+            # Check if CUDA runtime (libcudart) is actually available
+            _has_cudart = False
+            try:
+                r = subprocess.run(["ldconfig", "-p"], capture_output=True, text=True, timeout=10)
+                _has_cudart = "libcudart" in r.stdout
+            except: pass
+            if not _has_cudart:
+                _cuda_home = os.environ.get("CUDA_HOME", "/usr/local/cuda")
+                _has_cudart = any(
+                    os.path.isfile(os.path.join(d, f"libcudart.so.{v}"))
+                    for d in [f"{_cuda_home}/lib64", f"{_cuda_home}/lib", "/usr/lib/x86_64-linux-gnu"]
+                    for v in ("12", "11", "")
+                )
+            if not _has_cudart:
+                print("  [info] NVIDIA GPU detected but CUDA runtime (libcudart) not found — skipping CUDA wheel")
+                if _IN_DOCKER:
+                    print("         Inside Docker with NVIDIA_VISIBLE_DEVICES=all but no libcudart — GPU passthrough may be incomplete")
+                else:
+                    print("         Install CUDA runtime: sudo apt install nvidia-cuda-toolkit")
+                print("         Falling back to Vulkan binary...")
+                backend = "vulkan"
+            else:
+                if _ensure_cuda_wheel():
+                    return
+                print("  [warn] CUDA wheel not available for your Python version, trying Vulkan binary...")
+                backend = "vulkan"
+
+        tag = _latest_llama_release_tag()
+        if backend == "rocm":
+            asset = f"llama-{tag}-bin-ubuntu-rocm-7.2-x64.tar.gz"
+            label = "ROCm"
+        elif backend in ("vulkan", "cuda"):  # cuda falls back to vulkan
+            asset = f"llama-{tag}-bin-ubuntu-vulkan-x64.tar.gz"
+            label = "Vulkan"
+        else:
+            asset = f"llama-{tag}-bin-ubuntu-x64.tar.gz"
+            label = "CPU"
+        print(f"  Downloading pre-built llama-server ({label}, {tag})...")
+        if _download_release_asset(tag, asset, install_dir):
+            print(f"  [ok] llama-server installed in {install_dir}")
+            return
+
+    print("  Installing llama-cpp-python[server] as fallback...")
+    r = _pip_install("llama-cpp-python[server]")
+    if r.returncode == 0:
+        print("  [ok] llama-cpp-python[server] installed")
+    else:
+        print("  [warn] Could not install llama-server. Install manually later.")
+
+
 def check_deps():
     """Check for common missing dependencies."""
     missing = []
@@ -163,13 +348,8 @@ def check_deps():
     else:
         print("  [ok] All core dependencies installed")
 
-    try:
-        __import__("llama_cpp")
-    except ImportError:
-        print('\n  [warn] llama-cpp-python server is not installed.')
-        print('         Run: pip install "llama-cpp-python[server]"')
-    else:
-        print("  [ok] llama-cpp-python server installed")
+    print("\n6. llama.cpp inference server...")
+    setup_llamacpp()
 
     if os.name != "nt" and shutil.which("tmux") is None:
         print("\n  [warn] tmux not found")
@@ -224,11 +404,10 @@ def check_arch():
     sys.exit(1)
 
 
-def main():
+def _run_host_setup():
+    """Full host-side setup: dirs, env, deps, DB, admin."""
     print("\n=== Atenea Setup ===\n")
 
-    # Fail fast with a clear message if the CPU architecture is wrong (Apple
-    # Silicon under an x86/Rosetta Python) before importing anything native.
     check_arch()
 
     print("1. Creating directories...")
@@ -277,11 +456,26 @@ def main():
     elif admin_status == "failed":
         print("  Admin creation failed. Check permissions on data/ directory.\n")
 
-    # start-macos.sh launches the server itself (on its own port) right after
-    # this, so suppress the manual hint there to avoid a contradictory URL.
-    if not os.getenv("ATENEA_SKIP_RUN_HINT"):
-        print(f"  Start:  python -m uvicorn app:app --host 127.0.0.1 --port 7000")
-        print(f"  Open:   http://localhost:7000\n")
+
+def _run_container_setup():
+    """Inside-container setup: minimal, only what's needed at runtime."""
+    print("  [setup] Creating directories...")
+    create_dirs()
+    print("  [setup] Environment file...")
+    create_env()
+    print("  [setup] Database...")
+    init_database()
+    print("  [setup] Admin account...")
+    create_default_admin()
+    print("  [setup] LLM backend...")
+    setup_llamacpp()
+
+
+def main():
+    if _IN_DOCKER:
+        _run_container_setup()
+    else:
+        _run_host_setup()
 
 
 if __name__ == "__main__":
