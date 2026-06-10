@@ -16,10 +16,9 @@
 # Verify with:
 #   docker info | grep -i nvidia
 #
-# This overlay only passes the host GPU through to the container.
-# The slim Atenea image does not bundle CUDA userspace or inference
-# engines — install vLLM / llama-cpp-python / SGLang via
-# Cookbook -> Dependencies (or pip) before serving GPU models.
+# This overlay passes the host GPU through to the container and requires
+# Dockerfile.gpu-nvidia (build: { dockerfile: Dockerfile.gpu-nvidia }) which
+# pre-compiles llama-server with CUDA support at image build time.
 services:
   atenea:
     environment:

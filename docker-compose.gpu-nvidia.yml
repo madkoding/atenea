@@ -11,7 +11,9 @@
 # for setup details.
 services:
   atenea:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu-nvidia
     ports:
       - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7000}:7000"
     volumes:
