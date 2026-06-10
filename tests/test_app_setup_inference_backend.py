@@ -92,3 +92,45 @@ def test_setup_ollama_local_accepts_existing_binary_outside_path(monkeypatch):
     monkeypatch.setattr(setup.os, "access", lambda p, _mode: p == "/usr/local/bin/ollama")
 
     assert setup._setup_ollama_local() is True
+
+
+def test_setup_ollama_local_attempts_zstd_install_when_missing(monkeypatch):
+    setup = _load_setup_module()
+
+    monkeypatch.setattr(setup.os, "geteuid", lambda: 0)
+
+    def _which(name: str):
+        if name == "ollama":
+            return None
+        if name == "curl":
+            return "/usr/bin/curl"
+        if name == "zstd":
+            return None
+        if name == "apt-get":
+            return "/usr/bin/apt-get"
+        return None
+
+    monkeypatch.setattr(setup.shutil, "which", _which)
+
+    calls: list[list[str]] = []
+
+    class _Proc:
+        def __init__(self, returncode=0):
+            self.returncode = returncode
+            self.stderr = ""
+
+    def _run(cmd, *args, **kwargs):
+        if isinstance(cmd, list):
+            calls.append(cmd)
+            return _Proc(0)
+        return _Proc(1)
+
+    monkeypatch.setattr(setup.subprocess, "run", _run)
+    monkeypatch.setattr(setup.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(setup.sys.stdin, "isatty", lambda: False)
+    monkeypatch.setattr(setup.sys.stdout, "isatty", lambda: False)
+
+    ok = setup._setup_ollama_local()
+
+    assert ok is False
+    assert any(cmd[:3] == ["apt-get", "install", "-y"] and cmd[-1] == "zstd" for cmd in calls)

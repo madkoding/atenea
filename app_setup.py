@@ -788,6 +788,44 @@ def _prompt_inference_backend_choice() -> str:
 
 
 def _setup_ollama_local() -> bool:
+    def _run_cmd(cmd: list[str], interactive: bool) -> subprocess.CompletedProcess:
+        if interactive:
+            rc = subprocess.run(cmd).returncode
+            return subprocess.CompletedProcess(cmd, rc, "", "")
+        return subprocess.run(cmd, capture_output=True, text=True)
+
+    def _linux_install_package(pkg: str, interactive: bool) -> bool:
+        sudo_prefix: list[str] = []
+        if os.geteuid() != 0:
+            if not shutil.which("sudo"):
+                print(f"  [warn] sudo is required to install '{pkg}' automatically")
+                return False
+            sudo_prefix = ["sudo"]
+
+        if shutil.which("apt-get"):
+            print(f"  [info] Installing system package '{pkg}' via apt-get...")
+            _run_cmd(sudo_prefix + ["apt-get", "update"], interactive)
+            r = _run_cmd(sudo_prefix + ["apt-get", "install", "-y", pkg], interactive)
+            return r.returncode == 0
+        if shutil.which("dnf"):
+            print(f"  [info] Installing system package '{pkg}' via dnf...")
+            r = _run_cmd(sudo_prefix + ["dnf", "install", "-y", pkg], interactive)
+            return r.returncode == 0
+        if shutil.which("yum"):
+            print(f"  [info] Installing system package '{pkg}' via yum...")
+            r = _run_cmd(sudo_prefix + ["yum", "install", "-y", pkg], interactive)
+            return r.returncode == 0
+        if shutil.which("pacman"):
+            print(f"  [info] Installing system package '{pkg}' via pacman...")
+            r = _run_cmd(sudo_prefix + ["pacman", "-S", "--noconfirm", pkg], interactive)
+            return r.returncode == 0
+        if shutil.which("zypper"):
+            print(f"  [info] Installing system package '{pkg}' via zypper...")
+            r = _run_cmd(sudo_prefix + ["zypper", "install", "-y", pkg], interactive)
+            return r.returncode == 0
+        print(f"  [warn] No supported package manager found to install '{pkg}'")
+        return False
+
     def _resolve_ollama() -> str | None:
         found = shutil.which("ollama")
         if found:
@@ -808,13 +846,17 @@ def _setup_ollama_local() -> bool:
 
     system = platform.system().lower()
     if system == "linux":
-        if not shutil.which("curl"):
+        interactive = bool(sys.stdin.isatty() and sys.stdout.isatty())
+        if not shutil.which("curl") and not _linux_install_package("curl", interactive):
             print("  [warn] curl is required to auto-install Ollama on Linux")
             print("         Install manually: https://ollama.com/download")
             return False
+        if not shutil.which("zstd") and not _linux_install_package("zstd", interactive):
+            print("  [warn] zstd is required by current Ollama installer")
+            print("         Install manually (Debian/Ubuntu): sudo apt-get install zstd")
+            return False
         print("  [info] Installing Ollama...")
         cmd = "curl -fsSL https://ollama.com/install.sh | sh"
-        interactive = bool(sys.stdin.isatty() and sys.stdout.isatty())
         if interactive:
             print("         You may be prompted for sudo password.")
             r = subprocess.run(cmd, shell=True)
