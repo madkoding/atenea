@@ -546,11 +546,19 @@ export function _buildServeCmd(f, modelName, backend) {
       _lcpExtra += ` --clip_model_path "${f._mmproj_path}"`;
     }
     const _lcpServer = `${lcPrefix}${py} -m llama_cpp.server --model ${modelArg} --host 0.0.0.0 --port ${f.port || '8080'} --n_gpu_layers ${f.ngl || '99'} --n_ctx ${f.ctx || '8192'}${_lcpExtra}`;
+    const _gpuRequested = !_cpuOnly && (
+      !!gpuId ||
+      String(f.ngl || '').trim() === '' ||
+      String(f.ngl || '99').trim() !== '0'
+    );
     if (_isWindows()) {
       cmd += _lcpServer;
     } else {
       cmd += `${lcPrefix}llama-server --model ${modelArg} --host 0.0.0.0 --port ${f.port || '8080'} -ngl ${f.ngl || '99'} -c ${f.ctx || '8192'}${_lcExtra}`;
-      cmd += ` || ${_lcpServer}`;
+      // When GPU layers are requested, do NOT silently fall back to Python's
+      // llama_cpp.server: that frequently degrades to CPU-only and hides the
+      // real runtime issue. Keep fallback only for explicit CPU serves.
+      if (!_gpuRequested) cmd += ` || ${_lcpServer}`;
     }
   } else if (backend === 'ollama') {
     const ollamaPort = f.port || '11434';

@@ -28,3 +28,8 @@ def test_cpu_only_drops_gpu_only_flags():
     # The CUDA unified-memory env must be suppressed for CPU-only too.
     assert "f.unified_mem && !_cpuOnly" in text, \
         "GGML_CUDA_ENABLE_UNIFIED_MEMORY must be gated on !_cpuOnly"
+
+
+def test_gpu_llamacpp_does_not_silently_fallback_to_python_server():
+    text = SRC.read_text(encoding="utf-8")
+    assert "if (!_gpuRequested) cmd += ` || ${_lcpServer}`;" in text
