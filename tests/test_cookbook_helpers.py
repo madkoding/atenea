@@ -237,6 +237,7 @@ def test_pip_install_fallback_chain_quotes_extras_spec():
     # Quoted in the plain, --user, and guarded --break-system-packages attempts.
     assert chain.count("'llama-cpp-python[server]'") == 3
     # llama-cpp installs must prefer prebuilt wheels to avoid fragile source builds.
+    assert "--extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124" in chain
     assert "--extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu" in chain
     # Never the unquoted form (bracket-glob risk).
     assert "install -q llama-cpp-python[server]" not in chain

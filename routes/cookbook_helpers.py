@@ -264,15 +264,22 @@ def _pip_install_fallback_chain(package: str, *, python_cmd: str = "python3 -m p
     # ``huggingface_hub``) are returned unchanged by ``shlex.quote``.
     pkg = shlex.quote(package)
     # llama-cpp-python source builds are brittle on older distro pip/packaging
-    # stacks (common on WSL images). Prefer the prebuilt wheel index whenever
-    # this package is requested so dependency-install tasks are reliable.
-    if "llama-cpp-python" in package:
-        pkg += " --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu"
+    # stacks (common on WSL images). Prefer prebuilt wheels. Try CUDA first
+    # (NVIDIA containers/hosts), then fall back to CPU wheels so non-GPU hosts
+    # still install successfully.
+    prefer_cuda_then_cpu = "llama-cpp-python" in package
+
+    def _attempt_pair(cmd: str) -> str:
+        if not prefer_cuda_then_cpu:
+            return _pip_install_attempt(cmd)
+        cuda_cmd = cmd + " --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124"
+        cpu_cmd = cmd + " --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu"
+        return f"{_pip_install_attempt(cuda_cmd)} || {_pip_install_attempt(cpu_cmd)}"
 
     pip_cmd = _pip_command(python_cmd)
-    base = _pip_install_attempt(f"{pip_cmd} install -q{upgrade_flag} {pkg}")
-    user = _pip_install_attempt(f"{pip_cmd} install --user -q{upgrade_flag} {pkg}")
-    user_break_system = _pip_install_attempt(f"{pip_cmd} install --user --break-system-packages -q{upgrade_flag} {pkg}")
+    base = _attempt_pair(f"{pip_cmd} install -q{upgrade_flag} {pkg}")
+    user = _attempt_pair(f"{pip_cmd} install --user -q{upgrade_flag} {pkg}")
+    user_break_system = _attempt_pair(f"{pip_cmd} install --user --break-system-packages -q{upgrade_flag} {pkg}")
     user_fallback = f"( {user} || {{ {_pip_break_system_packages_check(pip_cmd)} && {user_break_system}; }} )"
     # Derive the python executable for the venv detection check.
     # Must use the same interpreter that pip belongs to; hardcoding
