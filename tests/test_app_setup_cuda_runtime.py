@@ -37,3 +37,23 @@ def test_ensure_cuda_wheel_requires_gpu_offload(monkeypatch):
 
     assert setup._ensure_cuda_wheel() is False
     assert any("nvidia-cuda-runtime-cu12" in args for args, _ in calls)
+
+
+def test_cuda_runtime_ready_accepts_cuda_llama_server(monkeypatch):
+    setup = _load_setup_module()
+
+    monkeypatch.setattr(setup, "_llama_server_supports_cuda_backend", lambda path=None: True)
+    monkeypatch.setattr(setup, "_has_llama_cpp_python", lambda: False)
+
+    assert setup._cuda_runtime_ready() is True
+
+
+def test_cuda_runtime_ready_requires_visible_cudart_for_python_path(monkeypatch):
+    setup = _load_setup_module()
+
+    monkeypatch.setattr(setup, "_llama_server_supports_cuda_backend", lambda path=None: False)
+    monkeypatch.setattr(setup, "_has_llama_cpp_python", lambda: True)
+    monkeypatch.setattr(setup, "_llama_cpp_supports_gpu_offload", lambda: True)
+    monkeypatch.setattr(setup, "_has_visible_cudart", lambda: False)
+
+    assert setup._cuda_runtime_ready() is False

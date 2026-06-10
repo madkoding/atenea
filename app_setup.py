@@ -254,6 +254,26 @@ def _llama_server_supports_gpu_backend(path: str | None = None) -> bool:
     return bool(re.search(r"\b(cuda|hip|vulkan|metal|sycl)\b", text))
 
 
+def _llama_server_supports_cuda_backend(path: str | None = None) -> bool:
+    """Return True if llama-server specifically advertises CUDA support."""
+    exe = path or shutil.which("llama-server")
+    if not exe:
+        return False
+    try:
+        r = subprocess.run([exe, "--help"], capture_output=True, text=True, timeout=10)
+    except Exception:
+        return False
+    text = ((r.stdout or "") + "\n" + (r.stderr or "")).lower()
+    return bool(re.search(r"\bcuda\b", text))
+
+
+def _cuda_runtime_ready() -> bool:
+    """True when a CUDA-capable llama runtime is actually available."""
+    if _llama_server_supports_cuda_backend():
+        return True
+    return _has_llama_cpp_python() and _llama_cpp_supports_gpu_offload() and _has_visible_cudart()
+
+
 def _pip_install(*args: str, user: bool = False) -> subprocess.CompletedProcess:
     cmd = [sys.executable, "-m", "pip", "install", "--upgrade"]
     if user:
@@ -421,8 +441,12 @@ def _ensure_cpu_wheel():
     return False
 
 
-def setup_llamacpp():
-    """Auto-detect hardware and install prebuilt llama.cpp binaries/wheels."""
+def setup_llamacpp() -> bool:
+    """Auto-detect hardware and install prebuilt llama.cpp binaries/wheels.
+
+    Returns True when a usable runtime was installed/detected. On CUDA hosts,
+    True means CUDA-capable runtime (not CPU-only fallback).
+    """
     existing = shutil.which("llama-server")
     backend = _detect_gpu_backend()
     while existing:
@@ -442,7 +466,12 @@ def setup_llamacpp():
                     if not _has_visible_cudart():
                         print("  [warn] libcudart not visible; installing CUDA runtime Python packages")
                     _ensure_cuda_wheel()
-                return
+                if backend != "cuda":
+                    return True
+                if _cuda_runtime_ready():
+                    return True
+                print("  [warn] CUDA host detected but active llama runtime is still CPU-only")
+                return False
         except: pass
         print(f"  [warn] Removing broken llama-server at {existing}")
         os.remove(existing)
@@ -455,7 +484,11 @@ def setup_llamacpp():
             if not _has_visible_cudart():
                 print("  [warn] libcudart not visible; installing CUDA runtime Python packages")
             _ensure_cuda_wheel()
-        return
+            if _cuda_runtime_ready():
+                return True
+            print("  [warn] CUDA host detected but llama-cpp runtime remains CPU-only")
+            return False
+        return True
     except (ImportError, RuntimeError) as e:
         if isinstance(e, RuntimeError):
             print(f"  [warn] llama-cpp-python is installed but broken: {e}")
@@ -485,7 +518,7 @@ def setup_llamacpp():
             # Linux CUDA prebuilt tarballs are not always published. Prefer
             # official prebuilt Python CUDA wheels (no source compile).
             if _ensure_cuda_wheel():
-                return
+                return True
             print("  [warn] CUDA wheel unavailable; probing release assets across recent tags...")
             recent_tags = _recent_llama_release_tags(limit=25)
             if not recent_tags:
@@ -499,58 +532,64 @@ def setup_llamacpp():
                 ("llama-{tag}-bin-ubuntu-cuda-12.4-x64.tar.gz", "CUDA 12.4"),
                 ("llama-{tag}-bin-ubuntu-cuda-13.3-x64.tar.gz", "CUDA 13.3"),
             )
-            installed = False
+            installed_cuda = False
             for probe_tag in recent_tags:
                 for asset_tpl, label in cuda_assets:
                     asset = asset_tpl.format(tag=probe_tag)
                     if not _asset_exists(probe_tag, asset):
                         continue
                     print(f"  Downloading pre-built llama-server ({label}, {probe_tag})...")
-                    if _download_release_asset(probe_tag, asset, install_dir):
+                    dst = _download_release_asset(probe_tag, asset, install_dir)
+                    if dst:
                         print(f"  [ok] llama-server installed in {install_dir}")
-                        return
-                # Vulkan fallback can still be useful on NVIDIA hosts when
-                # CUDA assets are unavailable for Linux.
-                vulkan = f"llama-{probe_tag}-bin-ubuntu-vulkan-x64.tar.gz"
-                if _asset_exists(probe_tag, vulkan):
-                    print(f"  Downloading pre-built llama-server (Vulkan fallback, {probe_tag})...")
-                    if _download_release_asset(probe_tag, vulkan, install_dir):
-                        print(f"  [ok] llama-server installed in {install_dir}")
-                        installed = True
-                        break
-            if installed:
-                return
-            print("  [warn] Could not find usable CUDA/Vulkan llama-server release assets")
-            print("         Falling back to prebuilt CPU wheel (GPU serving unavailable until CUDA wheel works)")
+                        if _llama_server_supports_cuda_backend(dst):
+                            installed_cuda = True
+                            break
+                        print("  [warn] Downloaded llama-server does not advertise CUDA; continuing search")
+                if installed_cuda:
+                    break
+            if installed_cuda:
+                return True
+            print("  [warn] Could not provision a CUDA-capable llama runtime from prebuilt sources")
         elif backend == "rocm":
             asset = f"llama-{tag}-bin-ubuntu-rocm-7.2-x64.tar.gz"
             print(f"  Downloading pre-built llama-server (ROCm, {tag})...")
             if _download_release_asset(tag, asset, install_dir):
                 print(f"  [ok] llama-server installed in {install_dir}")
-                return
+                return True
         elif backend == "vulkan":
             asset = f"llama-{tag}-bin-ubuntu-vulkan-x64.tar.gz"
             print(f"  Downloading pre-built llama-server (Vulkan, {tag})...")
             if _download_release_asset(tag, asset, install_dir):
                 print(f"  [ok] llama-server installed in {install_dir}")
-                return
+                return True
         else:
             asset = f"llama-{tag}-bin-ubuntu-x64.tar.gz"
             print(f"  Downloading pre-built llama-server (CPU, {tag})...")
             if _download_release_asset(tag, asset, install_dir):
                 print(f"  [ok] llama-server installed in {install_dir}")
-                return
+                return True
 
     print("  Installing prebuilt llama-cpp-python CPU wheel as fallback...")
     if _ensure_cpu_wheel():
-        return
+        if backend == "cuda":
+            print("  [error] CPU-only fallback installed on a CUDA host. Run setup again after fixing CUDA runtime availability.")
+            return False
+        return True
 
     print("  Installing llama-cpp-python[server] as last resort (may compile)...")
     r = _pip_install("llama-cpp-python[server]", user=_IN_DOCKER)
     if r.returncode == 0:
         print("  [ok] llama-cpp-python[server] installed")
+        if backend == "cuda":
+            if _cuda_runtime_ready():
+                return True
+            print("  [error] Last-resort install succeeded but CUDA runtime is still unavailable")
+            return False
+        return True
     else:
         print("  [warn] Could not install llama.cpp runtime. Install manually later.")
+    return False
 
 
 def check_deps():
@@ -568,7 +607,8 @@ def check_deps():
         print("  [ok] All core dependencies installed")
 
     print("\n6. llama.cpp inference server...")
-    setup_llamacpp()
+    if not setup_llamacpp():
+        print("  [warn] llama.cpp setup did not reach a usable GPU runtime on this host.")
 
     if os.name != "nt" and shutil.which("tmux") is None:
         print("\n  [warn] tmux not found")
