@@ -1057,9 +1057,10 @@ function _normalizeState(state) {
       if (!dirs.includes('~/.cache/huggingface/hub')) dirs.unshift('~/.cache/huggingface/hub');
       s.modelDirs = [...new Set(dirs)];
       delete s.modelDir; // Drop the legacy singular form
-      // A download target that's no longer in the dir list falls back to the
-      // default HF cache (empty) so we never download into an unscanned dir.
-      if (s.downloadDir && !s.modelDirs.includes(s.downloadDir)) s.downloadDir = '';
+      // Ensure the download target is always scanned so models appear in Serve.
+      if (s.downloadDir && !s.modelDirs.includes(s.downloadDir)) {
+        s.modelDirs.push(s.downloadDir);
+      }
     }
   }
   return state;
@@ -3508,6 +3509,7 @@ async function _pollBackgroundStatus() {
       const localTasks = _loadTasks();
       let changed = false;
       const completedDeps = [];
+      const completedDownloads = [];
       for (const task of localTasks) {
         const live = statusById.get(task.sessionId);
         if (!live) continue;
@@ -3527,6 +3529,7 @@ async function _pollBackgroundStatus() {
         if (nextStatus && task.status !== nextStatus) {
           updates.status = nextStatus;
           if (nextStatus === 'done' && task.payload?._dep) completedDeps.push(task);
+          if (nextStatus === 'done' && task.type === 'download' && !task.payload?._dep) completedDownloads.push(task);
         }
         if ((live.status === 'running' || live.status === 'ready') && task.status !== live.status) {
           updates.status = live.status === 'ready' ? 'ready' : 'running';
@@ -3560,6 +3563,11 @@ async function _pollBackgroundStatus() {
           _showDiagnosis(el, task._backendDiagnosis, task.output || '');
         }
         completedDeps.forEach(t => _refreshDepsAfterInstall(t));
+        if (completedDownloads.length) {
+          import('./cookbook-hwfit.js').then(m => {
+            if (typeof m._refreshCachedModels === 'function') m._refreshCachedModels();
+          }).catch(() => {});
+        }
       }
     } catch (_) { /* non-fatal: background status should never break polling */ }
 

@@ -974,11 +974,11 @@ function _wireTabEvents(body) {
       body.querySelectorAll('.cookbook-group').forEach(g => {
         g.classList.toggle('hidden', g.dataset.backendGroup !== backend);
       });
-      if (backend === _t('common.search')) {
+      if (backend === 'Search') {
         _hwfitInit();
         _hwfitFetch();
       }
-      if (backend === _t('cookbook.serve')) {
+      if (backend === 'Serve') {
         _fetchCachedModels();
       }
       if (backend === 'Dependencies') {
@@ -1036,6 +1036,12 @@ function _wireTabEvents(body) {
       const downloadDir = dlEl ? (dlEl.dataset.dlDir || '') : '';
       servers.push({ name, host, port, env, envPath, modelDirs: dirs, downloadDir, platform });
     });
+    // Ensure every download target is always scanned so models appear in Serve.
+    for (const s of servers) {
+      if (s.downloadDir && !s.modelDirs.includes(s.downloadDir)) {
+        s.modelDirs.push(s.downloadDir);
+      }
+    }
     _envState.servers = servers;
     // Auto-default: when the user has configured EXACTLY ONE remote server
     // and hasn't picked one yet, select it. Without this, the dropdown
@@ -2048,6 +2054,15 @@ export async function open(opts) {
     // holds the last-known state. Gating this on `!synced` left the render's
     // _envState empty whenever sync succeeded → "servers don't show".
     try { Object.assign(_envState, _readStoredEnvState()); } catch { }
+    // Normalise servers: ensure downloadDir is scanned.
+    if (Array.isArray(_envState.servers)) {
+      for (const s of _envState.servers) {
+        if (s.downloadDir && !s.modelDirs?.includes(s.downloadDir)) {
+          if (!Array.isArray(s.modelDirs)) s.modelDirs = [];
+          s.modelDirs.push(s.downloadDir);
+        }
+      }
+    }
     // Honour a user-set default server: always land on it when Cookbook opens, so
     // every dropdown (scan/download/serve/cache/deps) starts on the same machine.
     if (_envState.defaultServer) {

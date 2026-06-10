@@ -2157,16 +2157,42 @@ def setup_cookbook_routes() -> APIRouter:
     def _cookbook_tasks_status_sync():
         import subprocess
 
-        def _download_cache_complete(repo_id: str, remote_host: str = "", ssh_port: str = "") -> bool:
-            """Best-effort check for a completed HF cache entry.
+        def _download_cache_complete(repo_id: str, remote_host: str = "", ssh_port: str = "", local_dir: str = "") -> bool:
+            """Best-effort check for a completed download.
 
-            tmux output can stop at a stale progress line if the pane/session
-            disappears before Cookbook captures the final DOWNLOAD_OK marker.
-            In that case, trust the cache shape: a snapshot directory with files
-            and no *.incomplete blobs means HuggingFace finished materializing the
-            model.
+            When the download went to the HF cache, check that the HF cache entry
+            has a snapshot directory with files and no *.incomplete blobs. When a
+            custom local_dir was used, check that directory for GGUF files.
             """
-            if not repo_id or "/" not in repo_id:
+            if not repo_id:
+                return False
+            # Custom directory path: check <local_dir>/<short_name> for GGUF files
+            if local_dir:
+                dl_short = repo_id.split("/")[-1] if "/" in repo_id else repo_id
+                local_path = os.path.join(os.path.expanduser(local_dir), dl_short)
+                if remote_host:
+                    ls_cmd = ["ssh"]
+                    if ssh_port and ssh_port != "22":
+                        ls_cmd.extend(["-p", str(ssh_port)])
+                    ls_cmd.extend([remote_host, f"ls '{local_path}'/*.gguf 2>/dev/null | head -1"])
+                    try:
+                        p = subprocess.run(ls_cmd, timeout=12, capture_output=True, text=True)
+                        if p.returncode == 0 and p.stdout.strip():
+                            return True
+                    except Exception:
+                        pass
+                else:
+                    import glob as _glob
+                    try:
+                        ggufs = _glob.glob(os.path.join(local_path, "*.gguf"))
+                        if ggufs:
+                            return True
+                    except Exception:
+                        pass
+                # Fall through to HF-cache check even with a local_dir hint — some
+                # downloads still land there despite the hint.
+            # HF cache check
+            if "/" not in repo_id:
                 return False
             py = (
                 "import os,sys;"
@@ -2397,7 +2423,7 @@ def setup_cookbook_routes() -> APIRouter:
                     status = "running"
             else:
                 # Session is dead — check if it completed or crashed
-                if task_type == "download" and _download_cache_complete(_payload.get("repo_id") or model, remote, str(_tport or "")):
+                if task_type == "download" and _download_cache_complete(_payload.get("repo_id") or model, remote, str(_tport or ""), _payload.get("local_dir") or ""):
                     status = "completed"
                     if not progress_text:
                         progress_text = "Download complete"
