@@ -208,6 +208,25 @@ _setup() {
     echo
 }
 
+_wait_for_ready() {
+    local host="$1" port="$2"
+    local timeout="${ATENEA_WAIT_TIMEOUT:-120}"
+    local interval=2 elapsed=0
+
+    while [ "$elapsed" -lt "$timeout" ]; do
+        if command -v curl &>/dev/null; then
+            curl -sf "http://${host}:${port}/" -o /dev/null 2>/dev/null && return 0
+        elif command -v wget &>/dev/null; then
+            wget -q "http://${host}:${port}/" -O /dev/null 2>/dev/null && return 0
+        else
+            (echo > "/dev/tcp/${host}/${port}") 2>/dev/null && return 0
+        fi
+        sleep "$interval"
+        elapsed=$((elapsed + interval))
+    done
+    return 1
+}
+
 _up() {
     local native=0 build=0 gpu_mode="" args=()
 
@@ -232,9 +251,13 @@ _up() {
     [ "$build" -eq 1 ] && args+=(--build)
     GPU_MODE="$gpu_mode" _compose_cmd up -d "${args[@]}"
 
+    local port="${APP_PORT:-7000}"
+    _spin "Waiting for Atenea to be ready on port ${port}" \
+        _wait_for_ready "localhost" "$port"
+
     _sep
     _ok "Atenea is running"
-    _info "Open  ${C_BOLD}http://localhost:${APP_PORT:-7000}${C_RST}  in your browser"
+    _info "Open  ${C_BOLD}http://localhost:${port}${C_RST}  in your browser"
     _info "Run   ./atenea logs  to follow output"
 }
 
