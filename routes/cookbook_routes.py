@@ -327,6 +327,11 @@ def setup_cookbook_routes() -> APIRouter:
         # activated venv. Local bash runs only — meaningless over SSH.
         if not req.remote_host:
             lines.append(_local_tooling_path_export(sys.executable))
+            _project_venv = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)), ".venv", "bin"
+            )
+            if os.path.isdir(_project_venv):
+                lines.append(f'export PATH="{_project_venv}:$PATH"')
         # Best-effort install hf CLI (always). hf_transfer (Rust parallel downloader)
         # is fast but flaky on large files — it tends to crash near the end at high
         # throughput. Retries set disable_hf_transfer to fall back to the plain,
@@ -1036,15 +1041,21 @@ def setup_cookbook_routes() -> APIRouter:
             handled_ollama_serve = False
             # Auto-install inference engine if missing
             if "llama_cpp" in req.cmd or "llama-server" in req.cmd:
-                # Prefer the NATIVE llama-server binary — its minja templating
-                # renders modern GGUF chat templates that the Python bindings'
-                # Jinja2 rejects (do_tojson ensure_ascii). Build it once from
-                # source if missing; keep llama-cpp-python only as a fallback.
-                runner_lines.append('# Ensure a llama.cpp server (prefer native llama-server)')
+                # Prefer the NATIVE llama-server or pip-installed Python bindings.
+                # Run app_setup.py first to auto-install the best option for this
+                # machine; this block only handles the runtime guard.
+                runner_lines.append('# Ensure a llama.cpp server (native llama-server or Python bindings)')
                 # Include the Homebrew bin dirs so a brew-installed llama-server /
                 # ollama is found (otherwise macOS falls back to a slow source build).
                 # /opt/homebrew = Apple Silicon, /usr/local = Intel; harmless on Linux.
                 runner_lines.append('export PATH="$HOME/.local/bin:$HOME/bin:$HOME/llama.cpp/build/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"')
+                # Prepend project .venv so python3 resolves to the venv (which has
+                # llama_cpp installed) before the system /usr/local/bin.
+                _serve_venv = os.path.join(
+                    os.path.dirname(os.path.dirname(__file__)), ".venv", "bin"
+                )
+                if os.path.isdir(_serve_venv):
+                    runner_lines.append(f'export PATH="{_serve_venv}:$PATH"')
                 if local_windows:
                     # LOCAL Windows: no native source compilation (no cmake/compiler on Git Bash).
                     # Just check python bindings (using native `python` binary) and fall back to pip install.
@@ -1064,41 +1075,17 @@ def setup_cookbook_routes() -> APIRouter:
                     runner_lines.append('    pip install numpy diskcache jinja2 2>/dev/null')
                     runner_lines.append('    CMAKE_ARGS="-DGGML_BLAS=OFF -DGGML_LLAMAFILE=OFF" pip install \'llama-cpp-python[server]\' --no-build-isolation --no-cache-dir 2>&1 || true')
                     runner_lines.append('  fi')
-                    runner_lines.append('elif ! command -v llama-server &>/dev/null; then')
-                    runner_lines.append('  if [ -x ~/llama.cpp/build/bin/llama-server ]; then')
-                    runner_lines.append('    echo "[atenea] llama-server binary found in build dir — linking..."')
-                    runner_lines.append('    mkdir -p ~/bin && ln -sf ~/llama.cpp/build/bin/llama-server ~/bin/llama-server')
+                    runner_lines.append('elif ! python3 -c "import llama_cpp" 2>/dev/null; then')
+                    runner_lines.append('  if command -v llama-server &>/dev/null && llama-server --version &>/dev/null; then')
+                    runner_lines.append('    :  # native llama-server works, skip install')
                     runner_lines.append('  else')
-                    runner_lines.append('    echo "Native llama-server not found — building from source (one-time, may take a few minutes)..."')
-                    runner_lines.append('    mkdir -p ~/bin')
-                    runner_lines.append('    cd ~ && [ -d llama.cpp ] || git clone --depth 1 https://github.com/ggml-org/llama.cpp')
-                    # Build with the right accelerator: Metal on macOS (llama.cpp
-                    # enables it automatically, no flag), CUDA on Linux when present,
-                    # else a plain CPU build. nproc is Linux-only — fall back to
-                    # `sysctl hw.ncpu` on macOS. (Tip: `brew install llama.cpp` ships
-                    # a prebuilt llama-server and skips this whole source build.)
-                    runner_lines.append('    NPROC="$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"')
-                    runner_lines.append('    if [ "$(uname -s)" = "Darwin" ]; then')
-                    runner_lines.append('      command -v cmake >/dev/null 2>&1 || echo "WARNING: cmake not found — install it with: brew install cmake (or: brew install llama.cpp for a prebuilt llama-server)."')
-                    # Start from a clean cache: a prior failed configure (e.g. a CUDA
-                    # attempt) poisons build/CMakeCache.txt, so a plain `cmake -B build`
-                    # would reuse the bad settings and fail again. CMAKE_BUILD_TYPE is
-                    # explicit so the binary is optimized (Metal auto-enables on macOS).
-                    runner_lines.append('      cd ~/llama.cpp && rm -rf build && cmake -B build -DCMAKE_BUILD_TYPE=Release \\')
-                    runner_lines.append('        && cmake --build build -j"$NPROC" --target llama-server \\')
-                    runner_lines.append('        && ln -sf ~/llama.cpp/build/bin/llama-server ~/bin/llama-server')
-                    runner_lines.append('    else')
-                    _append_llama_cpp_linux_accel_build_lines(runner_lines, indent='      ')
-                    runner_lines.append('    fi')
-                    # If the native build failed, fall back to the Python bindings.
-                    runner_lines.append('    if ! command -v llama-server &>/dev/null && ! python3 -c "import llama_cpp" 2>/dev/null; then')
-                    runner_lines.append('      echo "llama-server build failed — installing Python bindings as fallback..."')
-                    runner_lines.append(f"      {_pip_install_fallback_chain('llama-cpp-python[server]', python_cmd='pip')} || true")
-                    runner_lines.append('    fi')
-                    runner_lines.append('    if ! command -v llama-server &>/dev/null && ! python3 -c "import llama_cpp" 2>/dev/null; then')
-                    runner_lines.append('      echo "ERROR: llama.cpp serving is not available after install/build attempts."')
-                    runner_lines.append('      ATENEA_PREFLIGHT_EXIT=127')
-                    runner_lines.append('    fi')
+                    runner_lines.append('    echo "llama-server not found — installing Python bindings..."')
+                    runner_lines.append(f"    {_pip_install_fallback_chain('llama-cpp-python[server]', python_cmd='pip')} || true")
+                    runner_lines.append('  fi')
+                    runner_lines.append('  if ! python3 -c "import llama_cpp" 2>/dev/null; then')
+                    runner_lines.append('    echo "ERROR: llama.cpp serving is not available after install attempts."')
+                    runner_lines.append('    echo "Run app_setup.py first: python app_setup.py"')
+                    runner_lines.append('    ATENEA_PREFLIGHT_EXIT=127')
                     runner_lines.append('  fi')
                     runner_lines.append('fi')
             elif "ollama" in req.cmd:
