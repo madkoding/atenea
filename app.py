@@ -664,6 +664,10 @@ app.include_router(setup_cookbook_routes())
 from routes.ollama_routes import setup_ollama_routes
 app.include_router(setup_ollama_routes())
 
+# Docker Ollama lifecycle (start/stop/status via Docker SDK)
+from routes.docker_ollama import setup_docker_ollama_routes
+app.include_router(setup_docker_ollama_routes())
+
 # Hardware model fitting (cookbook "What Fits?" tab)
 from routes.hwfit_routes import setup_hwfit_routes
 app.include_router(setup_hwfit_routes())

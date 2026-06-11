@@ -1,0 +1,10 @@
+services:
+  ollama:
+    image: docker.io/ollama/ollama:latest
+    ports:
+      - "${OLLAMA_BIND:-127.0.0.1}:${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ../data/ollama:/root/.ollama:z
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    restart: unless-stopped

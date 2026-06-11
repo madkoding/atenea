@@ -218,12 +218,12 @@ _compose_cmd() {
 # ─── subcommands ───────────────────────────────────────────────────────────────
 _ensure_sysdeps() {
     local pkgs=()
-    if ! python3 -c 'import ensurepip' &>/dev/null; then
+    if ! $PYTHON_BIN -c 'import ensurepip' &>/dev/null; then
         local py_ver
-        py_ver="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+        py_ver="$($PYTHON_BIN -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
         pkgs+=("python${py_ver}-venv")
     fi
-    if ! python3-config --include &>/dev/null 2>&1; then
+    if ! ${PYTHON_BIN}-config --include &>/dev/null 2>&1; then
         pkgs+=(python3-dev)
     fi
     if ! command -v gcc &>/dev/null; then
@@ -245,7 +245,19 @@ _ensure_sysdeps() {
     elif command -v zypper &>/dev/null; then
         sudo zypper install -y "${pkgs[@]}"
     elif command -v brew &>/dev/null; then
-        brew install "${pkgs[@]}"
+        # On macOS, python3-dev and build-essential are not Homebrew formulae.
+        # python3-dev is included in the python formula; build-essential is
+        # provided by Xcode CLI tools. Only install git if missing.
+        local brew_pkgs=()
+        for pkg in "${pkgs[@]}"; do
+            case "$pkg" in
+                python3-dev|build-essential) ;;
+                *) brew_pkgs+=("$pkg") ;;
+            esac
+        done
+        if [ ${#brew_pkgs[@]} -gt 0 ]; then
+            brew install "${brew_pkgs[@]}"
+        fi
     else
         _warn "Unknown package manager — install manually: ${pkgs[*]}"
     fi
@@ -262,8 +274,20 @@ _setup() {
         _fail "python3 not found — install Python 3.12 first"
         exit 1
     fi
+    PYTHON_BIN="python3"
     py_version="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
-    if [ "$py_version" != "3.12" ]; then
+    if [ "$py_version" = "3.9" ]; then
+        if command -v brew &>/dev/null; then
+            _dim "Python 3.9 is too old for some dependencies. Installing Python 3.12 via Homebrew..."
+            brew install python@3.12
+            BREW_PREFIX="$(brew --prefix python@3.12)"
+            PYTHON_BIN="$BREW_PREFIX/bin/python3.12"
+            _ok "Python 3.12 installed via Homebrew"
+        else
+            _fail "Python 3.10+ required (found $py_version) — install Python 3.12 manually"
+            exit 1
+        fi
+    elif [ "$py_version" != "3.12" ]; then
         _warn "Python 3.12 recommended (found $py_version) — continuing"
     else
         _ok "Python $py_version"
@@ -283,12 +307,20 @@ _setup() {
     _step "4/7  Python virtual environment"
     VENV_PY="${REPO_ROOT}/.venv/bin/python3"
     VENV_PIP="${REPO_ROOT}/.venv/bin/pip"
-    if [ ! -f "$VENV_PIP" ] || [ ! -f "$VENV_PY" ]; then
+    RECREATE_VENV=0
+    if [ -f "$VENV_PY" ]; then
+        venv_ver="$("$VENV_PY" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null)" || venv_ver=""
+        py_ver="$($PYTHON_BIN -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+        if [ "$venv_ver" != "$py_ver" ]; then
+            _warn "Virtual environment uses Python $venv_ver but system has Python $py_ver — rebuilding"
+            RECREATE_VENV=1
+        fi
+    fi
+    if [ ! -f "$VENV_PIP" ] || [ ! -f "$VENV_PY" ] || [ "$RECREATE_VENV" = "1" ]; then
         if [ -d "${REPO_ROOT}/.venv" ]; then
-            _warn "Virtual environment is broken — rebuilding"
             rm -rf "${REPO_ROOT}/.venv"
         fi
-        _spin "Creating virtual environment" python3 -m venv "${REPO_ROOT}/.venv"
+        _spin "Creating virtual environment" $PYTHON_BIN -m venv "${REPO_ROOT}/.venv"
     else
         _ok "Virtual environment exists"
     fi
@@ -314,7 +346,16 @@ _setup() {
 
     # ── 7. Auto-start ─────────────────────────────────────────────────────────
     _step "7/7  Starting Atenea"
-    _up --build
+    if command -v docker &>/dev/null; then
+        _up --build
+    else
+        _warn "Docker not found — skipping container start"
+        _info "Install Docker Desktop from ${C_BOLD}https://docs.docker.com/desktop/setup/install/mac-install/${C_RST}"
+        _info "Then run:  ${C_BOLD}./atenea up${C_RST}"
+        _info ""
+        _info "To run without Docker (native mode):"
+        _info "  ${C_BOLD}${VENV_PY} -m uvicorn app:app --host 0.0.0.0 --port ${APP_PORT:-7000}${C_RST}"
+    fi
 }
 
 _wait_for_ready() {

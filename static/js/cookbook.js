@@ -695,16 +695,21 @@ async function _fetchDependencies() {
       if (winBlocked) return `<span class="cookbook-dep-tag cookbook-dep-na">N/A</span>`;
       const hasCustomInstall = !!pkg.install_cmd;
       const hasCustomUpdate = !!pkg.update_cmd;
-      if (pkg.installed && isSystemDep && !hasCustomUpdate) return `<span class="cookbook-dep-tag cookbook-dep-installed" title="Found on selected server">Installed</span>`;
+      const isDocker = pkg.kind === 'docker';
+      if (pkg.installed && isSystemDep && !hasCustomUpdate && !isDocker) return `<span class="cookbook-dep-tag cookbook-dep-installed" title="Found on selected server">Installed</span>`;
+      if (pkg.installed && isDocker) return `<span class="cookbook-dep-tag cookbook-dep-installed" title="Container is running">Running</span>`;
       if (pkg.installed && pkg.pip_update_available === false && !hasCustomUpdate) {
         const tip = esc(pkg.update_note || pkg.status_note || 'Found externally; update outside Atenea.');
         return `<span class="cookbook-dep-tag cookbook-dep-installed" title="${tip}">Installed</span>`;
       }
       if (pkg.installed) return `<button class="cookbook-dep-tag cookbook-dep-installed cookbook-dep-installed-btn" title="Installed — click for actions"><span class="cookbook-dep-installed-label">Installed</span><span class="cookbook-dep-caret">&#9662;</span></button>`;
-      if (isSystemDep && !hasCustomInstall) {
+      if (isSystemDep && !hasCustomInstall && !isDocker) {
         const depTip = esc(pkg.install_hint || 'Install this OS package on the selected server.');
       const depLabel = pkg.applicable === false ? 'N/A' : _t('cookbook.missing');
         return `<span class="cookbook-dep-tag cookbook-dep-na" title="${depTip}">${depLabel}</span>`;
+      }
+      if (isDocker) {
+        return `<button class="cookbook-dep-tag cookbook-dep-install" data-dep-kind="docker" data-dep-install-route="${esc(pkg.install_route || '')}" title="${esc(pkg.install_hint || 'Start Docker container')}">Install</button>`;
       }
       return `<button class="cookbook-dep-tag cookbook-dep-install" data-dep-pip="${esc(pkg.pip || '')}" data-dep-install-cmd="${esc(pkg.install_cmd || '')}" data-dep-update-cmd="${esc(pkg.update_cmd || '')}" data-dep-target="${isLocal ? 'local' : 'remote'}">Install</button>`;
     };
@@ -883,6 +888,24 @@ async function _fetchDependencies() {
     list.querySelectorAll('.cookbook-dep-install').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
+        if (btn.dataset.depKind === 'docker') {
+          const installRoute = btn.dataset.depInstallRoute || '';
+          if (!installRoute) { uiModule.showToast('No install route for this package'); return; }
+          btn.textContent = 'Starting...';
+          btn.disabled = true;
+          try {
+            const res = await fetch(installRoute, { method: 'POST', credentials: 'same-origin' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+            uiModule.showToast('Ollama container started successfully.');
+            await _fetchDependencies();
+          } catch (err) {
+            btn.textContent = 'Install';
+            btn.disabled = false;
+            uiModule.showToast('Failed to start Ollama: ' + err.message);
+          }
+          return;
+        }
         const pipName = btn.dataset.depPip;
         const installCmd = btn.dataset.depInstallCmd || '';
         const pkgName = btn.closest('.cookbook-dep-row')?.querySelector('.memory-item-title')?.textContent || pipName;

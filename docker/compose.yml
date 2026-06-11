@@ -20,6 +20,9 @@ services:
       # land under /app/.local for the atenea user. Persist them so a
       # container recreate does not silently remove installed serve engines.
       - ../data/local:/app/.local:z
+      # Docker socket — lets Atenea manage Docker containers (Ollama, etc.)
+      # from Cookbook → Dependencies tab. Read-only for security.
+      - /var/run/docker.sock:/var/run/docker.sock:ro,z
       # User project files — accessible to the agent via Workspace picker
       # and tool_path_extra_roots setting.
       - ~/proyectos:/app/proyectos:z

@@ -971,11 +971,9 @@ def setup_cookbook_routes() -> APIRouter:
                 ps_lines.append('  exit 1')
                 ps_lines.append('}')
             elif "llama_cpp" in req.cmd or "llama-server" in req.cmd:
-                ps_lines.append('# Auto-install llama-cpp-python if missing')
-                ps_lines.append('try { python -c "import llama_cpp" 2>$null } catch {}')
-                ps_lines.append('if ($LASTEXITCODE -ne 0) {')
-                ps_lines.append('  Write-Host "Installing llama-cpp-python..."')
-                ps_lines.append('  python -m pip install llama-cpp-python[server] --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu')
+                ps_lines.append('if (-not (Get-Command llama-server -ErrorAction SilentlyContinue) -and (-not (python -c "import llama_cpp" 2>$null))) {')
+                ps_lines.append('  Write-Host "llama.cpp not found. Install it from Cookbook → Dependencies tab."')
+                ps_lines.append('  exit 1')
                 ps_lines.append('}')
             elif "vllm" in req.cmd:
                 ps_lines.append('Write-Host "ERROR: vLLM is not supported on Windows. Use Ollama or llama.cpp instead."')
@@ -1056,7 +1054,7 @@ def setup_cookbook_routes() -> APIRouter:
                 runner_lines.append('  ATENEA_OLLAMA_BIN="/bin/ollama"')
                 runner_lines.append('fi')
                 runner_lines.append('if [ -z "$ATENEA_OLLAMA_BIN" ]; then')
-                runner_lines.append("  echo 'ERROR: Ollama not found on this server. Install it from https://ollama.com/download or run: curl -fsSL https://ollama.com/install.sh | sh'")
+                runner_lines.append("  echo 'ERROR: Ollama not found. Install it from Cookbook → Dependencies tab.'")
                 runner_lines.append('  ATENEA_PREFLIGHT_EXIT=127')
                 runner_lines.append('fi')
                 _cmd_for_runner = re.sub(
@@ -1064,55 +1062,17 @@ def setup_cookbook_routes() -> APIRouter:
                     '"${ATENEA_OLLAMA_BIN:-ollama}"',
                     req.cmd,
                 )
-            # Auto-install inference engine if missing
             if "llama_cpp" in req.cmd or "llama-server" in req.cmd:
-                # Prefer the NATIVE llama-server or pip-installed Python bindings.
-                # Run app_setup.py first to auto-install the best option for this
-                # machine; this block only handles the runtime guard.
-                runner_lines.append('# Ensure a llama.cpp server (native llama-server or Python bindings)')
-                # Include the Homebrew bin dirs so a brew-installed llama-server /
-                # ollama is found (otherwise macOS falls back to a slow source build).
-                # /opt/homebrew = Apple Silicon, /usr/local = Intel; harmless on Linux.
                 runner_lines.append('export PATH="$HOME/.local/bin:$HOME/bin:$HOME/llama.cpp/build/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"')
-                # Prepend project .venv so python3 resolves to the venv (which has
-                # llama_cpp installed) before the system /usr/local/bin.
                 _serve_venv = os.path.join(
                     os.path.dirname(os.path.dirname(__file__)), ".venv", "bin"
                 )
                 if os.path.isdir(_serve_venv):
                     runner_lines.append(f'export PATH="{_serve_venv}:$PATH"')
-                if local_windows:
-                    # LOCAL Windows: no native source compilation (no cmake/compiler on Git Bash).
-                    # Just check python bindings (using native `python` binary) and fall back to pip install.
-                    runner_lines.append('if ! command -v llama-server &>/dev/null && ! python -c "import llama_cpp" 2>/dev/null; then')
-                    runner_lines.append('  echo "llama-server not found — installing Python bindings..."')
-                    runner_lines.append(f"  {_pip_install_fallback_chain('llama-cpp-python[server]', python_cmd='python')} || true")
-                    runner_lines.append('fi')
-                    runner_lines.append('if ! command -v llama-server &>/dev/null && ! python -c "import llama_cpp" 2>/dev/null; then')
-                    runner_lines.append('  echo "ERROR: llama.cpp serving is not available after install attempts."')
-                    runner_lines.append('  ATENEA_PREFLIGHT_EXIT=127')
-                    runner_lines.append('fi')
-                else:
-                    runner_lines.append('if [ -d /data/data/com.termux ]; then')
-                    runner_lines.append('  # Termux: no native build — use the Python bindings (CPU).')
-                    runner_lines.append('  if ! python3 -c "import llama_cpp" 2>/dev/null; then')
-                    runner_lines.append('    pkg install -y cmake 2>/dev/null')
-                    runner_lines.append('    pip install numpy diskcache jinja2 2>/dev/null')
-                    runner_lines.append('    CMAKE_ARGS="-DGGML_BLAS=OFF -DGGML_LLAMAFILE=OFF" pip install \'llama-cpp-python[server]\' --no-build-isolation --no-cache-dir 2>&1 || true')
-                    runner_lines.append('  fi')
-                    runner_lines.append('elif ! python3 -c "import llama_cpp" 2>/dev/null; then')
-                    runner_lines.append('  if command -v llama-server &>/dev/null && llama-server --version &>/dev/null; then')
-                    runner_lines.append('    :  # native llama-server works, skip install')
-                    runner_lines.append('  else')
-                    runner_lines.append('    echo "llama-server not found — installing Python bindings..."')
-                    runner_lines.append(f"    {_pip_install_fallback_chain('llama-cpp-python[server]', python_cmd='pip')} || true")
-                    runner_lines.append('  fi')
-                    runner_lines.append('  if ! python3 -c "import llama_cpp" 2>/dev/null; then')
-                    runner_lines.append('    echo "ERROR: llama.cpp serving is not available after install attempts."')
-                    runner_lines.append('    echo "Run app_setup.py first: python app_setup.py"')
-                    runner_lines.append('    ATENEA_PREFLIGHT_EXIT=127')
-                    runner_lines.append('  fi')
-                    runner_lines.append('fi')
+                runner_lines.append('if ! command -v llama-server &>/dev/null && ! python3 -c "import llama_cpp" 2>/dev/null; then')
+                runner_lines.append('  echo "ERROR: llama.cpp not found. Install it from Cookbook → Dependencies tab."')
+                runner_lines.append('  ATENEA_PREFLIGHT_EXIT=127')
+                runner_lines.append('fi')
 
                 _gpu_layers_requested = bool(re.search(r"(?:^|\\s)-ngl\\s+[1-9]\\d*", req.cmd) or re.search(r"--n_gpu_layers\\s+[1-9]\\d*", req.cmd))
                 _llama_gpu_requested = bool(

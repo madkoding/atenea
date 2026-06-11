@@ -50,13 +50,12 @@ def test_route_uses_dist_name_helper_not_munged_import_name():
     assert 'importlib_metadata.version(pkg["name"].replace("_", "-"))' not in src
 
 
-def test_packages_route_includes_ollama_system_dependency_row():
+def test_packages_route_includes_ollama_docker_row():
     src = (Path(__file__).resolve().parents[1] / "routes" / "shell_routes.py").read_text(encoding="utf-8")
     assert '"name": "ollama"' in src
-    assert '"kind": "system"' in src
-    assert '"target": "remote"' in src
-    assert "https://ollama.com/install.sh" in src
-    assert "sudo -n true" in src
+    assert '"kind": "docker"' in src
+    assert '"target": "local"' in src
+    assert '"install_route": "/api/docker/ollama/start"' in src
 
 
 def test_local_dependency_detection_accepts_running_ollama_api_without_cli():
@@ -65,7 +64,6 @@ def test_local_dependency_detection_accepts_running_ollama_api_without_cli():
     assert 'pkg["status_note"] = f"Ollama API reachable at {_ollama_api}"' in src
 
 
-def test_remote_dependency_detection_accepts_running_ollama_api_without_cli():
+def test_local_dependency_detection_reports_absent_hint():
     src = (Path(__file__).resolve().parents[1] / "routes" / "shell_routes.py").read_text(encoding="utf-8")
-    assert "curl -fsS --max-time 2 http://127.0.0.1:11434/api/version" in src
-    assert "python3 - <<'PY'" in src
+    assert "Ollama Docker container not running" in src

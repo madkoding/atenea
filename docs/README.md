@@ -88,39 +88,11 @@ downloads and serves. The app itself is lightweight; local model serving is the
 heavy part and depends on the model, runtime, GPU, and VRAM, so small hosts can
 connect to API or remote model servers instead. Use `--host 0.0.0.0` only when you intentionally want LAN/reverse-proxy access.
 
-### Local inference backend setup (host)
+### Local inference backend
 
-`python app_setup.py` no longer forces `llama.cpp` during first setup.
-
-- Setup first checks whether a local backend is already running and serving models.
-- If not found, it offers a local-only choice: `ollama`, `llama.cpp`, `vllm`, `hf-local`, or `skip`.
-- In non-interactive sessions (Docker/CI), control behavior with env vars:
-  - `ATENEA_INFERENCE_SETUP=prompt|auto|skip`
-  - `ATENEA_INFERENCE_BACKEND=ollama|llamacpp|vllm|hf-local|skip`
-  - `ATENEA_INFERENCE_NONINTERACTIVE=1`
-
-Quick start examples:
-
-```bash
-# skip backend install during setup
-ATENEA_INFERENCE_SETUP=skip python app_setup.py
-
-# non-interactive backend choice
-ATENEA_INFERENCE_SETUP=auto ATENEA_INFERENCE_BACKEND=ollama python app_setup.py
-ATENEA_INFERENCE_SETUP=auto ATENEA_INFERENCE_BACKEND=llamacpp python app_setup.py
-ATENEA_INFERENCE_SETUP=auto ATENEA_INFERENCE_BACKEND=vllm python app_setup.py
-ATENEA_INFERENCE_SETUP=auto ATENEA_INFERENCE_BACKEND=hf-local python app_setup.py
-```
-
-For `hf-local`, setup also attempts to auto-start a minimal local
-OpenAI-compatible endpoint (`/v1/models`, `/v1/chat/completions`) on
-`http://127.0.0.1:8010/v1` via `scripts/hf_local_openai_server.py`.
-
-```bash
-ATENEA_HF_LOCAL_MODEL=sshleifer/tiny-gpt2
-ATENEA_HF_LOCAL_HOST=127.0.0.1
-ATENEA_HF_LOCAL_PORT=8010
-```
+`app_setup.py` no longer installs any model server. All model runtimes (Ollama as
+a Docker container, llama.cpp/vLLM/SGLang as pip packages, etc.) are managed
+exclusively from the Cookbook → Dependencies tab.
 
 Run a local server after install:
 
@@ -239,16 +211,10 @@ COMPOSE_FILE=docker/compose.yml:docker/gpu.amd.yml
 RENDER_GID=989
 ```
 
-**Optional llama.cpp runtime (when selected).** GPU overlays only expose host
-GPU runtime/devices to the app container. If you choose `llama.cpp` as the
-local backend in setup, `app_setup.py` prefers prebuilt runtimes in this order:
-
-- NVIDIA: prebuilt `llama-cpp-python[server]` CUDA wheel, then release assets.
-- AMD ROCm: prebuilt upstream ROCm `llama-server` release asset.
-- CPU/Vulkan fallback: prebuilt release asset or prebuilt CPU wheel.
-
-Only as a last resort (if no prebuilt artifact exists for your Python/platform),
-it can fall back to a regular pip install that may compile.
+**Model runtimes.** All model runtimes (Ollama, llama.cpp, vLLM, SGLang) are
+installed via the Cookbook → Dependencies tab, not through `app_setup.py`.
+This gives you full control over what runs where, with live install progress
+and status checks from the UI.
 
 **Stack-management UIs (Portainer, Coolify, Dockhand, etc.).** These tools
 often accept only a single Compose file and do not reliably honor `COMPOSE_FILE`

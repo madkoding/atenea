@@ -50,7 +50,12 @@ mypy
 # Query-result and response caching (dogpile.cache with memory backend).
 # Wraps hot DB queries, LLM responses, settings, and context lookups.
 dogpile.cache
-# llama.cpp runtime is installed by app_setup.py using prebuilt artifacts
+# Docker SDK for Python — manages Docker containers (Ollama, etc.)
+# from Cookbook → Dependencies tab. Peer dependency of the Docker CLI;
+# the compose overlay mounts the host socket for container lifecycle.
+docker>=7.0,<8.0
+
+# llama.cpp runtime is installed via Cookbook → Dependencies tab
 # (CUDA/CPU wheels or upstream release binaries) based on detected hardware.
 # Keep it out of base requirements so Docker/native setup does not trigger a
 # costly source build during the initial dependency install.
