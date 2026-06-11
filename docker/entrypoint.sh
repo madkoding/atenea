@@ -24,6 +24,18 @@ if ! getent passwd "$PUID" >/dev/null 2>&1; then
     useradd -u "$PUID" -g "$PGID" -M -s /bin/sh -d /app atenea
 fi
 
+# Docker Desktop on macOS mounts the Docker socket as root:root (mode 660)
+# through its gRPC FUSE filesystem — chmod is blocked and ACLs are not
+# supported. The only reliable way for the non-root atenea user to access
+# the socket is through root-group membership. This is safe inside a
+# container: the root group carries no host-level privileges.
+# Add as supplementary group so the primary group (PGID) stays unchanged.
+if [ -S /var/run/docker.sock ]; then
+    SOCK_GID=$(stat -c '%g' /var/run/docker.sock 2>/dev/null || echo 0)
+    SOCK_GRP=$(getent group "$SOCK_GID" | cut -d: -f1 2>/dev/null || echo "root")
+    adduser atenea "$SOCK_GRP" 2>/dev/null || true
+fi
+
 # Repair ownership on every writable path the app touches at runtime.
 #
 # Bind-mounted dirs (/app/data, /app/logs) are the obvious ones, but
@@ -95,7 +107,12 @@ export PATH="/app/.local/bin:$PATH"
 # || true so a setup failure never prevents the container from starting.
 gosu "$PUID:$PGID" python /app/app_setup.py || true
 
-# Drop root and run the actual app. `gosu` is preferred over `su` /
-# `sudo` because it cleans up the process tree (no extra shell layer)
-# so signals (SIGTERM from `docker stop`) reach uvicorn directly.
-exec gosu "$PUID:$PGID" "$@"
+# The default HOME from the Docker image is /root which the non-root user
+# cannot read. Set HOME to /app (the working dir) so Path.home() and
+# subprocess cwd work correctly.
+export HOME=/app
+
+# Drop root and run the actual app. `setpriv --init-groups` initializes
+# supplementary groups from /etc/group (gosu does NOT), which is required
+# for the non-root user to access the Docker socket.
+exec setpriv --reuid="$PUID" --regid="$PGID" --init-groups "$@"

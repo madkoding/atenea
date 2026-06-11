@@ -4,7 +4,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
     ports:
-      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7000}:7000"
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7001}:7000"
     volumes:
       # Static files (JS/HTML/CSS) on the host so changes never require rebuild
       - ../static:/app/static:z

@@ -8,6 +8,7 @@ import re
 import shlex
 import shutil
 import subprocess
+import sys
 import uuid
 import tempfile
 from collections import namedtuple
@@ -1042,12 +1043,29 @@ def setup_shell_routes() -> APIRouter:
             {
                 "name": "ollama",
                 "pip": "",
-                "desc": "Local Ollama runtime and model pulls (Docker container)",
+                "desc": "Local Ollama runtime and model pulls",
                 "category": "LLM",
                 "target": "local",
-                "kind": "docker",
-                "install_route": "/api/docker/ollama/start",
-                "install_hint": "Requires Docker with the socket mounted in the Atenea container. Starts the Ollama container via Docker API.",
+                "kind": "system" if sys.platform == "darwin" else "docker",
+                "install_route": "/api/ollama/native/install" if sys.platform == "darwin" else "/api/docker/ollama/start",
+                "start_route": "/api/ollama/native/install" if sys.platform == "darwin" else "/api/docker/ollama/start",
+                "install_cmd": (
+                    "if ! command -v brew &>/dev/null; then "
+                    'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" </dev/null; '
+                    "fi && brew install ollama && brew services start ollama"
+                ) if (sys.platform == "darwin" and not _running_in_container()) else (":" if sys.platform == "darwin" else None),
+                "update_cmd": "brew upgrade ollama" if (sys.platform == "darwin" and not _running_in_container()) else None,
+                "install_hint": (
+                    "Auto-installs Homebrew (if missing) then Ollama natively on macOS. Metal GPU, no Docker, no sudo."
+                    if sys.platform == "darwin" and not _running_in_container()
+                    else (
+                        "On macOS, install Ollama natively for Metal GPU (no Docker, no sudo):\n"
+                        "  brew install ollama && brew services start ollama\n\n"
+                        "Homebrew will be auto-installed if missing. Then refresh this panel."
+                        if sys.platform == "darwin"
+                        else "Requires Docker with the socket mounted in the Atenea container. Starts the Ollama container via Docker API."
+                    )
+                ),
             },
             {
                 "name": "APFEL",
@@ -1207,10 +1225,31 @@ def setup_shell_routes() -> APIRouter:
                         else "Requires a native Apple Silicon Mac with Apple Foundational Models support."
                     )
                 elif pkg["name"] == "ollama":
-                    _ollama_cli = which_tool("ollama") or shutil.which("ollama")
+                    _ollama_cli = (
+                        which_tool("ollama")
+                        or shutil.which("ollama")
+                        or ("/opt/homebrew/bin/ollama" if os.path.isfile("/opt/homebrew/bin/ollama") else None)
+                    )
                     if _ollama_cli:
                         pkg["installed"] = True
-                        pkg["status_note"] = f"ollama CLI: {_ollama_cli}"
+                        # Also check if the service is actually running
+                        _api_up = False
+                        for base in (
+                            "http://127.0.0.1:11434",
+                            "http://localhost:11434",
+                            "http://host.docker.internal:11434",
+                        ):
+                            try:
+                                with urllib.request.urlopen(f"{base}/api/version", timeout=1.5):
+                                    _api_up = True
+                                    break
+                            except Exception:
+                                continue
+                        if _api_up:
+                            pkg["status_note"] = f"ollama {_ollama_cli} — API reachable"
+                        else:
+                            pkg["needs_start"] = True
+                            pkg["status_note"] = f"ollama CLI found but service not running"
                     else:
                         _ollama_api = ""
                         for base in (

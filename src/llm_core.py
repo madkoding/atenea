@@ -488,7 +488,7 @@ def _provider_label(url: str) -> str:
         host = (urlparse(url).hostname or "").lower()
     except Exception:
         return "provider"
-    if host in {"localhost", "127.0.0.1", "::1", "0.0.0.0"}:
+    if host in {"localhost", "127.0.0.1", "::1", "0.0.0.0", "host.docker.internal"}:
         return "local endpoint"
     return host or "provider"
 

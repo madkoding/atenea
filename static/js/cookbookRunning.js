@@ -2588,6 +2588,26 @@ async function _reconnectTask(el, task) {
             && /Successfully installed|Requirement already (?:satisfied|up-to-date)/i.test(lastOutput)
             && !/error:|ERROR:/.test(lastOutput.slice(-1024));
           const serveLooksReady = task.type === 'serve' && _serveOutputLooksReady({ ...task, output: lastOutput });
+          // Ollama-inside-Docker: tmux was intentionally skipped — the
+          // backend registered the endpoint at host.docker.internal:11434/v1
+          // directly. There's nothing to monitor, so mark done immediately
+          // instead of falling through to the "crashed" diagnosis below.
+          const _isOllamaDockerServe = task.type === 'serve'
+            && /ollama serve/.test(task.payload?._cmd || '')
+            && (!task.remoteHost || task.remoteHost === 'local');
+          if (_isOllamaDockerServe && !serveLooksReady) {
+            _updateTask(task.sessionId, { status: 'done', _serveReady: true, _endpointAdded: true });
+            el.dataset.status = 'done';
+            const badge = el.querySelector('.cookbook-task-status');
+            if (badge) { badge.textContent = _statusLabel('done', task.type); badge.className = 'cookbook-task-status cookbook-task-done'; }
+            _showCookbookNotif();
+            (async () => {
+              if (window.modelsModule?.refreshModels) await window.modelsModule.refreshModels(true);
+              if (window.sessionModule?.updateModelPicker) window.sessionModule.updateModelPicker();
+              window.dispatchEvent(new CustomEvent('ge:model-endpoints-updated', { detail: { host: 'host.docker.internal', port: '11434', model: task.name } }));
+            })();
+            break;
+          }
           // Dependency installs are tracked as download tasks but finish with a
           // pip exit-0 sentinel, not HF download markers — check that too.
           // Standalone pip-* serves finish with pip's own success line, not

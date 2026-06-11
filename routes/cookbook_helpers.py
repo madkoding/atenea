@@ -539,7 +539,7 @@ def _cached_model_scan_script(model_dirs: list[str] | None = None, add_hf_cache:
         "        seen.add(name)",
         "        models.append({'repo_id':name,'size_bytes':size_bytes,'nb_files':1,'has_incomplete':False,'path':'ollama','backend':'ollama','is_ollama':True})",
         "def scan_ollama_api():",
-        "    urls = ['http://127.0.0.1:11434/api/tags', 'http://localhost:11434/api/tags', 'http://host.docker.internal:11434/api/tags']",
+        "    urls = ['http://127.0.0.1:11434/api/tags', 'http://localhost:11434/api/tags', 'http://atenea-ollama:11434/api/tags', 'http://host.docker.internal:11434/api/tags']",
         "    for url in urls:",
         "        try:",
         "            with urllib.request.urlopen(url, timeout=2) as r:",

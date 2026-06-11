@@ -188,12 +188,51 @@ _export_venv_cuda_libs() {
     _prepend_ld_path "${libbase}/cublas/lib"
 }
 
+_ensure_docker_running() {
+    if docker info &>/dev/null; then
+        return 0
+    fi
+
+    _warn "Docker daemon is not running — attempting to start it..."
+    case "$(uname -s)" in
+        Darwin)
+            _spin "Starting Docker Desktop" open -a Docker
+            ;;
+        Linux)
+            if command -v systemctl &>/dev/null; then
+                _spin "Starting Docker via systemctl" sudo systemctl start docker
+            else
+                _fail "Cannot start Docker automatically. Start Docker and try again."
+                return 1
+            fi
+            ;;
+        *)
+            _fail "Cannot start Docker automatically on $(uname -s). Start Docker and try again."
+            return 1
+            ;;
+    esac
+
+    local timeout=60 elapsed=0
+    while [ "$elapsed" -lt "$timeout" ]; do
+        if docker info &>/dev/null; then
+            _ok "Docker daemon is now running"
+            return 0
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+
+    _fail "Docker daemon did not start within ${timeout}s. Please start Docker manually."
+    return 1
+}
+
 _compose_cmd() {
     local action="$1"; shift
     local gpu
     local compose_args=()
 
     _ensure_env
+    _ensure_docker_running || return 1
     gpu="$(_resolve_gpu_mode)" || return 1
 
     compose_args+=(-f "${COMPOSE_BASE}")
@@ -354,7 +393,7 @@ _setup() {
         _info "Then run:  ${C_BOLD}./atenea up${C_RST}"
         _info ""
         _info "To run without Docker (native mode):"
-        _info "  ${C_BOLD}${VENV_PY} -m uvicorn app:app --host 0.0.0.0 --port ${APP_PORT:-7000}${C_RST}"
+        _info "  ${C_BOLD}${VENV_PY} -m uvicorn app:app --host 0.0.0.0 --port ${APP_PORT:-7001}${C_RST}"
     fi
 }
 
@@ -378,7 +417,10 @@ _wait_for_ready() {
 }
 
 _up() {
-    local native=0 build=0 gpu_mode="" args=()
+    local native=0
+    local build=0
+    local gpu_mode=""
+    local -a args=()
 
     for arg in "$@"; do
         case "$arg" in
@@ -395,16 +437,24 @@ _up() {
         _step "Starting Atenea natively"
         _setup
         _export_venv_cuda_libs
-        exec "${REPO_ROOT}/.venv/bin/uvicorn" app:app --host 0.0.0.0 --port "${APP_PORT:-7000}" "${args[@]}"
+        if [ ${#args[@]} -gt 0 ]; then
+            exec "${REPO_ROOT}/.venv/bin/uvicorn" app:app --host 0.0.0.0 --port "${APP_PORT:-7001}" "${args[@]}"
+        else
+            exec "${REPO_ROOT}/.venv/bin/uvicorn" app:app --host 0.0.0.0 --port "${APP_PORT:-7001}"
+        fi
         return
     fi
 
     [ "$build" -eq 1 ] && args+=(--build)
-    ATENEA_GPU_MODE_OVERRIDE="$gpu_mode" _compose_cmd up -d "${args[@]}"
+    if [ ${#args[@]} -gt 0 ]; then
+        ATENEA_GPU_MODE_OVERRIDE="$gpu_mode" _compose_cmd up -d "${args[@]}"
+    else
+        ATENEA_GPU_MODE_OVERRIDE="$gpu_mode" _compose_cmd up -d
+    fi
 
-    local port="${APP_PORT:-7000}"
+    local port="${APP_PORT:-7001}"
     _spin "Waiting for Atenea to be ready on port ${port}" \
-        _wait_for_ready "localhost" "$port"
+        _wait_for_ready "127.0.0.1" "$port"
 
     _sep
     _ok "Atenea is running"

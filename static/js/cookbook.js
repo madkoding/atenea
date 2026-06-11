@@ -31,6 +31,7 @@ import {
 import {
   initServe,
   _fetchCachedModels, _cachedAllModels, _filterCachedList, _rerenderCachedModels, _deleteCachedModel,
+  _fetchOllamaCatalog, _triggerOllamaPull, _renderOllamaCatalogSection,
 } from './cookbookServe.js';
 
 const STORAGE_KEY = 'cookbook-presets';
@@ -158,6 +159,27 @@ function _getPort(hostOrTask) {
   if (typeof hostOrTask === 'object') return hostOrTask.sshPort || _getPort(hostOrTask.remoteHost);
   const srv = _envState.servers.find(s => s.host === hostOrTask);
   return srv?.port || '';
+}
+
+/** Fetch and render Ollama model catalog into the Downloads tab */
+async function _renderOllamaCatalogDl() {
+  const container = document.getElementById('cookbook-ollama-catalog-dl');
+  if (!container) return;
+  container.innerHTML = '<div class="hwfit-loading" style="font-size:11px;opacity:0.5;">Loading Ollama catalog\u2026</div>';
+  try {
+    const catalog = await _fetchOllamaCatalog('', '');
+    container.innerHTML = '';
+    if (Array.isArray(catalog) && catalog.length) {
+      _renderOllamaCatalogSection(container, '', catalog);
+    } else {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'font-size:11px;opacity:0.4;padding:4px 0;';
+      empty.textContent = 'Ollama not available — install Ollama in Dependencies tab';
+      container.appendChild(empty);
+    }
+  } catch {
+    container.innerHTML = '';
+  }
 }
 
 /** Get platform for a given host (or task object). Returns 'windows', 'termux', 'linux', or '' */
@@ -696,6 +718,11 @@ async function _fetchDependencies() {
       const hasCustomInstall = !!pkg.install_cmd;
       const hasCustomUpdate = !!pkg.update_cmd;
       const isDocker = pkg.kind === 'docker';
+      if (pkg.installed && pkg.needs_start) {
+        const startRoute = pkg.start_route || pkg.install_route || '';
+        return `<button class="cookbook-dep-tag cookbook-dep-install cookbook-dep-start" data-dep-kind="start" data-dep-start-route="${esc(startRoute)}" title="Ollama is installed but not running. Click to start it.">Start</button>`;
+      }
+      if (pkg.installed && isSystemDep && !isDocker && pkg.name === 'ollama') return `<span class="cookbook-dep-tag cookbook-dep-installed" title="Service is running">Running</span>`;
       if (pkg.installed && isSystemDep && !hasCustomUpdate && !isDocker) return `<span class="cookbook-dep-tag cookbook-dep-installed" title="Found on selected server">Installed</span>`;
       if (pkg.installed && isDocker) return `<span class="cookbook-dep-tag cookbook-dep-installed" title="Container is running">Running</span>`;
       if (pkg.installed && pkg.pip_update_available === false && !hasCustomUpdate) {
@@ -711,7 +738,7 @@ async function _fetchDependencies() {
       if (isDocker) {
         return `<button class="cookbook-dep-tag cookbook-dep-install" data-dep-kind="docker" data-dep-install-route="${esc(pkg.install_route || '')}" title="${esc(pkg.install_hint || 'Start Docker container')}">Install</button>`;
       }
-      return `<button class="cookbook-dep-tag cookbook-dep-install" data-dep-pip="${esc(pkg.pip || '')}" data-dep-install-cmd="${esc(pkg.install_cmd || '')}" data-dep-update-cmd="${esc(pkg.update_cmd || '')}" data-dep-target="${isLocal ? 'local' : 'remote'}">Install</button>`;
+      return `<button class="cookbook-dep-tag cookbook-dep-install" data-dep-pip="${esc(pkg.pip || '')}" data-dep-install-cmd="${esc(pkg.install_cmd || '')}" data-dep-update-cmd="${esc(pkg.update_cmd || '')}" data-dep-target="${isLocal ? 'local' : 'remote'}"${pkg.install_route ? ` data-dep-install-route="${esc(pkg.install_route)}"` : ''}>Install</button>`;
     };
 
     const _depRow = (pkg) => {
@@ -753,8 +780,8 @@ async function _fetchDependencies() {
         : '';
 
     const _viewingRemote = !!(_dsel && _dsel.value && _dsel.value !== 'local');
-    const _appDeps = pkgs.filter(p => p.target === 'local');
-    const _serverDeps = pkgs.filter(p => p.target !== 'local');
+    const _appDeps = pkgs.filter(p => p.target === 'local' && p.kind !== 'docker');
+    const _serverDeps = pkgs.filter(p => p.target !== 'local' || p.kind === 'docker');
 
     list.innerHTML = [
       _viewingRemote ? '' : _section(_t('cookbook.atenea_app'), 'Run inside the Atenea app itself.', _appDeps),
@@ -884,25 +911,56 @@ async function _fetchDependencies() {
       }
     }
 
-    // Wire install buttons (not-installed packages)
+    // Wire install buttons (not-installed packages) and start buttons
     list.querySelectorAll('.cookbook-dep-install').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (btn.dataset.depKind === 'docker') {
-          const installRoute = btn.dataset.depInstallRoute || '';
-          if (!installRoute) { uiModule.showToast('No install route for this package'); return; }
+        // Start button: binary found but service not running
+        if (btn.dataset.depKind === 'start') {
+          const startRoute = btn.dataset.depStartRoute || '';
+          if (!startRoute) { uiModule.showToast('No start route for this package'); return; }
           btn.textContent = 'Starting...';
+          btn.disabled = true;
+          try {
+            const res = await fetch(startRoute, { method: 'POST', credentials: 'same-origin' });
+            const data = await res.json().catch(() => ({}));
+            if (data.manual_cmd) {
+              uiModule.showToast('Run this in your terminal: ' + data.manual_cmd, 8000);
+              btn.textContent = 'Start';
+              btn.disabled = false;
+              return;
+            }
+            if (!res.ok) throw new Error(data.detail || data.error || `HTTP ${res.status}`);
+            uiModule.showToast('Ollama service started.');
+            await _fetchDependencies();
+          } catch (err) {
+            btn.textContent = 'Start';
+            btn.disabled = false;
+            uiModule.showToast('Failed to start Ollama: ' + err.message);
+          }
+          return;
+        }
+        const installRoute = btn.dataset.depInstallRoute || '';
+        if (btn.dataset.depKind === 'docker' || (installRoute && btn.dataset.depKind === 'system')) {
+          if (!installRoute) { uiModule.showToast('No install route for this package'); return; }
+          btn.textContent = 'Installing...';
           btn.disabled = true;
           try {
             const res = await fetch(installRoute, { method: 'POST', credentials: 'same-origin' });
             const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
-            uiModule.showToast('Ollama container started successfully.');
+            if (data.manual_cmd) {
+              uiModule.showToast('Run this in your terminal: ' + data.manual_cmd, 8000);
+              btn.textContent = 'Install';
+              btn.disabled = false;
+              return;
+            }
+            if (!res.ok) throw new Error(data.detail || data.error || `HTTP ${res.status}`);
+            uiModule.showToast('Ollama installed successfully.');
             await _fetchDependencies();
           } catch (err) {
             btn.textContent = 'Install';
             btn.disabled = false;
-            uiModule.showToast('Failed to start Ollama: ' + err.message);
+            uiModule.showToast('Failed to install Ollama: ' + err.message);
           }
           return;
         }
@@ -1016,6 +1074,7 @@ function _wireTabEvents(body) {
       if (backend === 'Search') {
         _hwfitInit();
         _hwfitFetch();
+        _renderOllamaCatalogDl();
       }
       if (backend === 'Serve') {
         _fetchCachedModels();
@@ -1878,6 +1937,7 @@ function _renderRecipes() {
   html += `</div>`;
   html += `<div id="cookbook-hf-latest-list" style="display:none;margin-top:4px;max-height:320px;overflow-y:auto;flex-direction:column;gap:4px;"></div>`;
   html += `</div>`;
+  html += `<div id="cookbook-ollama-catalog-dl" style="margin-top:8px;"></div>`;
   html += `</div>`;  // /#cookbook-dl-tab-fold-body (whole Download card body)
 
   // Search section
@@ -2072,6 +2132,9 @@ function _renderRecipes() {
   // Auto-init What Fits
   _hwfitInit();
   _hwfitFetch();
+
+  // Load Ollama catalog in Downloads tab
+  _renderOllamaCatalogDl();
 }
 
 // ── Public API ──

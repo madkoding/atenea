@@ -2174,7 +2174,7 @@ async function _triggerOllamaPull(modelId, host) {
   const sshPort = _getPort(host) || undefined;
 
   try {
-    uiModule.showToast(`Pulling ${shortName} via Ollama API...`);
+    uiModule.showToast(`Pulling ${shortName} via Ollama...`, 60000);
     const body = { model, host: host || undefined, ssh_port: sshPort };
     const res = await fetch('/api/ollama/pull', {
       method: 'POST', credentials: 'same-origin',
@@ -2187,12 +2187,38 @@ async function _triggerOllamaPull(modelId, host) {
       uiModule.showToast(`Ollama pull failed: ${String(reason).slice(0, 220)}`);
       return;
     }
-    const ep = data.endpoint || `http://localhost:11434/v1`;
-    uiModule.showToast(`Pull complete: ${shortName} ready at ${ep}`);
-    _fetchCachedModels();
+    // Create a tracked task so the Running tab shows pull progress
+    if (data.session_id && data.remote === 'local') {
+      const payload = { repo_id: model, _cmd: `ollama pull ${model}` };
+      _addTask(data.session_id, `ollama pull ${shortName}`, 'download', payload);
+      // Poll for completion, then refresh the model list
+      _startPullCompletionPoll(data.session_id, shortName);
+    } else {
+      uiModule.showToast(`Pull complete: ${shortName} ready`);
+      _fetchCachedModels();
+    }
   } catch (err) {
     uiModule.showToast('Ollama pull failed: ' + err.message);
   }
+}
+
+function _startPullCompletionPoll(sessionId, shortName) {
+  const checkDone = () => {
+    const tasks = JSON.parse(localStorage.getItem('cookbook-tasks') || '[]');
+    const task = tasks.find(t => t.sessionId === sessionId);
+    if (!task || task.status === 'done') {
+      uiModule.showToast(`Pull complete: ${shortName} ready`, 5000);
+      _fetchCachedModels();
+      return;
+    }
+    if (task.status === 'error' || task.status === 'crashed') {
+      uiModule.showToast(`Ollama pull failed for ${shortName}`, 8000);
+      _fetchCachedModels();
+      return;
+    }
+    setTimeout(checkDone, 2000);
+  };
+  setTimeout(checkDone, 5000);
 }
 
 function _renderVramBadge(hint) {
@@ -2367,21 +2393,37 @@ export async function _fetchCachedModels() {
 
     const downloading = data.models.filter(m => m.status === 'downloading');
     const allModels = [...ready, ...downloading];
+    // Merge installed Ollama models into the main grid
+    if (Array.isArray(catalog)) {
+      for (const m of catalog) {
+        if (!m.installed) continue;
+        const repoId = m.id || '';
+        if (!repoId) continue;
+        if (allModels.some(x => (x.repo_id || '') === repoId)) continue;
+        allModels.push({
+          repo_id: repoId,
+          backend: 'ollama',
+          is_ollama: true,
+          status: 'ready',
+          size: m.size || '',
+          path: 'ollama',
+          name: m.name || repoId,
+        });
+      }
+    }
     _cachedAllModels = allModels;
 
-    list.innerHTML = '';
-    _renderOllamaCatalogSection(list, host, catalog);
-
     if (!allModels.length) {
-      const empty = document.createElement('div');
-      empty.className = 'hwfit-loading';
+      list.innerHTML = '';
       if (!host) {
+        const empty = document.createElement('div');
+        empty.className = 'hwfit-loading';
         empty.style.cssText = 'flex-direction:column;gap:6px;text-align:center;';
-        empty.innerHTML = '<div>No cached models found</div><div style="font-size:11px;opacity:0.55;max-width:420px;line-height:1.4;">Docker Local uses Atenea’s cache in <code>data/huggingface</code>. Download a model here, or copy an existing host HuggingFace cache into that folder once.</div>';
+        empty.innerHTML = '<div>No cached models found</div><div style="font-size:11px;opacity:0.55;max-width:420px;line-height:1.4;">Docker Local uses Atenea\u2019s cache in <code>data/huggingface</code>. Download a model here, or copy an existing host HuggingFace cache into that folder once.</div>';
+        list.appendChild(empty);
       } else {
-        empty.textContent = 'No cached models found';
+        list.innerHTML = '<div class="hwfit-loading">No cached models found</div>';
       }
-      list.appendChild(empty);
       document.getElementById('serve-tags').innerHTML = '';
       return;
     }
@@ -2486,7 +2528,7 @@ export function initServe(shared) {
   _nextAvailablePort = shared._nextAvailablePort;
 }
 
-export { _cachedAllModels, _filterCachedList, _rerenderCachedModels, _deleteCachedModel };
+export { _cachedAllModels, _filterCachedList, _rerenderCachedModels, _deleteCachedModel, _fetchOllamaCatalog, _triggerOllamaPull, _renderOllamaCatalogSection };
 
 // Click the "running" pill on a serve-card → switch to Cookbook → Running
 // tab and scroll the matching task into view, with a brief flash so the

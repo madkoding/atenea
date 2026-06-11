@@ -128,6 +128,7 @@ _TIMEOUT_EXEMPT_PREFIXES = (
     "/api/model/download",  # tmux setup may run pip installs
     "/api/model/probe",     # SSE; iterates models with up to 8s timeout each
     "/api/model-endpoints", # /probe sub-route also iterates models
+    "/api/ollama/pull",     # model downloads via Ollama API
     "/api/cookbook/setup",  # remote pacman/apt installs
     "/api/upload",          # large files
     "/api/image",           # diffusion proxies (inpaint/harmonize/upscale/etc.) — own 120s httpx timeout
@@ -172,6 +173,7 @@ if AUTH_ENABLED:
         "/api/auth/integrations/presets",
         "/api/health",
         "/api/version",
+        "/api/ollama/catalog",
         "/login",
     }
     AUTH_EXEMPT_PREFIXES = ["/static"]

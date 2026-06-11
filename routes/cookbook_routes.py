@@ -1046,6 +1046,8 @@ def setup_cookbook_routes() -> APIRouter:
                 runner_lines.append('ATENEA_OLLAMA_BIN=""')
                 runner_lines.append('if command -v ollama >/dev/null 2>&1; then')
                 runner_lines.append('  ATENEA_OLLAMA_BIN="$(command -v ollama)"')
+                runner_lines.append('elif [ -x /opt/homebrew/bin/ollama ]; then')
+                runner_lines.append('  ATENEA_OLLAMA_BIN="/opt/homebrew/bin/ollama"')
                 runner_lines.append('elif [ -x /usr/local/bin/ollama ]; then')
                 runner_lines.append('  ATENEA_OLLAMA_BIN="/usr/local/bin/ollama"')
                 runner_lines.append('elif [ -x /usr/bin/ollama ]; then')
@@ -1232,6 +1234,51 @@ def setup_cookbook_routes() -> APIRouter:
             except Exception as e:
                 logger.error(f"Local detached serve launch failed: {e}")
                 return {"ok": False, "error": str(e), "session_id": session_id}
+        elif (
+            "ollama serve" in req.cmd
+            and not remote
+            and os.path.exists("/.dockerenv")
+        ):
+            # Inside Docker: Ollama runs as a separate container. No need to
+            # start another server — just warm up the model (load into RAM)
+            # via the Ollama API and register the endpoint.
+            TMUX_LOG_DIR.mkdir(parents=True, exist_ok=True)
+            log_path = TMUX_LOG_DIR / f"{session_id}.log"
+            log_path.write_text(
+                f"Ollama model: {req.repo_id}\n"
+                f"Ollama API: http://host.docker.internal:11434\n"
+                f"--- Warming up model (loading into RAM) ---\n",
+                encoding="utf-8",
+            )
+            # Fire-and-forget warmup — don't block the POST response
+            async def _warmup_ollama_model():
+                try:
+                    import httpx
+                    async with httpx.AsyncClient(timeout=120.0) as client:
+                        warmup_res = await client.post(
+                            "http://host.docker.internal:11434/api/generate",
+                            json={"model": req.repo_id, "keep_alive": -1, "prompt": ""},
+                        )
+                        if warmup_res.is_success:
+                            log_path.write_text(
+                                "Model loaded into memory\n"
+                                f"--- Endpoint: http://host.docker.internal:11434/v1 ---\n",
+                                mode="a", encoding="utf-8",
+                            )
+                        else:
+                            log_path.write_text(
+                                f"Warmup failed (HTTP {warmup_res.status_code}):\n"
+                                f"{warmup_res.text[-3000:]}\n",
+                                mode="a", encoding="utf-8",
+                            )
+                except Exception as exc:
+                    log_path.write_text(
+                        f"Warmup error: {exc}\n"
+                        f"--- Model will load on first request ---\n",
+                        mode="a", encoding="utf-8",
+                    )
+            asyncio.ensure_future(_warmup_ollama_model())
+            logger.info("Ollama inside Docker — warmup launched for %s", req.repo_id)
         else:
             proc = await asyncio.create_subprocess_shell(
                 setup_cmd,

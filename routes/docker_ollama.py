@@ -11,6 +11,58 @@ _OLLAMA_PORT = int(os.environ.get("OLLAMA_PORT", "11434"))
 _OLLAMA_DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "ollama")
 
 
+def _compute_ollama_env():
+    """Auto-calculate Ollama performance env vars based on detected hardware."""
+    try:
+        from services.hwfit.hardware import detect_system
+        hw = detect_system()
+    except Exception:
+        hw = {}
+
+    total_ram = hw.get("total_ram_gb") or 0
+    available_ram = hw.get("available_ram_gb") or 0
+    cpu_cores = hw.get("cpu_cores") or 0
+    has_gpu = hw.get("has_gpu", False)
+    gpu_vram = hw.get("gpu_vram_gb") or 0
+    unified = hw.get("unified_memory", False)
+
+    # Effective memory: discrete GPUs have dedicated VRAM, unified shares RAM
+    if has_gpu and not unified:
+        effective_mem = min(available_ram, gpu_vram)
+    else:
+        effective_mem = available_ram
+
+    env = {}
+
+    if cpu_cores >= 16 and effective_mem >= 32:
+        env["OLLAMA_NUM_PARALLEL"] = "4"
+    elif cpu_cores >= 8 and effective_mem >= 16:
+        env["OLLAMA_NUM_PARALLEL"] = "2"
+    elif has_gpu:
+        env["OLLAMA_NUM_PARALLEL"] = "2"
+    else:
+        env["OLLAMA_NUM_PARALLEL"] = "1"
+
+    if effective_mem >= 32:
+        env["OLLAMA_MAX_LOADED_MODELS"] = "3"
+    elif effective_mem >= 16:
+        env["OLLAMA_MAX_LOADED_MODELS"] = "2"
+    else:
+        env["OLLAMA_MAX_LOADED_MODELS"] = "1"
+
+    if effective_mem >= 32:
+        env["OLLAMA_KEEP_ALIVE"] = "5m"
+    elif effective_mem >= 16:
+        env["OLLAMA_KEEP_ALIVE"] = "2m"
+    elif effective_mem >= 8:
+        env["OLLAMA_KEEP_ALIVE"] = "1m"
+    else:
+        env["OLLAMA_KEEP_ALIVE"] = "30s"
+
+    logger.info("Auto-calculated Ollama env: %s", env)
+    return env
+
+
 def _docker_client():
     try:
         import docker
@@ -80,16 +132,16 @@ def setup_docker_ollama_routes():
                 logger.info("Pulling Ollama Docker image...")
                 client.images.pull(_OLLAMA_IMAGE)
 
-            os.makedirs(_OLLAMA_DATA_DIR, exist_ok=True)
+            env = {"OLLAMA_HOST": f"0.0.0.0:{_OLLAMA_PORT}"}
+            env.update(_compute_ollama_env())
             container = client.containers.run(
                 image=_OLLAMA_IMAGE,
                 name=_OLLAMA_CONTAINER,
                 detach=True,
-                remove=True,
                 restart_policy={"Name": "unless-stopped"},
                 ports={"11434/tcp": ("0.0.0.0", _OLLAMA_PORT)},
-                volumes={_OLLAMA_DATA_DIR: {"bind": "/root/.ollama", "mode": "rw"}},
-                environment={"OLLAMA_HOST": f"0.0.0.0:{_OLLAMA_PORT}"},
+                volumes={"atenea_ollama_data": {"bind": "/root/.ollama", "mode": "rw"}},
+                environment=env,
             )
             container.reload()
             return _get_container_state(client)
