@@ -1,0 +1,3060 @@
+[
+ {
+  "file": "routes/task_routes.py",
+  "loc": 1158,
+  "score": 25,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "pathtrav",
+   "secret",
+   "shell",
+   "sql",
+   "sql_fstr",
+   "subproc"
+  ]
+ },
+ {
+  "file": "src/actions/builtin.py",
+  "loc": 2250,
+  "score": 23,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "pathtrav",
+   "secret",
+   "shell",
+   "sql",
+   "subproc",
+   "thread"
+  ]
+ },
+ {
+  "file": "routes/email_routes.py",
+  "loc": 3226,
+  "score": 20,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "pathtrav",
+   "secret",
+   "sql",
+   "sql_fstr",
+   "thread"
+  ]
+ },
+ {
+  "file": "mcp_servers/email_server.py",
+  "loc": 1675,
+  "score": 19,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "pathtrav",
+   "secret",
+   "sql",
+   "sql_fstr",
+   "thread"
+  ]
+ },
+ {
+  "file": "routes/cookbook_routes.py",
+  "loc": 2534,
+  "score": 17,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "pathtrav",
+   "secret",
+   "subproc",
+   "thread"
+  ]
+ },
+ {
+  "file": "routes/email_pollers.py",
+  "loc": 1143,
+  "score": 17,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "pathtrav",
+   "secret",
+   "sql",
+   "sql_fstr",
+   "thread"
+  ]
+ },
+ {
+  "file": "routes/document_routes.py",
+  "loc": 1718,
+  "score": 16,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "eval",
+   "fileio",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/tools/execution.py",
+  "loc": 1621,
+  "score": 16,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "pathtrav",
+   "secret",
+   "subproc",
+   "thread"
+  ]
+ },
+ {
+  "file": "routes/shell_routes.py",
+  "loc": 1410,
+  "score": 16,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "pathtrav",
+   "secret",
+   "subproc",
+   "thread"
+  ]
+ },
+ {
+  "file": "routes/cookbook_helpers.py",
+  "loc": 1148,
+  "score": 16,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "pathtrav",
+   "secret",
+   "subproc",
+   "thread"
+  ]
+ },
+ {
+  "file": "app.py",
+  "loc": 1134,
+  "score": 16,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "pathtrav",
+   "secret",
+   "subproc",
+   "thread"
+  ]
+ },
+ {
+  "file": "core/database.py",
+  "loc": 2150,
+  "score": 15,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "pathtrav",
+   "secret",
+   "sql",
+   "sql_fstr"
+  ]
+ },
+ {
+  "file": "routes/email_helpers.py",
+  "loc": 1509,
+  "score": 15,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "pathtrav",
+   "secret",
+   "sql",
+   "sql_fstr"
+  ]
+ },
+ {
+  "file": "src/tools/implementations.py",
+  "loc": 4525,
+  "score": 14,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "routes/model_routes.py",
+  "loc": 2256,
+  "score": 14,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "app_setup.py",
+  "loc": 295,
+  "score": 14,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "eval",
+   "fileio",
+   "pathtrav",
+   "secret",
+   "subproc"
+  ]
+ },
+ {
+  "file": "src/chat/agent_loop.py",
+  "loc": 2741,
+  "score": 13,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "net",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/scheduling/task_scheduler.py",
+  "loc": 2307,
+  "score": 13,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "net",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/llm_core.py",
+  "loc": 2068,
+  "score": 13,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "net",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "routes/chat_routes.py",
+  "loc": 1768,
+  "score": 13,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "net",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "routes/skills_routes.py",
+  "loc": 1648,
+  "score": 13,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "net",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "scripts/demo_email/seed_demo_emails.py",
+  "loc": 395,
+  "score": 13,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "pathtrav",
+   "secret",
+   "sql",
+   "sql_fstr"
+  ]
+ },
+ {
+  "file": "routes/gallery_routes.py",
+  "loc": 1899,
+  "score": 12,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/agent/ai_interaction.py",
+  "loc": 1839,
+  "score": 12,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "routes/chat_helpers.py",
+  "loc": 1022,
+  "score": 12,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "net",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "routes/calendar_routes.py",
+  "loc": 1519,
+  "score": 11,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "net",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "scripts/pr_blocker_audit.py",
+  "loc": 1052,
+  "score": 11,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "pathtrav",
+   "secret",
+   "subproc"
+  ]
+ },
+ {
+  "file": "routes/contacts_routes.py",
+  "loc": 827,
+  "score": 11,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "routes/ollama_routes.py",
+  "loc": 400,
+  "score": 11,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "routes/webhook_routes.py",
+  "loc": 391,
+  "score": 11,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "net",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/scheduling/cookbook_serve_lifecycle.py",
+  "loc": 196,
+  "score": 11,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/research/handler.py",
+  "loc": 986,
+  "score": 10,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "fileio",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "routes/note_routes.py",
+  "loc": 887,
+  "score": 10,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "net",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "routes/mcp_routes.py",
+  "loc": 686,
+  "score": 10,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "routes/auth_routes.py",
+  "loc": 635,
+  "score": 10,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "net",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/integrations/registry.py",
+  "loc": 510,
+  "score": 10,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "core/platform_compat.py",
+  "loc": 445,
+  "score": 10,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "pathtrav",
+   "secret",
+   "subproc"
+  ]
+ },
+ {
+  "file": "routes/embedding_routes.py",
+  "loc": 376,
+  "score": 10,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/clients/webhook_manager.py",
+  "loc": 296,
+  "score": 10,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "net",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "routes/codex_routes.py",
+  "loc": 793,
+  "score": 9,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "fileio",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "services/memory/memory_extractor.py",
+  "loc": 658,
+  "score": 9,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "fileio",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "core/auth.py",
+  "loc": 566,
+  "score": 9,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "services/research/research_handler.py",
+  "loc": 472,
+  "score": 9,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "fileio",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/chat/handler.py",
+  "loc": 320,
+  "score": 9,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "fileio",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/misc/visual_report.py",
+  "loc": 1918,
+  "score": 8,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "scripts/diffusion_server.py",
+  "loc": 1171,
+  "score": 8,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "fileio",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "services/hwfit/hardware.py",
+  "loc": 721,
+  "score": 8,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "pathtrav",
+   "subproc"
+  ]
+ },
+ {
+  "file": "routes/research_routes.py",
+  "loc": 676,
+  "score": 8,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "fileio",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/agent/teacher_escalation.py",
+  "loc": 673,
+  "score": 8,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/clients/mcp_manager.py",
+  "loc": 673,
+  "score": 8,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/runtime/endpoint_resolver.py",
+  "loc": 407,
+  "score": 8,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "secret",
+   "subproc"
+  ]
+ },
+ {
+  "file": "src/chatgpt_subscription.py",
+  "loc": 312,
+  "score": 8,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "net",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "routes/vault_routes.py",
+  "loc": 244,
+  "score": 8,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "fileio",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "mcp_servers/image_gen_server.py",
+  "loc": 179,
+  "score": 8,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/tools/schemas.py",
+  "loc": 1397,
+  "score": 7,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/research/deep.py",
+  "loc": 966,
+  "score": 7,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "await",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "services/memory/skills.py",
+  "loc": 715,
+  "score": 7,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/uploads/handler.py",
+  "loc": 669,
+  "score": 7,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "pathtrav",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/tools/index.py",
+  "loc": 562,
+  "score": 7,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "net",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "routes/memory_routes.py",
+  "loc": 549,
+  "score": 7,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "fileio",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/calendar_app/sync.py",
+  "loc": 534,
+  "score": 7,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "services/search/core.py",
+  "loc": 479,
+  "score": 7,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/personal/docs.py",
+  "loc": 433,
+  "score": 7,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "scripts/add_hwfit_models.py",
+  "loc": 423,
+  "score": 7,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/memory/store.py",
+  "loc": 387,
+  "score": 7,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/misc/session_search.py",
+  "loc": 357,
+  "score": 7,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "pathtrav",
+   "secret",
+   "sql"
+  ]
+ },
+ {
+  "file": "src/chat/helpers.py",
+  "loc": 316,
+  "score": 7,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "net",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/settings.py",
+  "loc": 304,
+  "score": 7,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/calendar_app/writeback.py",
+  "loc": 213,
+  "score": 7,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "routes/device_flow.py",
+  "loc": 195,
+  "score": 7,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "pathtrav",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "scripts/hf_local_openai_server.py",
+  "loc": 133,
+  "score": 7,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "eval",
+   "secret"
+  ]
+ },
+ {
+  "file": "routes/session_routes.py",
+  "loc": 1283,
+  "score": 6,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/tools/parsing.py",
+  "loc": 538,
+  "score": 6,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/documents/pdf_form_doc.py",
+  "loc": 442,
+  "score": 6,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/chat/model_context.py",
+  "loc": 395,
+  "score": 6,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "net",
+   "secret"
+  ]
+ },
+ {
+  "file": "routes/compare_routes.py",
+  "loc": 367,
+  "score": 6,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/chat/processor.py",
+  "loc": 348,
+  "score": 6,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/runtime/model_discovery.py",
+  "loc": 295,
+  "score": 6,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "net",
+   "secret",
+   "subproc"
+  ]
+ },
+ {
+  "file": "src/youtube/handler.py",
+  "loc": 279,
+  "score": 6,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "fileio",
+   "pathtrav",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/scheduling/bg_jobs.py",
+  "loc": 276,
+  "score": 6,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "subproc"
+  ]
+ },
+ {
+  "file": "routes/upload_routes.py",
+  "loc": 272,
+  "score": 6,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "fileio",
+   "pathtrav",
+   "thread"
+  ]
+ },
+ {
+  "file": "services/youtube/youtube_handler.py",
+  "loc": 272,
+  "score": 6,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "fileio",
+   "pathtrav",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/clients/copilot.py",
+  "loc": 253,
+  "score": 6,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "net",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/runtime/config.py",
+  "loc": 209,
+  "score": 6,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/clients/mcp_oauth.py",
+  "loc": 193,
+  "score": 6,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "secret",
+   "thread"
+  ]
+ },
+ {
+  "file": "routes/copilot_routes.py",
+  "loc": 173,
+  "score": 6,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "net",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "mcp_servers/rag_server.py",
+  "loc": 161,
+  "score": 6,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "fileio",
+   "pathtrav",
+   "thread"
+  ]
+ },
+ {
+  "file": "routes/image_routes.py",
+  "loc": 158,
+  "score": 6,
+  "tier": "CRITICAL",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net"
+  ]
+ },
+ {
+  "file": "routes/history_routes.py",
+  "loc": 664,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "secret"
+  ]
+ },
+ {
+  "file": "services/search/providers.py",
+  "loc": 638,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "net",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/vector/rag_vector.py",
+  "loc": 608,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "src/chat/context_compactor.py",
+  "loc": 449,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "secret"
+  ]
+ },
+ {
+  "file": "routes/personal_routes.py",
+  "loc": 308,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "fileio",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "src/vector/embeddings.py",
+  "loc": 254,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "fileio",
+   "net",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/tools/policy.py",
+  "loc": 211,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "routes/api_token_routes.py",
+  "loc": 197,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "integrations/claude/skills/atenea/scripts/atenea_api.py",
+  "loc": 187,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "net",
+   "secret"
+  ]
+ },
+ {
+  "file": "integrations/codex/scripts/atenea_api.py",
+  "loc": 187,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "net",
+   "secret"
+  ]
+ },
+ {
+  "file": "services/shell/service.py",
+  "loc": 164,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "await",
+   "blocking_in_async",
+   "sql",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/runtime/request_models.py",
+  "loc": 137,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "companion/pairing.py",
+  "loc": 129,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "secret"
+  ]
+ },
+ {
+  "file": "routes/preset_routes.py",
+  "loc": 126,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/scheduling/event_bus.py",
+  "loc": 120,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "fileio",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/constants.py",
+  "loc": 104,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "scripts/demo_email/demo_account.py",
+  "loc": 89,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/security/settings_scrub.py",
+  "loc": 61,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/tools/_common.py",
+  "loc": 49,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "core/atomic_io.py",
+  "loc": 44,
+  "score": 5,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "secret"
+  ]
+ },
+ {
+  "file": "services/hwfit/fit.py",
+  "loc": 676,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/email/thread_parser.py",
+  "loc": 615,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "src/documents/processor.py",
+  "loc": 550,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio"
+  ]
+ },
+ {
+  "file": "services/memory/skill_format.py",
+  "loc": 445,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "services/tts/tts_service.py",
+  "loc": 298,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "fileio",
+   "net",
+   "secret"
+  ]
+ },
+ {
+  "file": "services/memory/skill_importer.py",
+  "loc": 282,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "net",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "services/hwfit/models.py",
+  "loc": 269,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "fileio",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "companion/routes.py",
+  "loc": 237,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/clients/builtin_mcp.py",
+  "loc": 223,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "await",
+   "fileio",
+   "pathtrav",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/misc/session_actions.py",
+  "loc": 223,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "secret"
+  ]
+ },
+ {
+  "file": "services/stt/stt_service.py",
+  "loc": 209,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "fileio",
+   "net",
+   "secret"
+  ]
+ },
+ {
+  "file": "mcp_servers/memory_server.py",
+  "loc": 208,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "await",
+   "fileio",
+   "pathtrav",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/agent/runs.py",
+  "loc": 202,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/preset_manager.py",
+  "loc": 191,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "fileio",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/tools/security.py",
+  "loc": 182,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "secret"
+  ]
+ },
+ {
+  "file": "routes/admin_wipe_routes.py",
+  "loc": 177,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "routes/chatgpt_subscription_routes.py",
+  "loc": 170,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "secret"
+  ]
+ },
+ {
+  "file": "services/research/service.py",
+  "loc": 168,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "secret"
+  ]
+ },
+ {
+  "file": "services/search/ranking.py",
+  "loc": 161,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/scheduling/bg_monitor.py",
+  "loc": 156,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "thread"
+  ]
+ },
+ {
+  "file": "src/auth/helpers.py",
+  "loc": 148,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "secret"
+  ]
+ },
+ {
+  "file": "core/middleware.py",
+  "loc": 128,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/runtime/app_initializer.py",
+  "loc": 121,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "secret"
+  ]
+ },
+ {
+  "file": "routes/emoji_routes.py",
+  "loc": 110,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "await",
+   "blocking_in_async",
+   "fileio",
+   "net"
+  ]
+ },
+ {
+  "file": "src/clients/api_key_manager.py",
+  "loc": 85,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "fileio",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "companion/__init__.py",
+  "loc": 12,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/clients/__init__.py",
+  "loc": 8,
+  "score": 4,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "secret"
+  ]
+ },
+ {
+  "file": "core/session_manager.py",
+  "loc": 717,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth"
+  ]
+ },
+ {
+  "file": "services/search/content.py",
+  "loc": 415,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "fileio",
+   "net"
+  ]
+ },
+ {
+  "file": "src/vector/embedding_lanes.py",
+  "loc": 382,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "secret"
+  ]
+ },
+ {
+  "file": "services/hwfit/image_models.py",
+  "loc": 377,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "secret"
+  ]
+ },
+ {
+  "file": "routes/assistant_routes.py",
+  "loc": 347,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await"
+  ]
+ },
+ {
+  "file": "src/memory/provider.py",
+  "loc": 322,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await"
+  ]
+ },
+ {
+  "file": "services/memory/skill_extractor.py",
+  "loc": 274,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "scripts/repair_stale_session_endpoints.py",
+  "loc": 198,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio"
+  ]
+ },
+ {
+  "file": "src/misc/text_helpers.py",
+  "loc": 173,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "services/search/query.py",
+  "loc": 143,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/actions/intents.py",
+  "loc": 139,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "services/memory/service.py",
+  "loc": 127,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "await",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "src/agent/tools_facade.py",
+  "loc": 104,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "services/search/service.py",
+  "loc": 103,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "await",
+   "pathtrav",
+   "thread"
+  ]
+ },
+ {
+  "file": "scripts/claim_ownerless.py",
+  "loc": 101,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "fileio"
+  ]
+ },
+ {
+  "file": "core/models.py",
+  "loc": 97,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "src/security/url_security.py",
+  "loc": 95,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "net",
+   "secret"
+  ]
+ },
+ {
+  "file": "routes/prefs_routes.py",
+  "loc": 91,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "auth",
+   "fileio"
+  ]
+ },
+ {
+  "file": "src/security/secret_storage.py",
+  "loc": 87,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "fileio",
+   "secret"
+  ]
+ },
+ {
+  "file": "core/cache.py",
+  "loc": 66,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "await",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "src/misc/readiness.py",
+  "loc": 61,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "fileio",
+   "pathtrav",
+   "sql"
+  ]
+ },
+ {
+  "file": "routes/workspace_routes.py",
+  "loc": 57,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "routes/font_routes.py",
+  "loc": 56,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "async",
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/agent/assistant_log.py",
+  "loc": 45,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "auth",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "src/security/__init__.py",
+  "loc": 8,
+  "score": 3,
+  "tier": "HIGH",
+  "model": "fable-5",
+  "flags": [
+   "pathtrav",
+   "secret"
+  ]
+ },
+ {
+  "file": "src/misc/cleanup_service.py",
+  "loc": 294,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "async",
+   "auth",
+   "await"
+  ]
+ },
+ {
+  "file": "routes/document_helpers.py",
+  "loc": 236,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "auth"
+  ]
+ },
+ {
+  "file": "services/hwfit/profiles.py",
+  "loc": 230,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "secret"
+  ]
+ },
+ {
+  "file": "routes/backup_routes.py",
+  "loc": 207,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "async",
+   "auth",
+   "await"
+  ]
+ },
+ {
+  "file": "routes/editor_draft_routes.py",
+  "loc": 189,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "async",
+   "auth"
+  ]
+ },
+ {
+  "file": "src/actions/document.py",
+  "loc": 180,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "async",
+   "auth"
+  ]
+ },
+ {
+  "file": "routes/signature_routes.py",
+  "loc": 152,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "async",
+   "auth"
+  ]
+ },
+ {
+  "file": "routes/gallery_helpers.py",
+  "loc": 145,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "auth"
+  ]
+ },
+ {
+  "file": "src/misc/user_time.py",
+  "loc": 138,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "secret"
+  ]
+ },
+ {
+  "file": "scripts/_lib/cli.py",
+  "loc": 123,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "fileio",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "scripts/index_documents.py",
+  "loc": 117,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "fileio",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "routes/background_routes.py",
+  "loc": 109,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "async",
+   "await",
+   "fileio",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "scripts/cleanup_stale_model_endpoints.py",
+  "loc": 105,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "auth"
+  ]
+ },
+ {
+  "file": "src/research/topic_analyzer.py",
+  "loc": 105,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "auth"
+  ]
+ },
+ {
+  "file": "src/security/url_safety.py",
+  "loc": 91,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "secret"
+  ]
+ },
+ {
+  "file": "src/security/prompt_security.py",
+  "loc": 83,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "secret"
+  ]
+ },
+ {
+  "file": "src/vector/rag_manager.py",
+  "loc": 71,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "auth"
+  ]
+ },
+ {
+  "file": "src/documents/markitdown.py",
+  "loc": 63,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "secret"
+  ]
+ },
+ {
+  "file": "routes/cleanup_routes.py",
+  "loc": 61,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "async",
+   "auth",
+   "await"
+  ]
+ },
+ {
+  "file": "src/chat/context_budget.py",
+  "loc": 56,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "secret"
+  ]
+ },
+ {
+  "file": "core/__init__.py",
+  "loc": 54,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "auth"
+  ]
+ },
+ {
+  "file": "src/misc/rate_limiter.py",
+  "loc": 49,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "thread"
+  ]
+ },
+ {
+  "file": "src/runtime/app_helpers.py",
+  "loc": 33,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "fileio",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "core/exceptions.py",
+  "loc": 30,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "auth"
+  ]
+ },
+ {
+  "file": "src/exceptions.py",
+  "loc": 30,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "auth"
+  ]
+ },
+ {
+  "file": "src/personal/__init__.py",
+  "loc": 15,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "secret"
+  ]
+ },
+ {
+  "file": "src/integrations/__init__.py",
+  "loc": 14,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "secret"
+  ]
+ },
+ {
+  "file": "src/scheduling/task_endpoint.py",
+  "loc": 14,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "auth"
+  ]
+ },
+ {
+  "file": "services/memory/memory.py",
+  "loc": 11,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "secret"
+  ]
+ },
+ {
+  "file": "src/email/__init__.py",
+  "loc": 7,
+  "score": 2,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "thread"
+  ]
+ },
+ {
+  "file": "src/documents/pdf_forms.py",
+  "loc": 402,
+  "score": 1,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "routes/docker_ollama.py",
+  "loc": 166,
+  "score": 1,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "async",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "services/search/analytics.py",
+  "loc": 149,
+  "score": 1,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "fileio"
+  ]
+ },
+ {
+  "file": "routes/search_routes.py",
+  "loc": 112,
+  "score": 1,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "async",
+   "await",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "src/security/tls_overrides.py",
+  "loc": 91,
+  "score": 1,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "net"
+  ]
+ },
+ {
+  "file": "routes/diagnostics_routes.py",
+  "loc": 77,
+  "score": 1,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "async",
+   "await",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "services/search/cache.py",
+  "loc": 63,
+  "score": 1,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "fileio"
+  ]
+ },
+ {
+  "file": "routes/stt_routes.py",
+  "loc": 60,
+  "score": 1,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "async",
+   "await",
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "src/research/goal_extractor.py",
+  "loc": 50,
+  "score": 1,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "src/misc/generated_images.py",
+  "loc": 33,
+  "score": 1,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "fileio"
+  ]
+ },
+ {
+  "file": "mcp_servers/_common.py",
+  "loc": 23,
+  "score": 1,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "src/chat/__init__.py",
+  "loc": 11,
+  "score": 1,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "src/tools/__init__.py",
+  "loc": 8,
+  "score": 1,
+  "tier": "MEDIUM",
+  "model": "sonnet",
+  "flags": [
+   "pathtrav"
+  ]
+ },
+ {
+  "file": "routes/hwfit_routes.py",
+  "loc": 288,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/vector/memory_vector.py",
+  "loc": 251,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "scripts/hf_download.py",
+  "loc": 183,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "services/docs/service.py",
+  "loc": 92,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": [
+   "async",
+   "await"
+  ]
+ },
+ {
+  "file": "routes/tts_routes.py",
+  "loc": 88,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": [
+   "async"
+  ]
+ },
+ {
+  "file": "src/vector/chroma_client.py",
+  "loc": 74,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "setup.py",
+  "loc": 66,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/research/utils.py",
+  "loc": 64,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/vector/rag_singleton.py",
+  "loc": 61,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/uploads/limits.py",
+  "loc": 45,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": [
+   "async",
+   "await"
+  ]
+ },
+ {
+  "file": "services/__init__.py",
+  "loc": 38,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "services/search/__init__.py",
+  "loc": 36,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/search/__init__.py",
+  "loc": 30,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/agent/__init__.py",
+  "loc": 27,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "services/youtube/__init__.py",
+  "loc": 23,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "services/docs/__init__.py",
+  "loc": 19,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/documents/pdf_runtime.py",
+  "loc": 16,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "services/memory/__init__.py",
+  "loc": 15,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/search/ranking.py",
+  "loc": 15,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "core/constants.py",
+  "loc": 13,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "services/research/__init__.py",
+  "loc": 13,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/search/analytics.py",
+  "loc": 13,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/search/core.py",
+  "loc": 13,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/search/providers.py",
+  "loc": 13,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/search/cache.py",
+  "loc": 12,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/search/content.py",
+  "loc": 12,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/search/query.py",
+  "loc": 12,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/youtube/__init__.py",
+  "loc": 12,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "services/tts/__init__.py",
+  "loc": 10,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/runtime/__init__.py",
+  "loc": 8,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/scheduling/__init__.py",
+  "loc": 8,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "services/shell/__init__.py",
+  "loc": 7,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/actions/__init__.py",
+  "loc": 7,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/calendar_app/__init__.py",
+  "loc": 7,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/memory/__init__.py",
+  "loc": 7,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/misc/__init__.py",
+  "loc": 7,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/vector/__init__.py",
+  "loc": 7,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "services/memory/memory_vector.py",
+  "loc": 6,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "services/stt/__init__.py",
+  "loc": 4,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/database.py",
+  "loc": 4,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "services/faces/__init__.py",
+  "loc": 2,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/__init__.py",
+  "loc": 2,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/auth/__init__.py",
+  "loc": 2,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/documents/__init__.py",
+  "loc": 2,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/research/__init__.py",
+  "loc": 2,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "src/uploads/__init__.py",
+  "loc": 2,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "mcp_servers/__init__.py",
+  "loc": 1,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "routes/__init__.py",
+  "loc": 1,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "scripts/_lib/__init__.py",
+  "loc": 1,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ },
+ {
+  "file": "services/hwfit/__init__.py",
+  "loc": 1,
+  "score": 0,
+  "tier": "LOW",
+  "model": "sonnet",
+  "flags": []
+ }
+]
